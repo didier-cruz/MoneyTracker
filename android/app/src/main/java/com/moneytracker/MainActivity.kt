@@ -1,4 +1,4 @@
-package com.rndiffapp
+package com.moneytracker
 
 import android.os.Bundle
 import com.facebook.react.ReactActivity
