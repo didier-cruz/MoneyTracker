@@ -2,14 +2,19 @@ import {FC} from 'react';
 import {CatalogCard} from '@components/molecules/Cards/CatalogCard';
 import {FlatList, View} from 'react-native';
 
-const CatalogList: FC<CatalogList> = ({data, selectedId, onPressItem}) => {
+const CatalogList: FC<CatalogList> = ({
+  data,
+  selectedId,
+  onPressItem,
+  onPressManageItem,
+}) => {
   return (
     <FlatList
-      keyExtractor={item => item.field}
+      keyExtractor={item => item.id.toString()}
       data={data}
       horizontal
       showsHorizontalScrollIndicator={false}
-      renderItem={({item, index}) => (
+      renderItem={({item}) => (
         <CatalogCard
           id={item.id}
           icon={item.icon}
@@ -18,7 +23,13 @@ const CatalogList: FC<CatalogList> = ({data, selectedId, onPressItem}) => {
           field={item.field}
           balance={item.balance}
           selectedId={selectedId}
+          variant={item.variant}
           onPress={() => onPressItem(item.id)}
+          onPressManage={
+            onPressManageItem && item.variant !== 'add'
+              ? () => onPressManageItem(item.id)
+              : undefined
+          }
         />
       )}
       ListFooterComponent={<View style={{marginLeft: 20}}></View>}

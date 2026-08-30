@@ -2,19 +2,30 @@ import {StyleSheet, Text, View} from 'react-native';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faBarsStaggered} from '@fortawesome/free-solid-svg-icons/faBarsStaggered';
 import {TouchableOpacity} from 'react-native-gesture-handler';
-import {useNavigation} from '@react-navigation/native';
-import {useTheme} from '@redshank/native';
-
+import {ParamListBase, useNavigation} from '@react-navigation/native';
+import {DrawerNavigationProp} from '@react-navigation/drawer';
 type MainHeaderProps = {
   title?: string;
+  /**
+   * Second header line, rendered as-is (never split further) — added
+   * for `BudgetsScreen`'s "Budgets" / current-month two-line header.
+   * Without this, the only way to get a second line was splitting
+   * `title` on its first space and keeping just the SECOND word
+   * (`title.split(' ')`'s destructure below silently drops everything
+   * after that), which mangles any subtitle with more than one word
+   * (e.g. `"August 2026"` -> `"August"`, losing the year). Optional and
+   * additive: every existing caller that only ever passed `title`
+   * (`AccountsScreen`/`ResumenScreen`/`AnalysisScreen`) keeps the exact
+   * same split-on-first-space behavior it already had.
+   */
+  subtitle?: string;
 };
 
-const MainHeader = ({title = ''}: MainHeaderProps) => {
-  const [title1, title2] = title.split(' ');
+const MainHeader = ({title = '', subtitle}: MainHeaderProps) => {
+  const [title1, splitTitle2] = title.split(' ');
+  const title2 = subtitle ?? splitTitle2;
 
-  const navigation = useNavigation();
-  const {colors} = useTheme();
-
+  const navigation = useNavigation<DrawerNavigationProp<ParamListBase>>();
 
   return (
     <View

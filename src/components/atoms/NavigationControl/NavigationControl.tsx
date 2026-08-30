@@ -1,8 +1,9 @@
 import { black, colors, white } from '@constants/colors/colors';
 import { windowHeight } from '@constants/dimensions/Dimensions';
 import { GlobalStyles } from '@constants/styles/global.styles';
-import React, { useState } from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import React from 'react';
+import {Pressable, Text, View} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {NavigationControlProps} from './types';
 
 export const NavigationControl = ({
@@ -10,7 +11,8 @@ export const NavigationControl = ({
   secondActionPress,
   firstActive
 }: NavigationControlProps) => {
-  
+  const {t} = useTranslation();
+
   return (
     <View
       style={[
@@ -43,7 +45,7 @@ export const NavigationControl = ({
             color: firstActive ? colors[white][0] : colors[black][0],
             fontWeight: 'bold'
           }}>
-          Dashboard
+          {t('common.dashboard')}
         </Text>
       </Pressable>
       <Pressable
@@ -68,7 +70,7 @@ export const NavigationControl = ({
             color: !firstActive ? colors[white][0] : colors[black][0],
             fontWeight: 'bold'
           }}>
-          Registros
+          {t('common.records')}
         </Text>
       </Pressable>
     </View>

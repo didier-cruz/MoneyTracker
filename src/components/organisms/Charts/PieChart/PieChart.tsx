@@ -18,7 +18,7 @@ export const PieChart: FC<PieChartProps> = ({data, radius, items}) => {
     );
   };
 
-  const onSelect = (option: any, optionIndex: number) => {
+  const onSelect = (option: any, _optionIndex: number) => {
     const chartItemSelected = data.find(
       (item: any) => item.value === option.value,
     );

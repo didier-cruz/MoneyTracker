@@ -1,4 +1,4 @@
-import { Theme } from "@react-navigation/native"
+import { DarkTheme, DefaultTheme, Theme } from "@react-navigation/native"
 
 type ThemeAction =
     | { type: 'set_light_theme' }
@@ -12,6 +12,8 @@ export interface ThemeState extends Theme {
 export const lightTheme: ThemeState = {
     currentTheme: 'light',
     dark: false,
+    // react-navigation v7 anadio `fonts` como parte obligatoria de Theme
+    fonts: DefaultTheme.fonts,
     dividerColor: 'rgba(0,0,0,0.7)',
     colors: {
         primary: 'red',
@@ -26,6 +28,7 @@ export const lightTheme: ThemeState = {
 export const darkTheme: ThemeState = {
     currentTheme: 'dark',
     dark: true,
+    fonts: DarkTheme.fonts,
     dividerColor: 'rgba(0,0,0,0.7)',
     colors: {
         primary: 'red',
