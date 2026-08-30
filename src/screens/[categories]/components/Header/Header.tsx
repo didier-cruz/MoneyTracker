@@ -1,5 +1,5 @@
 import {Spacer} from '@components/atoms';
-import {black, colors, gray} from '@constants/colors/colors';
+import {colors, gray} from '@constants/colors/colors';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {useNavigation} from '@react-navigation/native';
 import {Text, Title} from '@redshank/native';
