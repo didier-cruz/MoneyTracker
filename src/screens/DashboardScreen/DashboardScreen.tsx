@@ -3,12 +3,15 @@ import {ScreenContainer} from '@components/atoms/containers/ScreenContainer';
 import {StackNavParams} from '@navigation/StackNav/types';
 import {StackScreenProps} from '@react-navigation/stack';
 import React from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {Text} from 'react-native';
+import {useTranslation} from 'react-i18next';
 
 interface DashboardScreenProps
   extends StackScreenProps<StackNavParams, 'Dashboard'> {}
 
 export const DashboardScreen = ({navigation}: DashboardScreenProps) => {
+  const {t} = useTranslation();
+
   return (
     <ScreenContainer>
       <NavigationControl
@@ -16,7 +19,7 @@ export const DashboardScreen = ({navigation}: DashboardScreenProps) => {
         secondActionPress={() => navigation.navigate('Form')}
         firstActive
       />
-      <Text>Dashboard Screen</Text>
+      <Text>{t('common.dashboardScreenPlaceholder')}</Text>
     </ScreenContainer>
   );
 };

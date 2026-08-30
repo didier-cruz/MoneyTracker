@@ -1,4 +1,3 @@
-import {colors, primary, white} from '@constants/colors/colors';
 import {HomeBottomTabs} from '@navigation/[home]/HomeBottomTabs';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
