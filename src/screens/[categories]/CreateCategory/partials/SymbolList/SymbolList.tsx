@@ -1,11 +1,12 @@
 import {Spacer} from '@components/atoms';
 import {Headings} from '@components/atoms/text/Headings/Headings';
-import {accent, colors, gray, white} from '@constants/colors/colors';
+import {accent, colors, gray} from '@constants/colors/colors';
 import {icons} from '@data/icons';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import React from 'react';
-import {StyleSheet, View, TouchableOpacity} from 'react-native';
+import {View, TouchableOpacity} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import {useTranslation} from 'react-i18next';
 import {
   activeItemContainerStyle,
   listStyles,
@@ -18,20 +19,23 @@ type SymbolListProps = {
   onPressItem: any;
 };
 
-const SymbolListHeader = () => (
-  <View style={listTitle.container}>
-    <Headings
-      headingSize={'H3'}
-      color={colors[gray][1]}
-      fontWeight="600"
-      containerStyle={listTitle.heading}>
-      Choose an icon
-    </Headings>
-    <TouchableOpacity style={listTitle.action}>
-      <FontAwesomeIcon icon="ellipsis" size={25} color={colors[accent][0]} />
-    </TouchableOpacity>
-  </View>
-);
+const SymbolListHeader = () => {
+  const {t} = useTranslation();
+  return (
+    <View style={listTitle.container}>
+      <Headings
+        headingSize={'H3'}
+        color={colors[gray][1]}
+        fontWeight="600"
+        containerStyle={listTitle.heading}>
+        {t('categories.chooseAnIcon')}
+      </Headings>
+      <TouchableOpacity style={listTitle.action}>
+        <FontAwesomeIcon icon="ellipsis" size={25} color={colors[accent][0]} />
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const SymbolList = ({selectedIcon, onPressItem}: SymbolListProps) => {
   return (
@@ -39,7 +43,7 @@ const SymbolList = ({selectedIcon, onPressItem}: SymbolListProps) => {
       <SymbolListHeader />
       <Spacer space={15} />
       <View style={listStyles.listContainer}>
-        {icons.map(({id, icon}: IIcon, index) => {
+        {icons.map(({id, icon}: IIcon) => {
           return (
             <TouchableOpacity
               key={id}

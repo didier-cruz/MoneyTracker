@@ -1,1 +1,3 @@
-export {default as CategoriesList} from './CategoriesList/CategoriesList';
+export {CategoriesHeader} from './CategoriesHeader';
+export {CategoryGrid} from './CategoryGrid';
+export {CategoryMovementsList} from './CategoryMovementsList';

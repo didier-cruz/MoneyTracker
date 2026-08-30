@@ -1,30 +1,30 @@
 import {HomeNavigator} from '@navigation/[home]/HomeNavigator';
-import {selectedLanguage} from '@constants/languages';
-import {CategoriesScreen, CreateCategory} from '@screens/[categories]';
+import {DrawerLabel} from './partials/DrawerLabel';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
-import {faLayerGroup} from '@fortawesome/free-solid-svg-icons/faLayerGroup';
 import {faHome} from '@fortawesome/free-solid-svg-icons/faHome';
 import {faBookBookmark} from '@fortawesome/free-solid-svg-icons/faBookBookmark';
-import {CategoriesTopTabs} from '@navigation/[categories]/CategoriesTopTabsNavigator';
 import {CategoriesNavigator} from '@navigation/[categories]/CategoriesNavigator/CategoriesNavigator';
 
 export const drawerRouter: IDrawer[] = [
   {
-    name: selectedLanguage.drawer[0].label,
+    // El nombre de ruta es un IDENTIFICADOR y no se traduce: antes era
+    // el texto traducido, así que cambiar de idioma habría renombrado la
+    // ruta y roto cualquier navigate() hacia ella.
+    name: 'Home',
     component: HomeNavigator,
     options: {
-      drawerLabel: selectedLanguage.drawer[0].label,
-      drawerIcon: ({color, focused, size}: any) => (
+      drawerLabel: ({color}) => <DrawerLabel i18nKey="drawer.home" color={color} />,
+      drawerIcon: ({color, focused: _focused, size}: any) => (
         <FontAwesomeIcon icon={faHome} color={color} size={size} />
       ),
     },
   },
   {
-    name: selectedLanguage.drawer[1].label,
+    name: 'Categories',
     component: CategoriesNavigator,
     options: {
-      drawerLabel: selectedLanguage.drawer[1].label,
-      drawerIcon: ({color, focused, size}) => (
+      drawerLabel: ({color}) => <DrawerLabel i18nKey="drawer.categories" color={color} />,
+      drawerIcon: ({color, focused: _focused, size}) => (
         <FontAwesomeIcon icon={faBookBookmark} color={color} size={size} />
       ),
     },

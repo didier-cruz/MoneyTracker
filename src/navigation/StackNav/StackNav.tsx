@@ -5,7 +5,7 @@ import {StackNavParams} from './types';
 
 const Stack = createStackNavigator<StackNavParams>();
 
-export const StackNav = ({route}: any) => {
+export const StackNav = () => {
   return (
     <Stack.Navigator
       initialRouteName="Form"
@@ -17,16 +17,15 @@ export const StackNav = ({route}: any) => {
         component={DashboardScreen}
         options={{
           title: '',
-          animationEnabled: false,
+          animation: 'none',
         }}
       />
       <Stack.Screen
         name="Form"
         component={FormScreen}
-        initialParams={route.params?.category}
         options={{
           title: '',
-          animationEnabled: false,
+          animation: 'none',
         }}
       />
     </Stack.Navigator>

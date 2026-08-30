@@ -1,34 +1,48 @@
-import {Spacer} from '@components/atoms';
 import {Headings} from '@components/atoms/text/Headings/Headings';
 import {
   accent,
   black,
   colors,
   gray,
-  primary,
   secondary,
   white,
 } from '@constants/colors/colors';
-import {Text} from '@redshank/native';
 import React from 'react';
-import {StyleSheet, TextInput} from 'react-native';
+import {KeyboardTypeOptions, StyleSheet, TextInput} from 'react-native';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   inputText: string;
-  onChangeInputText: any;
+  onChangeInputText: (text: string) => void;
   error: string;
+  /** Defaults to the category-name copy this field originally shipped
+   * with — pass an explicit value for any other reuse (e.g. account
+   * name/initial balance in `CreateAccount`). */
+  placeholder?: string;
+  keyboardType?: KeyboardTypeOptions;
+  accessibilityLabel?: string;
 };
 
-const InputField = ({inputText, onChangeInputText, error}: Props) => {
+const InputField = ({
+  inputText,
+  onChangeInputText,
+  error,
+  placeholder,
+  keyboardType = 'default',
+  accessibilityLabel,
+}: Props) => {
+  const {t} = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('categories.addCategoryNamePlaceholder');
   return (
     <>
       <TextInput
         value={inputText}
         style={inputStyles.textInput}
         onChangeText={onChangeInputText}
-        placeholder="Add category name"
+        placeholder={resolvedPlaceholder}
         placeholderTextColor={colors[gray][0]}
-        keyboardType="default"
+        keyboardType={keyboardType}
+        accessibilityLabel={accessibilityLabel ?? resolvedPlaceholder}
       />
       <Headings
         containerStyle={inputStyles.errorMessage}

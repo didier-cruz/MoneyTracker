@@ -4,7 +4,9 @@ export const colors = {
   primary: ['#010062'],
   secondary: ['#CF0A0A'],
   tertiary: ['#DC5F00'],
-  accent: ['#C7FF70', '#8CC63F', '#5CA41B'],
+  // [0] claro, [1] medio, [2] fuerte, [3] profundo — [3] existe para texto
+  // legible sobre [0]: #5CA41B sobre #C7FF70 da 2,4:1, insuficiente.
+  accent: ['#C7FF70', '#8CC63F', '#5CA41B', '#2E4A0C'],
   success: ['#50B700'],
   info: ['#969696'],
   warning: ['#E6BF5C'],

@@ -2,20 +2,25 @@ import React from 'react';
 import {
   View,
   Text,
-  ImageBackground,
   Image,
   TouchableOpacity,
 } from 'react-native';
 import {
+  DrawerContentComponentProps,
   DrawerContentScrollView,
   DrawerItemList,
 } from '@react-navigation/drawer';
 import {accent, colors} from '@constants/colors/colors';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faArrowRightFromBracket} from '@fortawesome/free-solid-svg-icons/faArrowRightFromBracket';
-import {heightDP, widthDP} from '@utils/responsive';
+import {StyleSheet} from 'react-native';
+import {heightDP} from '@utils/responsive';
+import {useTranslation} from 'react-i18next';
+import {Text as RSText} from '@redshank/native';
+import {LanguageSwitch} from '@components/atoms/LanguageSwitch';
 
-const CustomDrawer = props => {
+const CustomDrawer = (props: DrawerContentComponentProps) => {
+  const {t} = useTranslation();
   return (
     <View style={{flex: 1}}>
       <DrawerContentScrollView
@@ -37,6 +42,12 @@ const CustomDrawer = props => {
         </View>
       </DrawerContentScrollView>
       <View style={{padding: 20, borderTopWidth: 1, borderTopColor: '#ccc'}}>
+        <View style={drawerStyles.languageBlock}>
+          <RSText size={12} color={colors[accent][0]} style={drawerStyles.languageLabel}>
+            {t('drawer.language')}
+          </RSText>
+          <LanguageSwitch onDark />
+        </View>
         <TouchableOpacity onPress={() => {}} style={{paddingVertical: 15}}>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
             <FontAwesomeIcon
@@ -51,7 +62,7 @@ const CustomDrawer = props => {
                 marginLeft: 5,
                 color: colors[accent][0],
               }}>
-              Sign Out
+              {t('drawer.signOut')}
             </Text>
           </View>
         </TouchableOpacity>
@@ -59,5 +70,14 @@ const CustomDrawer = props => {
     </View>
   );
 };
+
+const drawerStyles = StyleSheet.create({
+  languageBlock: {
+    paddingBottom: 14,
+  },
+  languageLabel: {
+    marginBottom: 7,
+  },
+});
 
 export default CustomDrawer;
