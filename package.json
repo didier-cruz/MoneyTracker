@@ -27,7 +27,10 @@
     "@redshank/native": "1.4.4",
     "@rnx-kit/align-deps": "^3.2.2",
     "add": "^2.0.6",
+    "i18next": "^26.4.0",
+    "intl-pluralrules": "^2.0.1",
     "react": "18.3.1",
+    "react-i18next": "^17.0.12",
     "react-native": "^0.77.0",
     "react-native-gesture-handler": "2.22.0",
     "react-native-gifted-charts": "^1.3.7",
@@ -99,5 +102,8 @@
         "svg"
       ]
     }
+  },
+  "resolutions": {
+    "@types/react": "^18.3.28"
   }
 }

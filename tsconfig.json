@@ -1,14 +1,10 @@
 {
   "extends": "@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "commonjs",
-    "lib": ["es2017"],
     "allowJs": true,
     "jsx": "react-native",
     "isolatedModules": true,
     "strict": true,
-    "moduleResolution": "node",
     "baseUrl": "./src" /* Base directory to resolve non-absolute module names. */,
     "paths": {
       "@components/*": ["components/*"],
@@ -23,7 +19,9 @@
       "@utils/*": ["utils/*"],
       "@icons/*": ["assets/icons/*"],
       "@navigation/*": ["navigation/*"],
-      "@db/*": ["db/*"]
+      "@db/*": ["db/*"],
+      "@i18n": ["i18n"],
+      "@i18n/*": ["i18n/*"]
     },
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
