@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text, Title} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import {faPen} from '@fortawesome/free-solid-svg-icons/faPen';
 import {faBoxArchive} from '@fortawesome/free-solid-svg-icons/faBoxArchive';
 import {ScreenTemplate} from '@components/templates/ScreenTemplate';

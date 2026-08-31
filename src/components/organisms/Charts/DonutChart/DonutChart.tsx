@@ -1,7 +1,7 @@
 import {FC} from 'react';
 import {StyleSheet, View} from 'react-native';
 import Svg, {Circle} from 'react-native-svg';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {colors, gray} from '@constants/colors/colors';
 import {IChartSector} from './donutMath';
 
@@ -51,10 +51,12 @@ const DEFAULT_STROKE_WIDTH = 22;
  * OUTSIDE the donut (color chip + name + amount·percentage, to the
  * chart's right), never as a label drawn ON a slice — which is
  * specifically the part of gifted-charts a previous slice found
- * unreliable (mis-positioned in-slice labels on some data shapes, see
- * `organisms/Charts/PieChart`'s existing, unrelated component, kept
- * as-is/untouched here). Since this design never needed slice labels
- * at all, drawing the ring directly sidesteps that failure mode
+ * unreliable (mis-positioned in-slice labels on some data shapes — was
+ * observed in `organisms/Charts/PieChart`, an unrelated component that
+ * has since been deleted as dead code, never rendered from any screen;
+ * see the `@redshank/native` removal slice's HANDOFF). Since this
+ * design never needed slice labels at all, drawing the ring directly
+ * sidesteps that failure mode
  * entirely, and keeps every angle/percentage computed by THIS app's
  * own `donutMath.ts` (see its doc comment for the rounding guarantee)
  * instead of trusting a third-party layout engine's internal math.

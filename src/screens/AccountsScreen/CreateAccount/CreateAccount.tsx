@@ -1,7 +1,7 @@
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RouteProp} from '@react-navigation/native';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {ScreenContainer, KeyboardContainer, Spacer} from '@components/atoms';
 import {ConfirmDialog} from '@components/organisms/feedback';
 import {useAccountForm} from '@hooks/useAccountForm';

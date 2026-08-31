@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import {IEnvelopeWithBalance} from '@db/queries';
 import {accent, colors, gray, inactive, primary, secondary, white} from '@constants/colors/colors';

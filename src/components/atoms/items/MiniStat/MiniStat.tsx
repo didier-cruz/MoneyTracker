@@ -1,6 +1,6 @@
 import {FC} from 'react';
 import {StyleSheet, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faArrowDownLong} from '@fortawesome/free-solid-svg-icons/faArrowDownLong';
 import {faArrowUpLong} from '@fortawesome/free-solid-svg-icons/faArrowUpLong';

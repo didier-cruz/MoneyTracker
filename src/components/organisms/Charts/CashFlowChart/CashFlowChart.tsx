@@ -1,6 +1,7 @@
 import {FC} from 'react';
 import {StyleSheet, View} from 'react-native';
-import {Title, Text} from '@redshank/native';
+import {Title} from '@components/atoms/text/Title';
+import {Text} from '@components/atoms/text/Text';
 import {BarChart} from 'react-native-gifted-charts';
 import type {barDataItem} from 'react-native-gifted-charts';
 import {ICashFlowMonth} from '@db/queries';

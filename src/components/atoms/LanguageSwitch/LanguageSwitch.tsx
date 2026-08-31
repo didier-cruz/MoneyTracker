@@ -1,5 +1,5 @@
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {useTranslation} from 'react-i18next';
 
 import {accent, colors, primary} from '@constants/colors/colors';

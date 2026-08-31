@@ -1,4 +1,5 @@
-import {Title, Text} from '@redshank/native';
+import {Title} from '@components/atoms/text/Title';
+import {Text} from '@components/atoms/text/Text';
 import {StyleSheet, View} from 'react-native';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 
@@ -44,9 +45,12 @@ function TransactItem(transactItem: TransactItem) {
         <Title level={3} numberOfLines={1} marginBottom={0}>
           {category}
         </Title>
-        {/* OJO: el Text de @redshank/native aplica numberOfLines DESPUES de
-            esparcir el resto de props, asi que sobrescribe el que le pases.
-            Su prop propia es `lines`. */}
+        {/* `lines` (not `numberOfLines`) — this is one of the 8 call
+            sites written for `@redshank/native`'s `Text`, which only
+            honored its own `lines` prop (see
+            `@components/atoms/text/Text`'s own doc comment for why).
+            `lines` still works as an alias on the replacement, so this
+            wasn't touched in the migration. */}
         <Text color={colors[gray][0]} lines={1}>
           {date}
         </Text>

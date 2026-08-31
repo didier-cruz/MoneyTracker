@@ -16,7 +16,7 @@ import {faArrowRightFromBracket} from '@fortawesome/free-solid-svg-icons/faArrow
 import {StyleSheet} from 'react-native';
 import {heightDP} from '@utils/responsive';
 import {useTranslation} from 'react-i18next';
-import {Text as RSText} from '@redshank/native';
+import {Text as RSText} from '@components/atoms/text/Text';
 import {LanguageSwitch} from '@components/atoms/LanguageSwitch';
 
 const CustomDrawer = (props: DrawerContentComponentProps) => {

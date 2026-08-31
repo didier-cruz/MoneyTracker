@@ -1,4 +1,6 @@
-import {Card, Text, Title} from '@redshank/native';
+import {Card} from '@components/atoms/Card';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import {FC, Fragment} from 'react';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import {TransactItem} from '@components/atoms/items/TransactItem';

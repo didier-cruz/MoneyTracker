@@ -1,6 +1,7 @@
 import {FC} from 'react';
 import {ActivityIndicator, SectionList, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text, Title} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import {TransactItem} from '@components/atoms/items/TransactItem';
 import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
 import {LoadStatus} from '@hooks/useCategoriesScreen';

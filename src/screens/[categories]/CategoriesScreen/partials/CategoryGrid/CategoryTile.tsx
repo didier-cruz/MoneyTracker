@@ -1,6 +1,6 @@
 import {FC} from 'react';
 import {StyleSheet, TouchableOpacity} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import {accent, colors, gray, primary, white} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';

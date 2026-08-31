@@ -1,6 +1,7 @@
 import {FC} from 'react';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text, Title} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import {buildDonutData, DonutChart, IChartSectorInput} from '@components/organisms/Charts/DonutChart';
 import {colors, gray, secondary, white} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';

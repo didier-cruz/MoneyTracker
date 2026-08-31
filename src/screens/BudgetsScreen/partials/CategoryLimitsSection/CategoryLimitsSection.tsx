@@ -1,6 +1,6 @@
 import {FC} from 'react';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import {ICategoryBudgetWithSpent} from '@db/queries';
 import {accent, colors, gray, primary, secondary, white} from '@constants/colors/colors';

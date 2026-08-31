@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text, Title} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {ScreenContainer} from '@components/atoms';

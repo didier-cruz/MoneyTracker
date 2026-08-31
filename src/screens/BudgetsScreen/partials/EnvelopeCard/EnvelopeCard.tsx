@@ -1,6 +1,8 @@
 import {FC} from 'react';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Card, Text, Title} from '@redshank/native';
+import {Card} from '@components/atoms/Card';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faPiggyBank} from '@fortawesome/free-solid-svg-icons/faPiggyBank';
 import {faFileInvoiceDollar} from '@fortawesome/free-solid-svg-icons/faFileInvoiceDollar';

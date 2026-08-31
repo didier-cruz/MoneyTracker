@@ -1,6 +1,6 @@
 import {FC} from 'react';
 import {StyleSheet, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {colors} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
 import {MiniStat} from '@components/atoms/items/MiniStat';

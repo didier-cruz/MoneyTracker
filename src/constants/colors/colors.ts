@@ -14,7 +14,14 @@ export const colors = {
   // legible sobre [0]: #5CA41B sobre #C7FF70 da 2,4:1, insuficiente.
   accent: ['#C7FF70', '#8CC63F', '#5CA41B', '#2E4A0C'],
   success: ['#50B700'],
-  info: ['#969696'],
+  // [0] never referenced anywhere in this app (kept, unused, in case a
+  // future info-toned surface wants it). [1] `@redshank/native`'s
+  // `ThemeProvider`-level `info` color (`themeLight` never overrode
+  // it, so this is Redshank's own default) — `CatalogCard`'s selected-
+  // account cyan border, the one `useTheme()` color this app read with
+  // no equivalent already in this file. Migrated verbatim (exact hex,
+  // not an approximation) when `useTheme` was retired.
+  info: ['#969696', '#0BB7E3'],
   warning: ['#E6BF5C'],
   error: ['#BC2424'],
   inactive: ['#EEEEEE'],

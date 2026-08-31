@@ -1,4 +1,5 @@
-import {Text, Title} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import React from 'react';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
@@ -113,10 +114,7 @@ export const Transfer = ({navigation}: TransferProps) => {
             <Title level={2}>{t('transfer.title')}</Title>
           </View>
 
-          <Text
-            color={colors[gray][0]}
-            containerStyle={styles.explainerContainer}
-            style={styles.explainer}>
+          <Text color={colors[gray][0]} style={styles.explainer}>
             {t('transfer.explainer')}
           </Text>
 
@@ -258,21 +256,18 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 10,
   },
-  // `Text` (from `@redshank/native`) wraps its `TextNative` in an outer
-  // `View` (see `Text.js`) that only gets `containerStyle`, never `style`
-  // — `style`'s `width` was applied to the INNER text node while the
-  // outer wrapper stayed unconstrained. Inside `ScreenContainer`
-  // (`alignItems: 'center'`, no stretch), an unconstrained wrapper
-  // shrink-wraps to the text's intrinsic single-line width instead of
-  // the screen's, so the sentence rendered on one line wider than the
-  // screen and overflowed symmetrically on both edges — in every
-  // language, since it's a layout bug, not a copy-length one. Forcing
-  // the WRAPPER to full width (via `containerStyle`) is what actually
-  // bounds the inner text and lets it wrap.
-  explainerContainer: {
-    width: '100%',
-  },
+  // Was two styles (`explainer` + `explainerContainer`) because the old
+  // `@redshank/native` `Text` wrapped its `TextNative` in an outer
+  // `View` that only accepted `containerStyle`, never `style` — `style`'s
+  // `width` landed on the INNER text node while the outer wrapper stayed
+  // unconstrained, so inside `ScreenContainer` (`alignItems: 'center'`,
+  // no stretch) the wrapper shrink-wrapped to the text's intrinsic
+  // single-line width instead of the screen's, and the sentence
+  // overflowed both edges in every language. `@components/atoms/text/Text`
+  // renders the RN `Text` directly with no wrapper, so `width: '100%'`
+  // here now bounds the text node itself — one style is enough.
   explainer: {
+    width: '100%',
     marginBottom: 5,
   },
   confirmRow: {

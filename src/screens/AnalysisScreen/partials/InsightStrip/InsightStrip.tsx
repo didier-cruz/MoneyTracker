@@ -1,6 +1,6 @@
 import {FC} from 'react';
 import {StyleSheet, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faCircleInfo} from '@fortawesome/free-solid-svg-icons/faCircleInfo';
 import {accent, colors} from '@constants/colors/colors';

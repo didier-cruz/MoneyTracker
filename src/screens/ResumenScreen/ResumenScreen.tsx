@@ -1,5 +1,5 @@
 import {ActivityIndicator, RefreshControl, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {NavigationProp, useNavigation} from '@react-navigation/native';
 import {ScreenTemplate} from '@components/templates/ScreenTemplate';
 import {BalanceCard} from '@components/molecules/Cards/BalanceCard';

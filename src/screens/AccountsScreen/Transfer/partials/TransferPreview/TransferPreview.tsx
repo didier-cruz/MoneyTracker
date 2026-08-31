@@ -1,4 +1,4 @@
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
 import {IAccountWithBalance} from '@db/queries';

@@ -1,5 +1,7 @@
 import {TransactItem} from '@components/atoms/items/TransactItem';
-import {Card, Text, Title} from '@redshank/native';
+import {Card} from '@components/atoms/Card';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import React, {FC} from 'react';
 import {ActivityIndicator, SectionList, StyleSheet, View} from 'react-native';
 import {colors, accent, gray} from '@constants/colors/colors';
