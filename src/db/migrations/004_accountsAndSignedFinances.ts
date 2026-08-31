@@ -224,7 +224,10 @@ export const migration004Statements: string[] = [
   // 3. Recreate `finances` with the new signed/accounted shape, backfilling
   // every existing row onto the seeded default account above, deriving
   // its sign from its category's type.
-  `PRAGMA foreign_keys = OFF;`,
+  // Foreign keys must be OFF for the drop-and-rename below. The toggle
+  // used to be two statements here; it is a no-op inside a transaction
+  // and this list now runs inside one, so `createTables` performs it
+  // around the transaction — see `requiresForeignKeysOff` in `db.ts`.
   `CREATE TABLE finances_v3 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     amount INTEGER NOT NULL,
@@ -246,7 +249,6 @@ export const migration004Statements: string[] = [
     LEFT JOIN categories c ON c.id = f.idCategory;`,
   `DROP TABLE finances;`,
   `ALTER TABLE finances_v3 RENAME TO finances;`,
-  `PRAGMA foreign_keys = ON;`,
 
   `DROP TABLE _default_account;`,
 
