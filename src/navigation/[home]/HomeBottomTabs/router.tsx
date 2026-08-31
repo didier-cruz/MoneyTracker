@@ -9,7 +9,8 @@ import {faChartPie} from '@fortawesome/free-solid-svg-icons/faChartPie';
 // import {varOutcomes} from '@data/varOutcomes';
 // import {incomes} from '@data/incomes';
 import {accent, colors} from '@constants/colors/colors';
-import {TouchableOpacity} from 'react-native';
+import {StyleSheet, TouchableOpacity} from 'react-native';
+import {FAB_OVERHANG, FAB_SIZE, TAB_BAR_HEIGHT} from './navOptions';
 import {useTranslation} from 'react-i18next';
 import Resumen from '@screens/ResumenScreen';
 import {AccountsNavigator} from '@navigation/[accounts]/AccountsNavigator';
@@ -78,19 +79,8 @@ export const useBottomTabsRoutes = (): IBottomTab[] => {
         tabBarIconStyle: {},
         tabBarButton: ({onPress, children}) => {
           return (
-            // <CustomTabBarButton onPress={onPress}>{children}</CustomTabBarButton>
             <TouchableOpacity
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                top: 0,
-                left: '43%',
-                width: 70,
-                height: 0,
-                backgroundColor: 'red',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
+              style={fabStyles.button}
               onPress={onPress}>
               {children}
             </TouchableOpacity>
@@ -121,3 +111,22 @@ export const useBottomTabsRoutes = (): IBottomTab[] => {
     },
   ];
 };
+
+const fabStyles = StyleSheet.create({
+  /**
+   * `left: '43%'` era una aproximación fija: solo quedaba centrado en el
+   * ancho concreto donde se ajustó y se descuadraba en cualquier otro.
+   * `left: '50%'` con un margen negativo de media anchura centra de verdad,
+   * sea cual sea el dispositivo.
+   */
+  button: {
+    position: 'absolute',
+    left: '50%',
+    marginLeft: -FAB_SIZE / 2,
+    bottom: TAB_BAR_HEIGHT - FAB_SIZE + FAB_OVERHANG,
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
