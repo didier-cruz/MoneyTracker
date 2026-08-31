@@ -1,7 +1,27 @@
 import {IAccountWithBalance, IFinanceRow} from '@db/queries';
 import {colors} from '@constants/colors/colors';
-import {formatDisplayDate, formatDisplayTime, toLocalDateKey} from '@utils/dateFormat';
+import {
+  formatDisplayDate,
+  formatDisplayTime,
+  formatMonthNameCapitalized,
+  toLocalDateKey,
+} from '@utils/dateFormat';
 import i18n from '@i18n';
+
+/**
+ * Today's calendar month, capitalized, no year — `"Agosto"` (es) /
+ * `"August"` (en) — the movements-list header's right-hand label (see
+ * `AccountsScreen`'s `FragmentSection` call: `transactHeaderSubtitle`).
+ * Reuses `formatMonthNameCapitalized` (added for `AnalysisScreen`'s own
+ * two-line header) rather than duplicating its locale/capitalization
+ * logic — that helper takes a `'YYYY-MM'` period, so this only builds
+ * today's.
+ */
+export const formatCurrentMonthLabel = (now: Date = new Date()): string => {
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  return formatMonthNameCapitalized(`${year}-${month}`);
+};
 
 /**
  * Sentinel id for the trailing "add account" affordance appended to the

@@ -1,9 +1,6 @@
 import {FC} from 'react';
 import {StyleSheet, View} from 'react-native';
-import {Text} from '@redshank/native';
-import {faSackDollar} from '@fortawesome/free-solid-svg-icons/faSackDollar';
-import {faCartShopping} from '@fortawesome/free-solid-svg-icons/faCartShopping';
-import {faPiggyBank} from '@fortawesome/free-solid-svg-icons/faPiggyBank';
+import {Text} from '@components/atoms/text/Text';
 import {colors} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
 import {MiniStat} from '@components/atoms/items/MiniStat';
@@ -47,21 +44,18 @@ const BalanceCard: FC<BalanceCardProps> = ({
       </Text>
       <View style={styles.statsRow}>
         <MiniStat
-          icon={faSackDollar}
           label={t('resumen.income')}
           amountCents={incomeCents}
           color={colors.accent[1]}
           direction="up"
         />
         <MiniStat
-          icon={faCartShopping}
           label={t('resumen.expense')}
           amountCents={expenseCents}
           color={colors.error[0]}
           direction="down"
         />
         <MiniStat
-          icon={faPiggyBank}
           label={t('resumen.savings')}
           amountCents={Math.abs(savingsCents)}
           color={colors.warning[0]}
@@ -95,7 +89,7 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 10,
   },
 });
 

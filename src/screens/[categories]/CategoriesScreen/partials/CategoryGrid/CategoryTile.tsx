@@ -1,6 +1,6 @@
 import {FC} from 'react';
 import {StyleSheet, TouchableOpacity} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import {accent, colors, gray, primary, white} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
@@ -61,10 +61,10 @@ export const CategoryTile: FC<CategoryTileProps> = ({tile, isSelected, onPress})
       activeOpacity={0.8}
       style={[styles.tile, isSelected ? styles.tileSelected : styles.tileDefault]}>
       <VectorIcon name={icon} color={iconColor} size={30} />
-      <Text numberOfLines={1} color={nameColor} size={12} style={styles.name}>
+      <Text lines={1} color={nameColor} size={12} style={styles.name}>
         {name}
       </Text>
-      <Text numberOfLines={1} color={amountColor} size={11}>
+      <Text lines={1} color={amountColor} size={11}>
         {formatCentsToCurrency(amount)}
       </Text>
     </TouchableOpacity>

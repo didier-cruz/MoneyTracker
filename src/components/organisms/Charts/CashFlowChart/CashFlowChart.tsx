@@ -1,6 +1,7 @@
 import {FC} from 'react';
 import {StyleSheet, View} from 'react-native';
-import {Title, Text} from '@redshank/native';
+import {Title} from '@components/atoms/text/Title';
+import {Text} from '@components/atoms/text/Text';
 import {BarChart} from 'react-native-gifted-charts';
 import type {barDataItem} from 'react-native-gifted-charts';
 import {ICashFlowMonth} from '@db/queries';
@@ -31,7 +32,15 @@ const SERIES_COLORS = {
   savings: colors.warning[0],
 };
 
-const CHART_HEIGHT = 170;
+/** Matches the approved prototype's own `<svg height="104">` — a
+ * compact chart, not the 170px this component used before, which (once
+ * `react-native-gifted-charts` renders it at this app's actual
+ * device pixel density) looked wildly oversized against the rest of
+ * this card, with most of that height sitting empty above squat bars.
+ * See `negativeStepHeight` below for the other half of "aprovecha el
+ * alto disponible" — this height alone isn't enough if a negative
+ * month still reserves a fixed quarter of it for a one-cent dip. */
+const CHART_HEIGHT = 100;
 const INNER_BAR_SPACING = 3;
 const EDGE_SPACING = 14;
 const MIN_GROUP_GAP = 12;
@@ -194,23 +203,47 @@ export const CashFlowChart: FC<CashFlowChartProps> = ({months}) => {
       : 0;
 
   const hasNegativeSavings = months.some(month => month.savings < 0);
-  // A SHARED positive/negative scale, derived from the largest
-  // magnitude across EVERY bar (income, expense, and `Math.abs(savings)`
-  // for a negative month) — gifted-charts computes the above-axis and
-  // below-axis scales INDEPENDENTLY by default when
-  // `noOfSectionsBelowXAxis` is used, which would size a small negative
-  // `savings` bar's one section as tall as a much larger positive bar's
-  // several sections, making the two axes visually incomparable (e.g. a
-  // -$30 dip would render no smaller than a +$2,000 income bar). Pinning
-  // both `maxValue`/`mostNegativeValue` AND `stepValue`/
-  // `negativeStepValue` to the same magnitude keeps one dollar the same
-  // bar height everywhere on the chart, above or below the axis.
-  const maxMagnitude = Math.max(
+
+  // The POSITIVE scale — driven by the largest magnitude across every
+  // ABOVE-axis bar (income, expense, and any month's non-negative
+  // savings). `maxValue`/`stepValue` below are pinned to this.
+  const maxPositiveMagnitude = Math.max(
     1,
-    ...months.flatMap(month => [month.income, month.expense, Math.abs(month.savings)]),
+    ...months.flatMap(month => [month.income, month.expense, Math.max(0, month.savings)]),
   );
   const NO_OF_SECTIONS = 4;
-  const stepValue = maxMagnitude / NO_OF_SECTIONS;
+  const stepValue = maxPositiveMagnitude / NO_OF_SECTIONS;
+
+  // The largest magnitude any single NEGATIVE `savings` bar actually
+  // needs to dip below the axis — `0` when every month is
+  // non-negative (no below-axis area reserved at all in that case).
+  const maxNegativeMagnitude = Math.max(
+    0,
+    ...months.map(month => (month.savings < 0 ? -month.savings : 0)),
+  );
+  // The below-axis area's PIXEL height, proportional to how big that
+  // dip actually is relative to the positive scale above — NOT a
+  // fixed fraction of `CHART_HEIGHT` no matter how tiny the dip is.
+  // `noOfSectionsBelowXAxis`'s own "sections" are each a fixed
+  // `CHART_HEIGHT / NO_OF_SECTIONS` (a whole 25% of this chart, with
+  // `NO_OF_SECTIONS = 4`) — exactly what used to push the axis up by a
+  // full quarter of the chart's height even for a one-cent dip.
+  // `negativeStepHeight` (an explicit PIXEL height for that one
+  // section, independent of `noOfSections`) is what actually lets the
+  // reserved area shrink to match the data: with exactly one
+  // below-axis section (`noOfSectionsBelowXAxis={1}`) spanning the
+  // FULL negative range (`negativeStepValue = maxNegativeMagnitude`),
+  // sizing that one section to
+  // `CHART_HEIGHT * (maxNegativeMagnitude / maxPositiveMagnitude)` keeps
+  // pixels-per-dollar IDENTICAL above and below the axis — the same
+  // "one dollar, one bar height, whichever side of the axis" guarantee
+  // this file has always protected, just no longer paid for with a
+  // whole extra quarter-height section regardless of how small the dip
+  // is. The `4`px floor keeps an actual (if tiny) withdrawal visibly
+  // present rather than a 0px sliver.
+  const negativeStepHeight = hasNegativeSavings
+    ? Math.max(4, (maxNegativeMagnitude / maxPositiveMagnitude) * CHART_HEIGHT)
+    : undefined;
 
   return (
     <View style={styles.card}>
@@ -257,12 +290,13 @@ export const CashFlowChart: FC<CashFlowChartProps> = ({months}) => {
             xAxisColor={colors.inactive[0]}
             rulesColor={colors.inactive[0]}
             rulesThickness={1}
-            maxValue={maxMagnitude}
+            maxValue={maxPositiveMagnitude}
             stepValue={stepValue}
             noOfSections={NO_OF_SECTIONS}
             noOfSectionsBelowXAxis={hasNegativeSavings ? 1 : 0}
-            negativeStepValue={hasNegativeSavings ? stepValue : undefined}
-            mostNegativeValue={hasNegativeSavings ? -maxMagnitude : undefined}
+            negativeStepValue={hasNegativeSavings ? maxNegativeMagnitude : undefined}
+            negativeStepHeight={negativeStepHeight}
+            mostNegativeValue={hasNegativeSavings ? -maxNegativeMagnitude : undefined}
           />
           <MonthLabelsRow months={months} groupWidth={groupWidth} groupGap={groupGap} />
         </View>
@@ -287,6 +321,12 @@ const styles = StyleSheet.create({
   },
   title: {
     marginBottom: 0,
+    // Explicit, not left to `Title level={3}`'s own shared theme
+    // default — this card's title rendered visibly larger than the
+    // approved prototype's own 20px "Flujo de caja" heading on-device;
+    // pinning `fontSize` here directly guarantees the exact match
+    // regardless of any future change to that shared theme.
+    fontSize: 20,
   },
   legendRow: {
     flexDirection: 'row',

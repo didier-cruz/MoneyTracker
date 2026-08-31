@@ -1,4 +1,5 @@
-import {Text, Title} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import React from 'react';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';

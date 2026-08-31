@@ -1,8 +1,9 @@
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RouteProp} from '@react-navigation/native';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {ScreenContainer, KeyboardContainer, Spacer} from '@components/atoms';
+import {ConfirmDialog} from '@components/organisms/feedback';
 import {useEnvelopeForm} from '@hooks/useEnvelopeForm';
 import {ScrollView} from 'react-native-gesture-handler';
 import Header from '@screens/[categories]/components/Header/Header';
@@ -64,13 +65,22 @@ export const CreateEnvelope = ({navigation, route}: CreateEnvelopeProps) => {
     loadStatus,
     loadErrorMessage,
     reloadEnvelope,
+    notice,
+    dismissNotice,
   } = useEnvelopeForm(envelopeId);
 
+  // Same fix as `CreateAccount` — see that screen's doc comment: the
+  // native `Alert.alert` this used to fire stayed on screen even after
+  // an immediate `navigation.goBack()` because it rendered outside the
+  // React tree; a JS `ConfirmDialog` would unmount WITH this screen, so
+  // navigation now waits for the dialog's own dismissal instead.
   const handleSave = async () => {
-    const success = await saveEnvelope();
-    if (success) {
-      navigation.goBack();
-    }
+    await saveEnvelope();
+  };
+
+  const onDismissSavedNotice = () => {
+    dismissNotice();
+    navigation.goBack();
   };
 
   const targetAmountPlaceholder =
@@ -118,43 +128,59 @@ export const CreateEnvelope = ({navigation, route}: CreateEnvelopeProps) => {
   }
 
   return (
-    <KeyboardContainer>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <ScreenContainer>
-          <Header
-            title={isEditMode ? t('budgets.editEnvelopeTitle') : t('budgets.createEnvelopeTitle')}
-            message={isEditMode ? undefined : t('budgets.createEnvelopeMessage')}
-          />
-          <InputField
-            inputText={inputText}
-            onChangeInputText={onChangeInputText}
-            placeholder={t('budgets.envelopeNamePlaceholder')}
-            accessibilityLabel={t('budgets.envelopeNamePlaceholder')}
-            error={error}
-          />
-          <Spacer space={20} />
-          <KindField
-            value={selectedKind}
-            onChange={isEditMode ? undefined : onChangeSelectedKind}
-          />
-          <Spacer space={20} />
-          <InputField
-            inputText={targetAmountText}
-            onChangeInputText={onChangeTargetAmountText}
-            placeholder={targetAmountPlaceholder}
-            accessibilityLabel={
-              selectedKind === 'debt' ? t('budgets.amountOwedAccessibilityLabel') : t('budgets.savingsGoalAccessibilityLabel')
-            }
-            keyboardType="decimal-pad"
-            error=""
-          />
-          <SymbolList selectedIcon={selectedIcon} onPressItem={handlePressItem} />
-          <Spacer space={20} />
-          <SaveAction onSave={handleSave} disabled={!canSave} />
-          <Spacer space={30} />
-        </ScreenContainer>
-      </ScrollView>
-    </KeyboardContainer>
+    <>
+      <KeyboardContainer>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <ScreenContainer>
+            <Header
+              title={
+                isEditMode ? t('budgets.editEnvelopeTitle') : t('budgets.createEnvelopeTitle')
+              }
+              message={isEditMode ? undefined : t('budgets.createEnvelopeMessage')}
+            />
+            <InputField
+              inputText={inputText}
+              onChangeInputText={onChangeInputText}
+              placeholder={t('budgets.envelopeNamePlaceholder')}
+              accessibilityLabel={t('budgets.envelopeNamePlaceholder')}
+              error={error}
+            />
+            <Spacer space={20} />
+            <KindField
+              value={selectedKind}
+              onChange={isEditMode ? undefined : onChangeSelectedKind}
+            />
+            <Spacer space={20} />
+            <InputField
+              inputText={targetAmountText}
+              onChangeInputText={onChangeTargetAmountText}
+              placeholder={targetAmountPlaceholder}
+              accessibilityLabel={
+                selectedKind === 'debt'
+                  ? t('budgets.amountOwedAccessibilityLabel')
+                  : t('budgets.savingsGoalAccessibilityLabel')
+              }
+              keyboardType="decimal-pad"
+              error=""
+            />
+            <SymbolList selectedIcon={selectedIcon} onPressItem={handlePressItem} />
+            <Spacer space={20} />
+            <SaveAction onSave={handleSave} disabled={!canSave} />
+            <Spacer space={30} />
+          </ScreenContainer>
+        </ScrollView>
+      </KeyboardContainer>
+
+      <ConfirmDialog
+        visible={notice.visible}
+        tone={notice.tone}
+        title={notice.title}
+        message={notice.message}
+        onRequestClose={onDismissSavedNotice}
+        primaryLabel={t('common.ok')}
+        onPrimaryPress={onDismissSavedNotice}
+      />
+    </>
   );
 };
 

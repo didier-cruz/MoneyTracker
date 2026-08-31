@@ -1,8 +1,9 @@
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RouteProp} from '@react-navigation/native';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {ScreenContainer, KeyboardContainer, Spacer} from '@components/atoms';
+import {ConfirmDialog} from '@components/organisms/feedback';
 import {useAccountForm} from '@hooks/useAccountForm';
 import {ScrollView} from 'react-native-gesture-handler';
 import Header from '@screens/[categories]/components/Header/Header';
@@ -72,13 +73,23 @@ export const CreateAccount = ({navigation, route}: CreateAccountProps) => {
     loadStatus,
     loadErrorMessage,
     reloadAccount,
+    notice,
+    dismissNotice,
   } = useAccountForm(accountId);
 
+  // Was `Alert.alert(...); navigation.goBack()` fired back to back —
+  // the native `Alert` rendered outside the React tree, so it stayed on
+  // screen even once `goBack()` popped this one underneath it. A
+  // JS-rendered `ConfirmDialog` would instead unmount WITH this screen,
+  // so navigation now waits for the dialog's own dismissal instead (see
+  // `onDismissSavedNotice`).
   const handleSave = async () => {
-    const success = await saveAccount();
-    if (success) {
-      navigation.goBack();
-    }
+    await saveAccount();
+  };
+
+  const onDismissSavedNotice = () => {
+    dismissNotice();
+    navigation.goBack();
   };
 
   // Edit mode needs a real DB read (`getAccountById`) before the form
@@ -124,38 +135,52 @@ export const CreateAccount = ({navigation, route}: CreateAccountProps) => {
   }
 
   return (
-    <KeyboardContainer>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <ScreenContainer>
-          <Header
-            title={isEditMode ? t('accounts.editAccountTitle') : t('accounts.createAccountTitle')}
-            message={isEditMode ? undefined : t('accounts.createAccountMessage')}
-          />
-          <InputField
-            inputText={inputText}
-            onChangeInputText={onChangeInputText}
-            placeholder={t('accounts.accountNamePlaceholder')}
-            accessibilityLabel={t('accounts.accountNamePlaceholder')}
-            error={error}
-          />
-          <Spacer space={20} />
-          <KindField value={selectedKind} onChange={onChangeSelectedKind} />
-          <Spacer space={20} />
-          <InputField
-            inputText={initialBalanceText}
-            onChangeInputText={onChangeInitialBalanceText}
-            placeholder={t('accounts.initialBalancePlaceholder')}
-            accessibilityLabel={t('accounts.initialBalanceAccessibilityLabel')}
-            keyboardType="decimal-pad"
-            error=""
-          />
-          <SymbolList selectedIcon={selectedIcon} onPressItem={handlePressItem} />
-          <Spacer space={20} />
-          <SaveAction onSave={handleSave} disabled={!canSave} />
-          <Spacer space={30} />
-        </ScreenContainer>
-      </ScrollView>
-    </KeyboardContainer>
+    <>
+      <KeyboardContainer>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <ScreenContainer>
+            <Header
+              title={
+                isEditMode ? t('accounts.editAccountTitle') : t('accounts.createAccountTitle')
+              }
+              message={isEditMode ? undefined : t('accounts.createAccountMessage')}
+            />
+            <InputField
+              inputText={inputText}
+              onChangeInputText={onChangeInputText}
+              placeholder={t('accounts.accountNamePlaceholder')}
+              accessibilityLabel={t('accounts.accountNamePlaceholder')}
+              error={error}
+            />
+            <Spacer space={20} />
+            <KindField value={selectedKind} onChange={onChangeSelectedKind} />
+            <Spacer space={20} />
+            <InputField
+              inputText={initialBalanceText}
+              onChangeInputText={onChangeInitialBalanceText}
+              placeholder={t('accounts.initialBalancePlaceholder')}
+              accessibilityLabel={t('accounts.initialBalanceAccessibilityLabel')}
+              keyboardType="decimal-pad"
+              error=""
+            />
+            <SymbolList selectedIcon={selectedIcon} onPressItem={handlePressItem} />
+            <Spacer space={20} />
+            <SaveAction onSave={handleSave} disabled={!canSave} />
+            <Spacer space={30} />
+          </ScreenContainer>
+        </ScrollView>
+      </KeyboardContainer>
+
+      <ConfirmDialog
+        visible={notice.visible}
+        tone={notice.tone}
+        title={notice.title}
+        message={notice.message}
+        onRequestClose={onDismissSavedNotice}
+        primaryLabel={t('common.ok')}
+        onPrimaryPress={onDismissSavedNotice}
+      />
+    </>
   );
 };
 

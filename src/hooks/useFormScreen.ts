@@ -1,5 +1,4 @@
-import {useCallback, useEffect, useState} from 'react';
-import {Alert} from 'react-native';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
 import {getAccounts, getCategories, IAccountWithBalance, insertFinance} from '@db/queries';
@@ -7,6 +6,7 @@ import {parseAmountToCents} from '@utils/currency';
 
 export type CategoriesStatus = 'loading' | 'success' | 'error';
 export type AccountsStatus = 'loading' | 'success' | 'error';
+export type TransactionType = 'expense' | 'income';
 
 // Re-exported for backward compatibility — this used to be defined here;
 // it now lives in `@utils/currency` alongside `formatCentsToCurrency`
@@ -18,7 +18,13 @@ export const useFormScreen = () => {
   const {t} = useTranslation();
   const [inputText, onChangeInputText] = useState<string>('');
 
-  const [visibleInputText, setVisibleInputText] = useState<boolean>(false);
+  // The Gasto/Ingreso segment from the approved prototype — new in
+  // this pass. Transaction type used to be derived silently from
+  // whichever category the user tapped (categories mix both types in
+  // one flat list); now the segment is the primary choice and the
+  // category grid is filtered to match it. See `selectType` for what
+  // happens to `selectedCategory` when this changes.
+  const [selectedType, setSelectedType] = useState<TransactionType>('expense');
 
   const [selectedCategory, onChangeSelectedCategory] = useState<ICategory>();
 
@@ -73,7 +79,12 @@ export const useFormScreen = () => {
         if (prev && result.some(account => account.id === prev.id)) {
           return prev;
         }
-        return result[0];
+        // Por defecto, la cuenta de efectivo: es el caso comun al anotar un
+        // gasto sobre la marcha. `getAccounts` ordena por nombre, asi que
+        // tomar la primera daba "Banco" antes que "Efectivo" por puro
+        // alfabeto. Se elige por `kind`, no por nombre, para que siga
+        // funcionando si el usuario la renombra o cambia de idioma.
+        return result.find(account => account.kind === 'cash') ?? result[0];
       });
       setAccountsStatus('success');
     } catch (e: any) {
@@ -92,26 +103,41 @@ export const useFormScreen = () => {
     setSelectedAccount(account);
   };
 
+  // Only categories matching the active segment are ever shown in the
+  // grid, so `selectedCategory` — once one is chosen — always belongs
+  // to `selectedType` by construction. `selectType` still explicitly
+  // clears it on a type switch (rather than relying on the grid
+  // filter alone) so a stale cross-type selection can never survive
+  // in state even for a single render.
+  const filteredCategories = useMemo(
+    () => categories.filter(category => category.type === selectedType),
+    [categories, selectedType],
+  );
+
+  const selectType = (type: TransactionType) => {
+    setSelectedType(type);
+    onChangeSelectedCategory(undefined);
+    setAmountError('');
+  };
+
   const selectCategory = (category: ICategory) => {
-    setVisibleInputText(true);
-    onChangeInputText('');
     setAmountError('');
     onChangeSelectedCategory(category);
   };
 
-  const saveTransaction = async () => {
+  const saveTransaction = async (): Promise<boolean> => {
     if (!selectedCategory) {
       setAmountError(t('form.chooseCategoryFirst'));
-      return;
+      return false;
     }
     const amountInCents = parseAmountToCents(inputText);
     if (amountInCents === null) {
       setAmountError(t('form.invalidAmount'));
-      return;
+      return false;
     }
     if (!selectedAccount) {
       setAmountError(t('form.chooseAccountFirst'));
-      return;
+      return false;
     }
     setAmountError('');
     setIsSaving(true);
@@ -122,19 +148,16 @@ export const useFormScreen = () => {
         idCategory: selectedCategory.id,
         idAccount: selectedAccount.id,
       });
-      Alert.alert(
-        t('common.success'),
-        t('form.transactionSaved'),
-        [{text: t('common.ok')}],
-        {cancelable: false},
-      );
+      // Sin dialogo de confirmacion: el usuario ve el movimiento aparecer
+      // en Balance, que es prueba mas fuerte que un aviso que hay que cerrar.
       onChangeInputText('');
-      setVisibleInputText(false);
       onChangeSelectedCategory(undefined);
+      return true;
     } catch (e: any) {
       setAmountError(
         t('form.saveTransactionError', {message: e?.message ?? t('common.unknownError')}),
       );
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -143,11 +166,16 @@ export const useFormScreen = () => {
   return {
     inputText,
     onChangeInputText,
-    visibleInputText,
-    setVisibleInputText,
+    selectedType,
+    selectType,
     selectedCategory,
     selectCategory,
+    // Unfiltered — drives the "are there ANY categories at all" empty
+    // state (`categories.length === 0`), which is a different question
+    // from "does the ACTIVE segment have any" (`filteredCategories`,
+    // what the grid itself renders).
     categories,
+    filteredCategories,
     categoriesStatus,
     categoriesErrorMessage,
     reloadCategories: loadCategories,

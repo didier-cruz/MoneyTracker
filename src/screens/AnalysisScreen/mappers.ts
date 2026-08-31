@@ -1,6 +1,7 @@
 import {IEnvelopeWithBalance} from '@db/queries';
 import {accent, colors, gray, primary, secondary} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
+import {formatMonthNameCapitalized} from '@utils/dateFormat';
 import {IChartSectorInput} from '@components/organisms/Charts/DonutChart';
 import i18n from '@i18n';
 
@@ -41,6 +42,22 @@ import i18n from '@i18n';
  */
 const DEBT_PALETTE = [colors[secondary][0], colors.warning[0], colors[gray][0]];
 const FUND_PALETTE = [colors[accent][2], colors[accent][1], colors[primary][0]];
+
+/**
+ * This calendar month's full name, capitalized, no year — e.g.
+ * `"Agosto"` — for this screen's two-line header ("Analítica" /
+ * `<month>`, per the approved prototype). A local, minimal duplicate of
+ * `ResumenScreen/mappers.ts`'s own `getCurrentPeriod` (`'YYYY-MM'` for
+ * "now"), not an import from it: that file is a SIBLING screen's own
+ * module, out of this slice's scope to depend on (see this screen's
+ * HANDOFF), and this is the only place Analítica needs "what period is
+ * it right now" at all.
+ */
+export const getCurrentMonthLabel = (now: Date = new Date()): string => {
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  return formatMonthNameCapitalized(`${year}-${month}`);
+};
 
 /**
  * One envelope -> one chart sector input, sorted BIGGEST value first

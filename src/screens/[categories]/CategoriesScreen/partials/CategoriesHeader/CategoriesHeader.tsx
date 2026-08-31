@@ -1,6 +1,7 @@
 import {FC} from 'react';
 import {ActivityIndicator, StyleSheet, View} from 'react-native';
-import {Text, Title} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import {colors, gray, primary, white} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';

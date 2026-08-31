@@ -1,17 +1,23 @@
 import {useState} from 'react';
-import {Alert} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
 import {insertCategory} from '@db/queries';
+import {useNoticeDialog} from '@hooks/useNoticeDialog';
 
 const DEFAULT_CATEGORY_TYPE: ICategory['type'] = 'expense';
 
 /**
  * Shared form state for creating a category.
  * Consumed by CategoriesScreen and CreateCategory.
+ *
+ * Same fix as `useAccountForm`/`useEnvelopeForm` — see `useAccountForm`'s
+ * doc comment for why a save-success notice (an `Alert.alert` before) is
+ * exposed as `notice`/`dismissNotice` state instead of rendered here;
+ * `CreateCategory` owns the `<ConfirmDialog>`.
  */
 export const useCategoryForm = () => {
   const {t} = useTranslation();
+  const {notice, showNotice, dismissNotice} = useNoticeDialog();
   const [inputText, setInputText] = useState<string>('');
 
   const [selectedIcon, onChangeSelectedIcon] = useState<IIcon>();
@@ -55,12 +61,7 @@ export const useCategoryForm = () => {
       setError('');
       setInputText('');
       onChangeSelectedIcon(undefined);
-      Alert.alert(
-        t('common.success'),
-        t('categories.form.created'),
-        [{text: t('common.ok')}],
-        {cancelable: false},
-      );
+      showNotice('info', t('common.success'), t('categories.form.created'));
     } catch (e: any) {
       setError(t('categories.form.saveError', {message: e.message}));
     } finally {
@@ -81,5 +82,7 @@ export const useCategoryForm = () => {
     canSave,
     handlePressItem,
     createCategory,
+    notice,
+    dismissNotice,
   };
 };

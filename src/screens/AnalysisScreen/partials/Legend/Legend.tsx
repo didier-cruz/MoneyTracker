@@ -1,6 +1,6 @@
 import {FC} from 'react';
 import {StyleSheet, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {gray, colors} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
 import {IChartSector} from '@components/organisms/Charts/DonutChart';

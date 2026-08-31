@@ -1,6 +1,6 @@
 import React from 'react';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {ScreenContainer, ScrollContainer} from '@components/atoms';
 import {useNavigation} from '@react-navigation/native';
 import {MaterialTopTabScreenProps} from '@react-navigation/material-top-tabs';

@@ -1,4 +1,4 @@
-import {black, colors, gray, white} from '@constants/colors/colors';
+import {colors, white} from '@constants/colors/colors';
 import {Headings} from '@components/atoms/text/Headings/Headings';
 import {IAccountWithBalance} from '@db/queries';
 import React from 'react';
@@ -21,12 +21,30 @@ type Props = {
   errorMessage: string;
 };
 
+// The prototype's account row lives INSIDE the indigo `#010062` amount
+// card, with a muted-indigo icon/label color (`#9C9AC8`) for the
+// unselected state and white for the selected one — there's no token
+// for that muted indigo in `@constants/colors` (it's specific to this
+// one card), same precedent as `TypeSegment`'s own `#EDEDF2`.
+const MUTED_ON_CARD = '#9C9AC8';
+
 /**
  * The account picker for the transaction amount card — per the
  * approved prototype, the account is chosen from this card, not a
- * separate screen. Visually mirrors the category-grid selection
- * already on this screen (black pill when selected) for consistency,
- * since this screen has no other approved reference for it.
+ * separate screen. Restyled for the card's indigo background (was
+ * previously white-card/black-pill styling from before this card
+ * existed at all).
+ *
+ * The prototype itself only draws ONE account row (icon + name +
+ * chevron), implying a single current selection that some picker
+ * opens on tap. This component instead shows every account as a
+ * horizontally-scrollable row of pills, all selectable inline — that
+ * behavior already existed and works; this pass only restyles it for
+ * the dark card. Rebuilding it as a chevron-triggered picker sheet
+ * would duplicate `Transfer`'s own `AccountPickerModal` pattern for no
+ * functional gain here (usually 1-3 accounts, all fit on one row), so
+ * it's flagged as a known visual delta in the HANDOFF instead of
+ * built.
  */
 const AccountSelector = ({
   accounts,
@@ -42,7 +60,7 @@ const AccountSelector = ({
       <View style={styles.centered}>
         <ActivityIndicator
           size="small"
-          color={colors[black][0]}
+          color={colors[white][0]}
           accessibilityLabel={t('form.loadingAccounts')}
         />
       </View>
@@ -53,7 +71,7 @@ const AccountSelector = ({
     return (
       <Headings
         headingSize="H6"
-        color={colors[gray][0]}
+        color={MUTED_ON_CARD}
         containerStyle={styles.message}>
         {errorMessage}
       </Headings>
@@ -64,7 +82,7 @@ const AccountSelector = ({
     return (
       <Headings
         headingSize="H6"
-        color={colors[gray][0]}
+        color={MUTED_ON_CARD}
         containerStyle={styles.message}>
         {t('form.createAccountFirst')}
       </Headings>
@@ -75,6 +93,14 @@ const AccountSelector = ({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      // Android measures a horizontal `ScrollView` with no explicit
+      // `style` height as free to grow along the CROSS axis (vertical,
+      // for a `column` parent) instead of hugging its tallest pill —
+      // it was silently stretching this whole card to fill the rest
+      // of the screen. Pinning it to the pill's own height fixes that
+      // without touching `contentContainerStyle` (which only sizes the
+      // scrollable content, not the ScrollView itself).
+      style={styles.scrollView}
       contentContainerStyle={styles.list}>
       {accounts.map(account => {
         const isSelected = selectedAccount?.id === account.id;
@@ -84,12 +110,13 @@ const AccountSelector = ({
             accessibilityRole="button"
             accessibilityLabel={t('form.selectAccountAccessibilityLabel', {name: account.name})}
             accessibilityState={{selected: isSelected}}
+            hitSlop={{top: 6, bottom: 6}}
             style={[styles.pill, isSelected && styles.pillSelected]}
             onPress={() => onSelectAccount(account)}>
             <Icon
               name={account.icon}
               size={16}
-              color={isSelected ? colors[white][0] : colors[black][0]}
+              color={isSelected ? colors[white][0] : MUTED_ON_CARD}
             />
             <Text
               style={[styles.pillText, isSelected && styles.pillTextSelected]}>
@@ -106,32 +133,35 @@ const styles = StyleSheet.create({
   centered: {
     width: '100%',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 4,
   },
   message: {
-    paddingHorizontal: 20,
-    marginTop: 4,
+    paddingHorizontal: 4,
+    marginTop: 0,
+  },
+  scrollView: {
+    flexGrow: 0,
+    height: 32,
   },
   list: {
-    paddingHorizontal: 10,
+    alignItems: 'center',
   },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 36,
-    paddingHorizontal: 14,
-    marginHorizontal: 5,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors[black][0],
+    height: 32,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   pillSelected: {
-    backgroundColor: colors[black][0],
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
   pillText: {
     marginLeft: 6,
-    fontSize: 12,
-    color: colors[black][0],
+    fontSize: 14,
+    color: MUTED_ON_CARD,
   },
   pillTextSelected: {
     color: colors[white][0],

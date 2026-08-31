@@ -1,4 +1,6 @@
-import {Card, Text, Title} from '@redshank/native';
+import {Card} from '@components/atoms/Card';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import {FC, Fragment} from 'react';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import {TransactItem} from '@components/atoms/items/TransactItem';
@@ -9,6 +11,13 @@ import {useTranslation} from 'react-i18next';
  * `TransactItem.containerStyle`'s own doc for why this is opt-in per
  * caller rather than the shared atom's new default. */
 const ROW_HEIGHT = 82;
+
+/** Sangria horizontal del contenido dentro de la tarjeta: sin ella las
+ * filas y las cabeceras de fecha quedan pegadas al borde. Igual en las
+ * dos listas de movimientos (Cuentas y Resumen) para que compartan
+ * anatomia. */
+const CONTENT_PADDING = 16;
+
 
 type TransactCardProps = {
   transactions: TransactItem[];
@@ -70,6 +79,7 @@ const styles = StyleSheet.create({
   },
   row: {
     height: ROW_HEIGHT,
+    paddingHorizontal: CONTENT_PADDING,
   },
   divider: {
     width: '90%',

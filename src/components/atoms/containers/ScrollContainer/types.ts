@@ -4,7 +4,7 @@ export interface ScrollContainerProps {
   children: JSX.Element | JSX.Element[];
   style?: ViewStyle;
   /**
-   * Passed straight through to the underlying `react-native-virtualized-view`
+   * Passed straight through to the underlying `FlatList`
    * `ScrollView` (itself a `FlatList` under the hood — see that
    * library's own `ScrollView/index.js` — which natively accepts a
    * `refreshControl` element same as RN's own `ScrollView`/`FlatList`).

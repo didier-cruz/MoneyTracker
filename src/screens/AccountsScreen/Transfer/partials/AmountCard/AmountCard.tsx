@@ -1,4 +1,4 @@
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import React from 'react';
 import {StyleSheet, TextInput, View} from 'react-native';
 import {colors, inactive, white} from '@constants/colors/colors';

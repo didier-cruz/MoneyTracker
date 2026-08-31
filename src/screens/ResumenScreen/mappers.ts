@@ -103,3 +103,30 @@ export const mapFinanceRowToTransactItem = (row: IFinanceRow): TransactItem => (
 
 export const mapFinancesToTransactItems = (rows: IFinanceRow[]): TransactItem[] =>
   rows.map(mapFinanceRowToTransactItem);
+
+/**
+ * Adapta los meses de flujo de caja a la forma que espera `PieChart`:
+ * un selector de periodo (`items`) y, por cada uno, sus tres sectores.
+ *
+ * Los valores van en CENTAVOS, como en toda la app: las proporciones del
+ * pastel son las mismas y el importe del centro se formatea al mostrarse.
+ * El orden de los sectores importa — `PieChart.onPressChartItem` deduce
+ * la etiqueta del centro por indice: 0 ahorros, 1 gastos, 2 ingresos.
+ */
+export const mapCashFlowToPieChart = (months: ICashFlowMonth[]) => {
+  const ordered = [...months].reverse(); // el mes mas reciente primero
+  return {
+    items: ordered.map(month => ({
+      value: month.month,
+      label: getMonthAbbreviation(month.month),
+    })),
+    data: ordered.map(month => ({
+      value: month.month,
+      finances: [
+        {value: month.savings, color: colors.warning[0]},
+        {value: month.expense, color: colors.error[0]},
+        {value: month.income, color: colors.accent[1]},
+      ],
+    })),
+  };
+};

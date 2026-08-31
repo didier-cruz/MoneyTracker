@@ -1,18 +1,39 @@
-import {ActivityIndicator, Alert, StyleSheet, TouchableOpacity, View} from 'react-native';
-import {Text, Title} from '@redshank/native';
+import {useState} from 'react';
+import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
+import {faPen} from '@fortawesome/free-solid-svg-icons/faPen';
+import {faBoxArchive} from '@fortawesome/free-solid-svg-icons/faBoxArchive';
 import {ScreenTemplate} from '@components/templates/ScreenTemplate';
 import {FragmentSection} from '@components/templates/FragmentSection';
+import {ActionSheet, ConfirmDialog} from '@components/organisms/feedback';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AccountsNavParams} from '@navigation/[accounts]/AccountsNavigator/types';
-import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
+import {accent, colors, gray, primary, secondary, white} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
 import {useAccountsScreen} from '@hooks/useAccountsScreen';
+import {useNoticeDialog} from '@hooks/useNoticeDialog';
 import {IAccountWithBalance} from '@db/queries';
-import {ADD_ACCOUNT_CARD_ID, groupFinancesByDate, mapAccountsToCatalogCards} from './mappers';
+import {
+  ADD_ACCOUNT_CARD_ID,
+  formatCurrentMonthLabel,
+  groupFinancesByDate,
+  mapAccountsToCatalogCards,
+} from './mappers';
 import {useTranslation} from 'react-i18next';
 
 interface AccountsScreenProps
-  extends NativeStackScreenProps<AccountsNavParams, 'Accounts'> {}
+  extends NativeStackScreenProps<AccountsNavParams, 'AccountsHome'> {}
+
+interface AccountMenuState {
+  visible: boolean;
+  account: IAccountWithBalance | null;
+}
+
+interface ArchiveAccountConfirmState {
+  visible: boolean;
+  account: IAccountWithBalance | null;
+}
 
 const AccountsScreen = ({navigation}: AccountsScreenProps) => {
   const {t} = useTranslation();
@@ -35,6 +56,21 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
     refresh,
   } = useAccountsScreen();
 
+  const {notice, showNotice, dismissNotice} = useNoticeDialog();
+  const [accountMenu, setAccountMenu] = useState<AccountMenuState>({
+    visible: false,
+    account: null,
+  });
+  const [archiveConfirm, setArchiveConfirm] = useState<ArchiveAccountConfirmState>({
+    visible: false,
+    account: null,
+  });
+
+  const closeAccountMenu = () => setAccountMenu(prev => ({...prev, visible: false}));
+  const closeArchiveConfirm = () => setArchiveConfirm(prev => ({...prev, visible: false}));
+  const menuAccount = accountMenu.account;
+  const confirmingAccount = archiveConfirm.account;
+
   const onPressCatalogItem = (id: number) => {
     if (id === ADD_ACCOUNT_CARD_ID) {
       navigation.navigate('CreateAccount');
@@ -52,30 +88,25 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
   // toward net worth the moment it's archived — that second part only
   // applies when the balance isn't already zero, so it's the one piece
   // of this message built conditionally.
-  const onArchiveAccount = (account: IAccountWithBalance) => {
+  const archiveMessageFor = (account: IAccountWithBalance) => {
     const balanceImpact =
       account.balance !== 0
         ? ` ${t('accounts.archiveBalanceImpact', {
             amount: formatCentsToCurrency(account.balance),
           })}`
         : '';
-    Alert.alert(
-      t('accounts.archiveTitle'),
-      `${t('accounts.archiveMessage', {name: account.name})}${balanceImpact}`,
-      [
-        {text: t('common.cancel'), style: 'cancel'},
-        {
-          text: t('accounts.archive'),
-          style: 'destructive',
-          onPress: async () => {
-            const success = await archiveAccountById(account.id);
-            if (!success) {
-              Alert.alert(t('common.error'), t('accounts.archiveErrorMessage'));
-            }
-          },
-        },
-      ],
-    );
+    return `${t('accounts.archiveMessage', {name: account.name})}${balanceImpact}`;
+  };
+
+  const onConfirmArchiveAccount = async () => {
+    if (!confirmingAccount) {
+      return;
+    }
+    closeArchiveConfirm();
+    const success = await archiveAccountById(confirmingAccount.id);
+    if (!success) {
+      showNotice('danger', t('common.error'), t('accounts.archiveErrorMessage'));
+    }
   };
 
   // The one gesture for "manage this account" (edit/archive) — there is
@@ -91,22 +122,27 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
     if (!account) {
       return;
     }
-    Alert.alert(account.name, undefined, [
-      {
-        text: t('common.edit'),
-        onPress: () => navigation.navigate('EditAccount', {accountId: id}),
-      },
-      {
-        text: t('accounts.archive'),
-        style: 'destructive',
-        onPress: () => onArchiveAccount(account),
-      },
-      {text: t('common.cancel'), style: 'cancel'},
-    ]);
+    setAccountMenu({visible: true, account});
   };
 
+  // The movements list below needs the SELECTED account's name (see
+  // `stateStyles.netWorth`'s sibling `FragmentSection` call below) —
+  // `onPressManageAccount` above already does this same lookup for its
+  // own alert title, kept separate since it only runs on a press, not
+  // every render.
+  const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+
   return (
-    <ScreenTemplate headerTitle={t('accounts.title')}>
+    <>
+      {/* Two-line "Mis" / "Cuentas" header per the approved prototype —
+          `accounts.title` ("Cuentas") is ALSO this tab's route title (see
+          `HomeBottomTabs/router.tsx`), so it stays the bare noun and the
+          "Mis" line is its own key (`accounts.titlePrefix`) rather than
+          baking both words into `accounts.title` itself, which would leak
+          "Mis" into the tab bar label too. */}
+      <ScreenTemplate
+        headerTitle={t('accounts.titlePrefix')}
+        headerSubtitle={t('accounts.title')}>
       {accountsStatus === 'loading' && (
         <View style={stateStyles.centered}>
           <ActivityIndicator
@@ -169,11 +205,26 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
             </TouchableOpacity>
           </View>
 
+          {/* Label + amount on ONE baseline-aligned row, per the approved
+              prototype — was previously stacked (label above, amount
+              below) at `Title level={1}` (30px, default dark text). The
+              prototype's amount is 25px BOLD ÍNDIGO (`Title level={2}`,
+              `colors.primary[0]`), not the theme's default text color —
+              same "pass the raw token as `color`" idiom `CatalogCard`
+              already uses for its negative-balance red. */}
           <View style={stateStyles.netWorth} accessible accessibilityRole="text">
-            <Text color={colors[gray][0]} size={12}>
-              {t('accounts.netWorth')}
-            </Text>
-            <Title level={1}>{formatCentsToCurrency(netWorth)}</Title>
+            <View style={stateStyles.netWorthRow}>
+              <Text
+                color={colors[gray][0]}
+                size={12}
+                transform="uppercase"
+                style={stateStyles.netWorthLabel}>
+                {t('accounts.netWorth')}
+              </Text>
+              <Title level={2} color={colors[primary][0]}>
+                {formatCentsToCurrency(netWorth)}
+              </Title>
+            </View>
           </View>
 
           {accounts.length === 0 ? (
@@ -190,6 +241,8 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
             onPressItem={onPressCatalogItem}
             onPressManageItem={onPressManageAccount}
             transactSections={groupFinancesByDate(financeItems)}
+            transactHeaderTitle={selectedAccount?.name ?? ''}
+            transactHeaderSubtitle={formatCurrentMonthLabel()}
             financesStatus={financesStatus}
             financesErrorMessage={financesErrorMessage}
             onRetryFinances={reloadFinances}
@@ -200,7 +253,57 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
           />
         </>
       )}
-    </ScreenTemplate>
+      </ScreenTemplate>
+
+      <ActionSheet
+        visible={accountMenu.visible}
+        title={menuAccount?.name ?? ''}
+        onClose={closeAccountMenu}
+        actions={
+          menuAccount
+            ? [
+                {
+                  key: 'edit',
+                  label: t('common.edit'),
+                  icon: faPen,
+                  onPress: () =>
+                    navigation.navigate('EditAccount', {accountId: menuAccount.id}),
+                },
+                {
+                  key: 'archive',
+                  label: t('accounts.archive'),
+                  icon: faBoxArchive,
+                  tone: 'destructive',
+                  onPress: () => setArchiveConfirm({visible: true, account: menuAccount}),
+                },
+              ]
+            : []
+        }
+      />
+
+      <ConfirmDialog
+        visible={archiveConfirm.visible}
+        tone="danger"
+        title={t('accounts.archiveTitle')}
+        message={confirmingAccount ? archiveMessageFor(confirmingAccount) : ''}
+        onRequestClose={closeArchiveConfirm}
+        secondaryLabel={t('common.cancel')}
+        onSecondaryPress={closeArchiveConfirm}
+        primaryLabel={t('accounts.archive')}
+        destructive
+        onPrimaryPress={onConfirmArchiveAccount}
+      />
+
+      <ConfirmDialog
+        visible={notice.visible}
+        tone={notice.tone}
+        title={notice.title}
+        message={notice.message}
+        onRequestClose={dismissNotice}
+        primaryLabel={t('common.ok')}
+        onPrimaryPress={dismissNotice}
+      />
+    </>
   );
 };
 
@@ -225,12 +328,14 @@ const stateStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Sin inset propio: la pantalla ya aporta su padding y asi esta fila
+  // queda alineada verticalmente con la cabecera de la lista de
+  // movimientos ("Efectivo") y con la primera tarjeta de cuenta.
   linksRow: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
     marginBottom: 5,
   },
   transferLink: {
@@ -248,8 +353,15 @@ const stateStyles = StyleSheet.create({
   },
   netWorth: {
     width: '100%',
-    paddingHorizontal: 20,
     marginBottom: 10,
+  },
+  netWorthRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 10,
+  },
+  netWorthLabel: {
+    letterSpacing: 0.7,
   },
 });
 

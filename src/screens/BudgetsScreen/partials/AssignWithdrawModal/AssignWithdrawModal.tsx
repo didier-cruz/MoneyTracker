@@ -1,6 +1,8 @@
 import {useEffect, useState} from 'react';
-import {BackHandler, KeyboardAvoidingView, Platform, StyleSheet, View} from 'react-native';
-import {Modal, Text, Title} from '@redshank/native';
+import {KeyboardAvoidingView, Platform, StyleSheet, View} from 'react-native';
+import {BottomSheet} from '@components/organisms/feedback/BottomSheet';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import InputField from '@screens/[categories]/CreateCategory/partials/InputField/InputField';
 import SaveAction from '@screens/[categories]/CreateCategory/partials/SaveAction/SaveAction';
 import {IEnvelopeWithBalance} from '@db/queries';
@@ -26,13 +28,16 @@ interface AssignWithdrawModalProps {
  * Bottom-sheet amount entry for BOTH "assign money to" and "withdraw
  * money from" one envelope — not part of the approved `BudgetsScreen`
  * prototype (that mock only shows the cards themselves, no interaction
- * for changing a balance), reuses `AccountPickerModal`'s existing
- * shape (`@redshank/native`'s `Modal`, `position="bottom"`,
- * `maskClosable`, a `BackHandler` listener so Android's hardware back
- * button closes the sheet instead of falling through to the screen
- * beneath it — see that component's doc comment for the full
- * reasoning, identical here) rather than inventing new modal chrome.
- * Flagged for design review in this slice's HANDOFF.
+ * for changing a balance), built on the shared `BottomSheet` rather
+ * than inventing new modal chrome. Flagged for design review in this
+ * slice's HANDOFF.
+ *
+ * Was `@redshank/native`'s `Modal`, reusing `AccountPickerModal`'s old
+ * shape — see that component's doc comment (and the `@redshank/native`
+ * removal slice's HANDOFF) for why its `BackHandler` listener is gone
+ * here too, not ported: `BottomSheet` renders RN's OWN `Modal` with
+ * `onRequestClose` already wired to `onClose`, which RN wires to
+ * Android's hardware back button natively.
  *
  * Deliberately does NOT block on `availableToAssign`/the envelope's own
  * `balance` — assigning more than is currently available, or
@@ -69,17 +74,6 @@ export const AssignWithdrawModal = ({
     }
   }, [visible, envelope?.id, mode]);
 
-  useEffect(() => {
-    if (!visible) {
-      return undefined;
-    }
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      onClose();
-      return true;
-    });
-    return () => subscription.remove();
-  }, [visible, onClose]);
-
   if (!envelope) {
     return null;
   }
@@ -104,15 +98,9 @@ export const AssignWithdrawModal = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      position="bottom"
-      maskClosable
-      closable={false}
-      contentStyle={styles.content}
-      contentContainerStyle={styles.contentContainer}>
+    <BottomSheet visible={visible} onClose={onClose}>
       <KeyboardAvoidingView
+        style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Title level={4} style={styles.title}>
           {title}
@@ -132,21 +120,17 @@ export const AssignWithdrawModal = ({
           <SaveAction onSave={handleSubmit} disabled={isSubmitting} />
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
+  // `BottomSheet`'s panel carries no horizontal padding of its own
+  // (`ActionSheet` pads each row individually) — this sheet has no
+  // rows, just a single padded block, so the inset lives here instead.
   content: {
     width: '100%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-  },
-  contentContainer: {
-    width: '100%',
-    paddingBottom: 10,
+    paddingHorizontal: 20,
   },
   title: {
     marginBottom: 4,

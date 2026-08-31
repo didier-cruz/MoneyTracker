@@ -17,6 +17,25 @@ export const getCurrentPeriod = (now: Date = new Date()): string => {
 export const getMonthLabel = (period: string): string => formatMonthYearLong(period);
 
 /**
+ * Days left in `period` (`'YYYY-MM'`), counting from `now` — the
+ * "Límites del mes" section's right-hand subtitle in the approved
+ * prototype ("Quedan 9 días"). `useBudgetsScreen`'s `period` is always
+ * built from `getCurrentPeriod()` (today's own month, no month
+ * picker on this screen), so `now` defaults to today rather than this
+ * function needing to special-case a past/future period.
+ * Never negative — clamped to `0` for the (never expected, since
+ * `period` IS today's month) case of `now` having rolled past
+ * `period`'s own last day.
+ */
+export const getDaysRemainingInMonth = (period: string, now: Date = new Date()): number => {
+  const [yearStr, monthStr] = period.split('-');
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const lastDayOfMonth = new Date(year, month, 0).getDate();
+  return Math.max(0, lastDayOfMonth - now.getDate());
+};
+
+/**
  * Strips `formatCentsToCurrency`'s display decoration ("$", thousands
  * commas) so its output can seed an editable `decimal-pad` field that
  * `parseAmountToCents` later re-parses on save — same trick

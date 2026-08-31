@@ -1,5 +1,4 @@
-import {accent, colors} from '@constants/colors/colors';
-import {Radio} from '@redshank/native';
+import {SegmentedControl, SegmentedControlOption} from '@components/atoms/SegmentedControl';
 import {ACCOUNT_KINDS, AccountKind} from '@db/queries';
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
@@ -10,13 +9,6 @@ type Props = {
   value: AccountKind;
   onChange: (kind: AccountKind) => void;
 };
-
-// Guards the library's untyped `onChange(key: string | number)` callback
-// against the one source of truth for valid values (`@db/queries`'
-// `ACCOUNT_KINDS`) instead of a bare `as` cast to `AccountKind` — same
-// pattern as `RadioField` (categories' type selector).
-const isAccountKind = (value: string | number): value is AccountKind =>
-  typeof value === 'string' && (ACCOUNT_KINDS as readonly string[]).includes(value);
 
 /**
  * Translated label for an account `kind` — used both here (radio
@@ -32,24 +24,26 @@ const styles = StyleSheet.create({
   container: {width: '100%'},
 });
 
+/**
+ * Was `@redshank/native`'s `Radio.Group`, now the shared
+ * `SegmentedControl` atom — see that component's doc comment for why:
+ * this app already has this exact "pick one of two" pattern solved
+ * visually in `TypeSegment`/`LanguageSwitch`, no need for a third
+ * style. The old `isAccountKind` runtime guard against `Radio.Group`'s
+ * untyped `onChange(key: string | number)` is gone too —
+ * `SegmentedControl`'s `onChange` is typed straight from `options`
+ * (`AccountKind`), no cast/guard needed.
+ */
 const KindField = ({value, onChange}: Props) => {
   useTranslation();
+  const options: SegmentedControlOption<AccountKind>[] = ACCOUNT_KINDS.map(kind => ({
+    value: kind,
+    label: getKindLabel(kind),
+  }));
 
   return (
     <View style={styles.container}>
-      <Radio.Group
-        value={value}
-        onChange={key => {
-          if (isAccountKind(key)) {
-            onChange(key);
-          }
-        }}
-        size="middle"
-        activeColor={colors[accent][1]}>
-        {ACCOUNT_KINDS.map(kind => (
-          <Radio key={kind} label={getKindLabel(kind)} value={kind} />
-        ))}
-      </Radio.Group>
+      <SegmentedControl value={value} onChange={onChange} options={options} />
     </View>
   );
 };

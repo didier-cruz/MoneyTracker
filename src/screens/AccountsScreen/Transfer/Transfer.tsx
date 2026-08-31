@@ -1,12 +1,7 @@
-import {Text, Title} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import React from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {
@@ -15,9 +10,11 @@ import {
   ScrollContainer,
   Spacer,
 } from '@components/atoms';
+import {ConfirmDialog} from '@components/organisms/feedback';
 import {AccountsNavParams} from '@navigation/[accounts]/AccountsNavigator/types';
 import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
 import {useTransferScreen} from '@hooks/useTransferScreen';
+import {useNoticeDialog} from '@hooks/useNoticeDialog';
 import AccountSelectorCard from './partials/AccountSelectorCard';
 import TransferDivider from './partials/TransferDivider';
 import AmountCard from './partials/AmountCard';
@@ -76,14 +73,24 @@ export const Transfer = ({navigation}: TransferProps) => {
     submitTransfer,
   } = useTransferScreen();
 
+  const {notice, showNotice, dismissNotice} = useNoticeDialog();
+
+  // Was `Alert.alert(...); navigation.goBack();` fired back to back —
+  // a native `Alert` renders OUTSIDE the React tree, so it stayed on
+  // screen even after `goBack()` popped this screen underneath it. A
+  // JS-rendered `ConfirmDialog` would instead unmount WITH this screen,
+  // so the equivalent behavior here is to wait for the dialog's own
+  // dismissal before navigating back (see `onDismissDoneNotice`).
   const handleConfirm = async () => {
     const success = await submitTransfer();
     if (success) {
-      Alert.alert(t('transfer.doneTitle'), t('transfer.doneMessage'), [{text: t('common.ok')}], {
-        cancelable: false,
-      });
-      navigation.goBack();
+      showNotice('info', t('transfer.doneTitle'), t('transfer.doneMessage'));
     }
+  };
+
+  const onDismissDoneNotice = () => {
+    dismissNotice();
+    navigation.goBack();
   };
 
   const pickerAccounts = pickerTarget ? accountsForPicker(pickerTarget) : [];
@@ -91,6 +98,7 @@ export const Transfer = ({navigation}: TransferProps) => {
     pickerTarget === 'from' ? t('transfer.pickFromTitle') : t('transfer.pickToTitle');
 
   return (
+    <>
     <KeyboardContainer>
       <ScrollContainer>
         <ScreenContainer>
@@ -224,6 +232,17 @@ export const Transfer = ({navigation}: TransferProps) => {
         </ScreenContainer>
       </ScrollContainer>
     </KeyboardContainer>
+
+      <ConfirmDialog
+        visible={notice.visible}
+        tone={notice.tone}
+        title={notice.title}
+        message={notice.message}
+        onRequestClose={onDismissDoneNotice}
+        primaryLabel={t('common.ok')}
+        onPrimaryPress={onDismissDoneNotice}
+      />
+    </>
   );
 };
 
@@ -237,6 +256,16 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 10,
   },
+  // Was two styles (`explainer` + `explainerContainer`) because the old
+  // `@redshank/native` `Text` wrapped its `TextNative` in an outer
+  // `View` that only accepted `containerStyle`, never `style` — `style`'s
+  // `width` landed on the INNER text node while the outer wrapper stayed
+  // unconstrained, so inside `ScreenContainer` (`alignItems: 'center'`,
+  // no stretch) the wrapper shrink-wrapped to the text's intrinsic
+  // single-line width instead of the screen's, and the sentence
+  // overflowed both edges in every language. `@components/atoms/text/Text`
+  // renders the RN `Text` directly with no wrapper, so `width: '100%'`
+  // here now bounds the text node itself — one style is enough.
   explainer: {
     width: '100%',
     marginBottom: 5,

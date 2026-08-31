@@ -1,6 +1,6 @@
 import {FC} from 'react';
 import {StyleSheet, View} from 'react-native';
-import {Text} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faCircleInfo} from '@fortawesome/free-solid-svg-icons/faCircleInfo';
 import {accent, colors} from '@constants/colors/colors';
@@ -13,6 +13,16 @@ export interface InsightStripProps {
    * see `AnalysisPieCard`. */
   text: string;
 }
+
+/** `rgba(199,255,112,0.24)` is `colors.accent[0]` (`#C7FF70`) at 24%
+ * opacity over this screen's off-white surface — the soft "lectura"
+ * wash the approved prototype actually draws, not the SOLID lime a
+ * plain `backgroundColor: colors.accent[0]` renders. Same
+ * literal-rgba-with-a-token-provenance-comment convention
+ * `FormScreen/partials/AmountCard`'s own `DIVIDER_COLOR` already uses
+ * for the identical token at a different opacity — this app has no
+ * shared hex-to-rgba helper to derive it from instead. */
+const STRIP_BACKGROUND = 'rgba(199,255,112,0.24)';
 
 /**
  * The light-lime "info" strip under each pie card, per the approved
@@ -27,8 +37,10 @@ export interface InsightStripProps {
  * `colors.accent[3]` (not `colors.accent[2]`/text-on-white) for the
  * text color — see `colors.ts`'s own comment on `accent`: index `3` is
  * the one shade in that ramp built specifically for legible text over
- * `accent[0]` (this strip's background); `accent[2]` over `accent[0]`
- * measures under 2.5:1 contrast, `accent[3]` does not.
+ * `accent[0]`; over THIS strip's actual (much lighter, washed) 24%-
+ * opacity background `accent[3]` reads with even MORE contrast than it
+ * was built for, not less, so this deliberate prior fix is kept as-is
+ * — only `container`'s `backgroundColor` below changes.
  */
 export const InsightStrip: FC<InsightStripProps> = ({text}) => {
   return (
@@ -48,7 +60,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: colors[accent][0],
+    backgroundColor: STRIP_BACKGROUND,
   },
   text: {
     flex: 1,

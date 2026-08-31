@@ -1,20 +1,35 @@
-import React, {FC, useState} from 'react';
+import React, {FC, useEffect, useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {colors} from '@constants/colors/colors';
+import {formatCentsToCurrency} from '@utils/currency';
 import {Text, View} from 'react-native';
 import {PieChart as PieChartGifted} from 'react-native-gifted-charts';
 import {RenderLegend} from './partials/RenderLend';
 import {SelectPro} from '@components/molecules/Selects/SelectPro';
 
 export const PieChart: FC<PieChartProps> = ({data, radius, items}) => {
+  const {t} = useTranslation();
+
   const [chartData, setChartData] = useState(data[0].finances);
+  const [balanceGnrl, setBalanceGnrl] = useState<number>(data[0].finances[0]?.value ?? 0);
+  const [balanceLbl, setBalanceLbl] = useState<string>(t('resumen.savings'));
 
-  const [balanceGnrl, setBalanceGnrl] = useState<number>(100);
-  const [balanceLbl, setBalanceLbl] = useState<string>('Ahorros');
+  // Los datos llegan de la base y cambian al recargar la pantalla; sin
+  // esto el grafico se quedaria mostrando la primera lectura.
+  useEffect(() => {
+    setChartData(data[0].finances);
+    setBalanceGnrl(data[0].finances[0]?.value ?? 0);
+    setBalanceLbl(t('resumen.savings'));
+  }, [data, t]);
 
-  const onPressChartItem = ({value, color, text}: ChartItem, index: number) => {
-    console.log({index, value, color, text});
+  const onPressChartItem = ({value}: ChartItem, index: number) => {
     setBalanceGnrl(value);
     setBalanceLbl(
-      index === 0 ? 'Ahorros' : index === 1 ? 'Gastos' : 'Ingresos',
+      index === 0
+        ? t('resumen.savings')
+        : index === 1
+        ? t('resumen.expense')
+        : t('resumen.income'),
     );
   };
 
@@ -40,9 +55,27 @@ export const PieChart: FC<PieChartProps> = ({data, radius, items}) => {
           justifyContent: 'space-evenly',
           marginVertical: 15,
         }}>
-        <RenderLegend text="Ingresos" color="#177AD5" onPress={() => {}} />
-        <RenderLegend text="Ahorros" color="#79D2DE" onPress={() => {}} />
-        <RenderLegend text="Gastos" color="red" onPress={() => {}} />
+        {/*
+          Colores alineados con CashFlowChart: las dos graficas viven en
+          la misma pantalla y muestran las mismas tres series, asi que
+          pintarlas distinto (antes azul/cian/rojo) hacia que el mismo
+          concepto tuviera dos codigos de color a la vez.
+        */}
+        <RenderLegend
+          text={t('resumen.income')}
+          color={colors.accent[1]}
+          onPress={() => {}}
+        />
+        <RenderLegend
+          text={t('resumen.savings')}
+          color={colors.warning[0]}
+          onPress={() => {}}
+        />
+        <RenderLegend
+          text={t('resumen.expense')}
+          color={colors.error[0]}
+          onPress={() => {}}
+        />
       </View>
       <SelectPro
         options={items}
@@ -54,23 +87,19 @@ export const PieChart: FC<PieChartProps> = ({data, radius, items}) => {
       />
       <PieChartGifted
         data={chartData}
-        showText
-        textColor="black"
         radius={radius}
-        textSize={20}
         focusOnPress
         toggleFocusOnPress={false}
         sectionAutoFocus={true}
-        showValuesAsLabels
-        showTextBackground
-        textBackgroundRadius={26}
         donut
         onPress={onPressChartItem}
         centerLabelComponent={() => {
           return (
             <View>
-              <Text style={{color: 'black', fontSize: 36}}>${balanceGnrl}</Text>
-              <Text style={{color: 'black', fontSize: 18, textAlign: 'center'}}>
+              <Text style={{color: colors.text[0], fontSize: 26}}>
+                {formatCentsToCurrency(balanceGnrl)}
+              </Text>
+              <Text style={{color: colors.text[1], fontSize: 16, textAlign: 'center'}}>
                 {balanceLbl}
               </Text>
             </View>

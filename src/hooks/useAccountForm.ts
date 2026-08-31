@@ -1,10 +1,10 @@
 import {useCallback, useEffect, useState} from 'react';
-import {Alert} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
 import {AccountKind, getAccountById, insertAccount, updateAccount} from '@db/queries';
 import {formatCentsToCurrency, parseInitialBalanceToCents} from '@utils/currency';
 import {icons} from '@data/icons';
+import {useNoticeDialog} from '@hooks/useNoticeDialog';
 
 const DEFAULT_ACCOUNT_KIND: AccountKind = 'cash';
 
@@ -45,6 +45,13 @@ const centsToEditableAmountText = (cents: number): string =>
 export const useAccountForm = (accountId?: number) => {
   const {t} = useTranslation();
   const mode: AccountFormMode = accountId !== undefined ? 'edit' : 'create';
+
+  // See this hook's file-level doc note in this slice's HANDOFF: a hook
+  // can't render JSX, so a save success/failure notice (an
+  // `Alert.alert` before) is exposed as `notice`/`dismissNotice` state
+  // instead — `CreateAccount` (the only screen that calls this hook)
+  // owns the actual `<ConfirmDialog>` element reading it.
+  const {notice, showNotice, dismissNotice} = useNoticeDialog();
 
   const [inputText, setInputText] = useState<string>('');
 
@@ -156,12 +163,7 @@ export const useAccountForm = (accountId?: number) => {
           initialBalance,
         });
         setError('');
-        Alert.alert(
-          t('common.success'),
-          t('accounts.form.updated'),
-          [{text: t('common.ok')}],
-          {cancelable: false},
-        );
+        showNotice('info', t('common.success'), t('accounts.form.updated'));
         return true;
       }
       await insertAccount(db, {
@@ -175,12 +177,7 @@ export const useAccountForm = (accountId?: number) => {
       onChangeSelectedIcon(undefined);
       setSelectedKind(DEFAULT_ACCOUNT_KIND);
       setInitialBalanceText('');
-      Alert.alert(
-        t('common.success'),
-        t('accounts.form.created'),
-        [{text: t('common.ok')}],
-        {cancelable: false},
-      );
+      showNotice('info', t('common.success'), t('accounts.form.created'));
       return true;
     } catch (e: any) {
       setError(t('accounts.form.saveError', {message: e.message}));
@@ -207,5 +204,7 @@ export const useAccountForm = (accountId?: number) => {
     loadStatus,
     loadErrorMessage,
     reloadAccount: loadAccount,
+    notice,
+    dismissNotice,
   };
 };

@@ -2,7 +2,8 @@ import {Spacer} from '@components/atoms';
 import {colors, gray} from '@constants/colors/colors';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {useNavigation} from '@react-navigation/native';
-import {Text, Title} from '@redshank/native';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import React from 'react';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 

@@ -39,11 +39,14 @@ const DEFAULT_HEIGHT = 6;
 /**
  * A plain, non-animated horizontal progress bar built directly on
  * design tokens (`@constants/colors/colors`) rather than
- * `@redshank/native`'s own `Progress` — that component resolves its
+ * `@redshank/native`'s own `Progress` (that whole library has since
+ * been removed from this app — see the `@redshank/native` removal
+ * slice's HANDOFF) — that component resolved its
  * `activeColor`/`fallbackColor` props through `useTheme()`'s OWN color
- * table (`ThemeProvider`'s `success`/`warning`/`error`, wired in
- * `App.tsx` from `src/constants/theme/theme.ts`), which does not match
- * this app's `colors.success`/`colors.warning`/`colors.error` tokens
+ * table (`ThemeProvider`'s `success`/`warning`/`error`, formerly wired
+ * in `App.tsx` from `src/constants/theme/theme.ts`, both now deleted),
+ * which did not match this app's
+ * `colors.success`/`colors.warning`/`colors.error` tokens
  * value-for-value (e.g. theme `success` is `#C7FF70`, token `success` is
  * `#50B700`) — passing a raw hex string as `activeColor` would silently
  * fall back to the theme's `primary` instead of rendering that hex, an

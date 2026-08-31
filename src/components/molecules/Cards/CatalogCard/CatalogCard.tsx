@@ -1,4 +1,6 @@
-import {Card, Text, Title, useTheme} from '@redshank/native';
+import {Card} from '@components/atoms/Card';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import {FC} from 'react';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
@@ -18,7 +20,6 @@ const CatalogCard: FC<CatalogCard> = ({
   selectedId,
   variant = 'square',
 }) => {
-  const {colors} = useTheme();
   const {t} = useTranslation();
   const isActive = selectedId === id;
   const isNegative = balance < 0;
@@ -56,14 +57,25 @@ const CatalogCard: FC<CatalogCard> = ({
             }
           : undefined
       }>
+      {/*
+        NO se usa `isPressable` de Card: inyecta el `Ripple` de
+        @redshank/native, que fija `pointerEvents="box-only"` en el
+        contenedor de sus hijos y con eso descarta EN SILENCIO cualquier
+        toque anidado — el boton "..." de gestionar quedaba muerto. El
+        touchable propio conserva la pulsacion de la tarjeta y deja que
+        el boton interior reciba la suya.
+      */}
+      <TouchableOpacity activeOpacity={0.85} onPress={onPress}>
       <Card
         style={[
           styles.card,
           isWide && styles.cardWide,
-          isActive && {borderColor: colors.info, borderWidth: 1.5},
-        ]}
-        isPressable
-        onPress={onPress}>
+          // Was `useTheme()`'s `colors.info` (`@redshank/native`'s own
+          // default `info` theme color — `themeLight` never overrode
+          // it) — migrated verbatim to `tokens.info[1]`, see that
+          // token's own doc comment in `@constants/colors/colors`.
+          isActive && {borderColor: tokens.info[1], borderWidth: 1.5},
+        ]}>
         <Card.Body style={styles.cardBody}>
           <View
             style={[
@@ -110,16 +122,19 @@ const CatalogCard: FC<CatalogCard> = ({
           )}
         </Card.Body>
       </Card>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // El margen izquierdo se elimino: la separacion entre tarjetas la da
+  // ahora el `gap` del contenedor de la lista, para que la PRIMERA quede
+  // alineada con el resto de la pantalla en vez de 20 mas adentro.
   card: {
     borderRadius: 20,
     elevation: 10,
     marginVertical: 20,
-    marginLeft: 20,
   },
   cardWide: {
     marginRight: 20,

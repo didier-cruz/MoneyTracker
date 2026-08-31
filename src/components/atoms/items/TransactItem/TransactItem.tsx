@@ -1,4 +1,5 @@
-import {Title, Text} from '@redshank/native';
+import {Title} from '@components/atoms/text/Title';
+import {Text} from '@components/atoms/text/Text';
 import {StyleSheet, View} from 'react-native';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 
@@ -41,21 +42,33 @@ function TransactItem(transactItem: TransactItem) {
         </View>
       </View>
       <View style={styles.center}>
-        <Title level={3}>{category}</Title>
-        <Text color={colors[gray][0]} style={{marginTop: -5}}>
+        <Title level={3} numberOfLines={1} marginBottom={0}>
+          {category}
+        </Title>
+        {/* `lines` (not `numberOfLines`) — this is one of the 8 call
+            sites written for `@redshank/native`'s `Text`, which only
+            honored its own `lines` prop (see
+            `@components/atoms/text/Text`'s own doc comment for why).
+            `lines` still works as an alias on the replacement, so this
+            wasn't touched in the migration. */}
+        <Text color={colors[gray][0]} lines={1}>
           {date}
         </Text>
       </View>
       <View style={styles.right}>
-        <Title level={3} color={signColor}>
+        <Title
+          level={3}
+          color={signColor}
+          numberOfLines={1}
+          marginBottom={0}
+          style={styles.amount}>
           {positive && '+'}
           {formatCentsToCurrency(amount)}
         </Title>
         <FontAwesomeIcon
           icon={positive ? faArrowUpLong : faArrowDownLong}
           color={signColor}
-          size={25}
-          style={{marginTop: -10}}
+          size={20}
         />
       </View>
     </View>
@@ -71,18 +84,27 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     // padding: 10,
   },
+  // El icono tiene ancho fijo y el importe ocupa el que necesite; lo que
+  // cede espacio es el nombre. Antes las tres columnas eran proporcionales
+  // (flex 1.5 / 4 / 1.5) y un importe de cuatro cifras no cabia en su
+  // columna, asi que envolvia a dos lineas.
   left: {
-    flex: 1.5,
+    width: 74,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  center: {flex: 4},
+  center: {
+    flex: 1,
+    paddingRight: 10,
+  },
   right: {
-    flex: 1.5,
-    height: '100%',
+    flexShrink: 0,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
+    gap: 4,
+  },
+  amount: {
+    textAlign: 'right',
   },
 });
 
