@@ -8,10 +8,19 @@ export const KeyboardContainer = ({
   containerStyle,
 }: KeyboardContainerTypes) => {
   return (
+    /*
+     * En Android NO se usa `behavior`: el sistema ya reajusta la ventana
+     * al abrir el teclado (`adjustResize`). Combinarlo con
+     * `behavior="height"` hacia que el contenedor se redimensionara dos
+     * veces, y ese re-layout tumbaba el foco del TextInput: solo entraba
+     * un digito y el teclado se cerraba. El offset de 500 agravaba lo
+     * mismo. En iOS si hace falta `padding`, porque alli el sistema no
+     * reajusta nada.
+     */
     <KeyboardAvoidingView
       style={[styles.keyboardAvoidingViewContainer, containerStyle]}
-      keyboardVerticalOffset={Platform.select({ios: 0, android: 500})}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      keyboardVerticalOffset={0}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {children}
     </KeyboardAvoidingView>
   );
