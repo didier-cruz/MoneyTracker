@@ -61,10 +61,10 @@ export const CategoryTile: FC<CategoryTileProps> = ({tile, isSelected, onPress})
       activeOpacity={0.8}
       style={[styles.tile, isSelected ? styles.tileSelected : styles.tileDefault]}>
       <VectorIcon name={icon} color={iconColor} size={30} />
-      <Text numberOfLines={1} color={nameColor} size={12} style={styles.name}>
+      <Text lines={1} color={nameColor} size={12} style={styles.name}>
         {name}
       </Text>
-      <Text numberOfLines={1} color={amountColor} size={11}>
+      <Text lines={1} color={amountColor} size={11}>
         {formatCentsToCurrency(amount)}
       </Text>
     </TouchableOpacity>

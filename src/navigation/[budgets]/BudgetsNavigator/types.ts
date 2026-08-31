@@ -1,7 +1,9 @@
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 export type BudgetsNavParams = {
-  Budgets: undefined;
+  /** Raiz del stack; no puede llamarse `Budgets` porque asi se llama la
+   * pestana que lo contiene (mismo motivo que `AccountsHome`). */
+  BudgetsHome: undefined;
   CreateEnvelope: undefined;
   /** Same screen component as `CreateEnvelope`, in edit mode — see
    * `CreateEnvelope`'s doc comment. `kind` is never a param here: it is
@@ -13,7 +15,7 @@ export type BudgetsNavParams = {
 
 export type BudgetsNavigationProp = NativeStackNavigationProp<
   BudgetsNavParams,
-  'Budgets'
+  'BudgetsHome'
 >;
 
 export type CreateEnvelopeNavigationProp = NativeStackNavigationProp<

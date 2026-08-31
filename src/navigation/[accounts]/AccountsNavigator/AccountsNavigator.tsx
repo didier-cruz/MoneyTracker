@@ -34,7 +34,7 @@ const Stack = createNativeStackNavigator<AccountsNavParams>();
 export const AccountsNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{headerShown: false}}>
-      <Stack.Screen name="Accounts" component={AccountsScreen} />
+      <Stack.Screen name="AccountsHome" component={AccountsScreen} />
       <Stack.Screen name="CreateAccount" component={CreateAccount} />
       <Stack.Screen name="EditAccount" component={CreateAccount} />
       <Stack.Screen name="ArchivedAccounts" component={ArchivedAccounts} />

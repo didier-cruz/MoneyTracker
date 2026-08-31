@@ -1,14 +1,20 @@
 import {useState} from 'react';
-import {Alert, RefreshControl} from 'react-native';
+import {RefreshControl} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {faCoins} from '@fortawesome/free-solid-svg-icons/faCoins';
+import {faArrowUpFromBracket} from '@fortawesome/free-solid-svg-icons/faArrowUpFromBracket';
+import {faPen} from '@fortawesome/free-solid-svg-icons/faPen';
+import {faBoxArchive} from '@fortawesome/free-solid-svg-icons/faBoxArchive';
 import {ScreenTemplate} from '@components/templates/ScreenTemplate';
+import {ActionSheet, ConfirmDialog} from '@components/organisms/feedback';
 import {BudgetsNavParams} from '@navigation/[budgets]/BudgetsNavigator/types';
 import {ICategoryBudgetWithSpent, IEnvelopeWithBalance} from '@db/queries';
 import {colors, accent} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
 import {useBudgetsScreen} from '@hooks/useBudgetsScreen';
-import {getMonthLabel} from './mappers';
+import {useNoticeDialog} from '@hooks/useNoticeDialog';
+import {getDaysRemainingInMonth, getMonthLabel} from './mappers';
 import {EnvelopesSection} from './partials/EnvelopesSection/EnvelopesSection';
 import {CategoryLimitsSection} from './partials/CategoryLimitsSection/CategoryLimitsSection';
 import {
@@ -21,7 +27,7 @@ import {
 } from './partials/CategoryLimitModal/CategoryLimitModal';
 
 interface BudgetsScreenProps
-  extends NativeStackScreenProps<BudgetsNavParams, 'Budgets'> {}
+  extends NativeStackScreenProps<BudgetsNavParams, 'BudgetsHome'> {}
 
 interface AssignWithdrawSheetState {
   visible: boolean;
@@ -33,6 +39,16 @@ interface CategoryLimitSheetState {
   visible: boolean;
   mode: CategoryLimitModalMode;
   budget: ICategoryBudgetWithSpent | null;
+}
+
+interface EnvelopeMenuState {
+  visible: boolean;
+  envelope: IEnvelopeWithBalance | null;
+}
+
+interface ArchiveEnvelopeConfirmState {
+  visible: boolean;
+  envelope: IEnvelopeWithBalance | null;
 }
 
 /**
@@ -60,7 +76,7 @@ interface CategoryLimitSheetState {
  * - **Create envelope**: the dashed "Add envelope" card at the end of
  *   the horizontal Sobres list (`CatalogList`'s existing "add" idiom).
  * - **Manage envelope** (assign / withdraw / edit / archive): tapping
- *   the card itself opens an action sheet — see `EnvelopeCard`'s doc
+ *   the card itself opens an `ActionSheet` — see `EnvelopeCard`'s doc
  *   comment for why the whole card, not a separate small button.
  * - **Set/edit a category limit**: "Set a limit" button in the Límites
  *   card opens `CategoryLimitModal` in "add" mode (category picker);
@@ -68,9 +84,18 @@ interface CategoryLimitSheetState {
  *   (category locked, amount prefilled) — see that modal's doc comment
  *   for why the category can't be changed on an edit.
  *
+ * Every native `Alert.alert` this screen used to show is now one of the
+ * two feedback components in `@components/organisms/feedback`: the
+ * envelope manage menu is an `ActionSheet`, archiving is a `danger`
+ * `ConfirmDialog`, and every dismiss-only notice (`common.error`
+ * failures AND the two non-blocking heads-ups below) shares ONE
+ * `ConfirmDialog` via `useNoticeDialog` — only one of those notices is
+ * ever on screen at a time, so one shared piece of state is simpler
+ * than one per call site.
+ *
  * Over-allocation/overdraw are never blocked (see `envelopesQueries.ts`)
  * — `onSubmitAssign`/`onSubmitWithdraw` below always let the write
- * through, then show a plain, dismiss-only `Alert` afterward ONLY when
+ * through, then show a `warning`-tone notice afterward ONLY when
  * `overAllocated`/`envelopeOverdrawn` comes back `true`. This is
  * strictly a heads-up, never a confirmation gate: there is no "undo"
  * button on it, because there is nothing left to undo by the time it
@@ -99,16 +124,31 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
     isSavingLimit,
   } = useBudgetsScreen();
 
+  const {notice, showNotice, dismissNotice} = useNoticeDialog();
+
   const [assignWithdrawSheet, setAssignWithdrawSheet] =
     useState<AssignWithdrawSheetState>({visible: false, mode: 'assign', envelope: null});
   const [categoryLimitSheet, setCategoryLimitSheet] =
     useState<CategoryLimitSheetState>({visible: false, mode: 'add', budget: null});
+  const [envelopeMenu, setEnvelopeMenu] =
+    useState<EnvelopeMenuState>({visible: false, envelope: null});
+  const [archiveConfirm, setArchiveConfirm] =
+    useState<ArchiveEnvelopeConfirmState>({visible: false, envelope: null});
   const [isSubmittingMovement, setIsSubmittingMovement] = useState(false);
 
   const closeAssignWithdrawSheet = () =>
     setAssignWithdrawSheet(prev => ({...prev, visible: false}));
   const closeCategoryLimitSheet = () =>
     setCategoryLimitSheet(prev => ({...prev, visible: false}));
+  const closeEnvelopeMenu = () => setEnvelopeMenu(prev => ({...prev, visible: false}));
+  const closeArchiveConfirm = () => setArchiveConfirm(prev => ({...prev, visible: false}));
+
+  // Local `const`s (not the raw `envelopeMenu.envelope`/`archiveConfirm
+  // .envelope` property accesses) so TypeScript can actually narrow
+  // `| null` away inside the JSX closures below — a property access
+  // doesn't narrow across a nested function boundary, a `const` does.
+  const menuEnvelope = envelopeMenu.envelope;
+  const confirmingEnvelope = archiveConfirm.envelope;
 
   // The one gesture for "manage this envelope" — no approved prototype
   // covers this interaction at all (see this screen's doc comment
@@ -116,51 +156,21 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
   // (`AccountsScreen.onPressManageAccount`) rather than inventing a
   // swipe/long-press gesture with no precedent here.
   const onPressEnvelope = (envelope: IEnvelopeWithBalance) => {
-    Alert.alert(envelope.name, undefined, [
-      {
-        text: t('budgets.assignMoney'),
-        onPress: () =>
-          setAssignWithdrawSheet({visible: true, mode: 'assign', envelope}),
-      },
-      {
-        text: t('budgets.withdrawMoney'),
-        onPress: () =>
-          setAssignWithdrawSheet({visible: true, mode: 'withdraw', envelope}),
-      },
-      {
-        text: t('common.edit'),
-        onPress: () => navigation.navigate('EditEnvelope', {envelopeId: envelope.id}),
-      },
-      {
-        text: t('budgets.archive'),
-        style: 'destructive',
-        onPress: () => onArchiveEnvelope(envelope),
-      },
-      {text: t('common.cancel'), style: 'cancel'},
-    ]);
+    setEnvelopeMenu({visible: true, envelope});
   };
 
   // Same "explain the effect, then confirm" shape as
   // `AccountsScreen.onArchiveAccount` — archiving is a soft delete in
   // the data layer, but reads as final from the user's seat.
-  const onArchiveEnvelope = (envelope: IEnvelopeWithBalance) => {
-    Alert.alert(
-      t('budgets.archiveEnvelopeTitle'),
-      t('budgets.archiveEnvelopeMessage', {name: envelope.name}),
-      [
-        {text: t('common.cancel'), style: 'cancel'},
-        {
-          text: t('budgets.archive'),
-          style: 'destructive',
-          onPress: async () => {
-            const success = await archiveEnvelopeById(envelope.id);
-            if (!success) {
-              Alert.alert(t('common.error'), t('budgets.archiveEnvelopeErrorMessage'));
-            }
-          },
-        },
-      ],
-    );
+  const onConfirmArchiveEnvelope = async () => {
+    if (!confirmingEnvelope) {
+      return;
+    }
+    closeArchiveConfirm();
+    const success = await archiveEnvelopeById(confirmingEnvelope.id);
+    if (!success) {
+      showNotice('danger', t('common.error'), t('budgets.archiveEnvelopeErrorMessage'));
+    }
   };
 
   const onSubmitAssignOrWithdraw = async (amount: number) => {
@@ -173,14 +183,15 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
       if (mode === 'assign') {
         const result = await assignToEnvelopeById(envelope.id, amount);
         if (!result) {
-          Alert.alert(t('common.error'), t('budgets.assignErrorMessage'));
+          showNotice('danger', t('common.error'), t('budgets.assignErrorMessage'));
           return;
         }
         closeAssignWithdrawSheet();
         // Non-blocking heads-up — see this screen's doc comment. The
         // assignment already succeeded; this is context, not a gate.
         if (result.overAllocated) {
-          Alert.alert(
+          showNotice(
+            'warning',
             t('budgets.headsUp'),
             t('budgets.overAllocatedMessage', {
               amount: formatCentsToCurrency(result.availableToAssign),
@@ -190,12 +201,13 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
       } else {
         const result = await withdrawFromEnvelopeById(envelope.id, amount);
         if (!result) {
-          Alert.alert(t('common.error'), t('budgets.withdrawErrorMessage'));
+          showNotice('danger', t('common.error'), t('budgets.withdrawErrorMessage'));
           return;
         }
         closeAssignWithdrawSheet();
         if (result.envelopeOverdrawn) {
-          Alert.alert(
+          showNotice(
+            'warning',
             t('budgets.headsUp'),
             t('budgets.envelopeOverdrawnMessage', {
               amount: formatCentsToCurrency(result.balance),
@@ -217,7 +229,7 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
   const onSubmitCategoryLimit = async (idCategory: number, limitAmount: number) => {
     const success = await setCategoryLimit(idCategory, limitAmount);
     if (!success) {
-      Alert.alert(t('common.error'), t('budgets.limitSaveErrorMessage'));
+      showNotice('danger', t('common.error'), t('budgets.limitSaveErrorMessage'));
       return;
     }
     closeCategoryLimitSheet();
@@ -248,6 +260,7 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
           budgets={budgets}
           status={budgetsStatus}
           errorMessage={budgetsErrorMessage}
+          daysRemainingInMonth={getDaysRemainingInMonth(period)}
           onRetry={reloadBudgets}
           onPressBudget={onPressBudget}
           onPressAddLimit={onPressAddLimit}
@@ -273,6 +286,77 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
         isSubmitting={isSavingLimit}
         onSubmit={onSubmitCategoryLimit}
         onClose={closeCategoryLimitSheet}
+      />
+
+      <ActionSheet
+        visible={envelopeMenu.visible}
+        title={menuEnvelope?.name ?? ''}
+        onClose={closeEnvelopeMenu}
+        actions={
+          menuEnvelope
+            ? [
+                {
+                  key: 'assign',
+                  label: t('budgets.assignMoney'),
+                  icon: faCoins,
+                  onPress: () =>
+                    setAssignWithdrawSheet({visible: true, mode: 'assign', envelope: menuEnvelope}),
+                },
+                {
+                  key: 'withdraw',
+                  label: t('budgets.withdrawMoney'),
+                  icon: faArrowUpFromBracket,
+                  onPress: () =>
+                    setAssignWithdrawSheet({
+                      visible: true,
+                      mode: 'withdraw',
+                      envelope: menuEnvelope,
+                    }),
+                },
+                {
+                  key: 'edit',
+                  label: t('common.edit'),
+                  icon: faPen,
+                  onPress: () =>
+                    navigation.navigate('EditEnvelope', {envelopeId: menuEnvelope.id}),
+                },
+                {
+                  key: 'archive',
+                  label: t('budgets.archive'),
+                  icon: faBoxArchive,
+                  tone: 'destructive',
+                  onPress: () => setArchiveConfirm({visible: true, envelope: menuEnvelope}),
+                },
+              ]
+            : []
+        }
+      />
+
+      <ConfirmDialog
+        visible={archiveConfirm.visible}
+        tone="danger"
+        title={t('budgets.archiveEnvelopeTitle')}
+        message={
+          confirmingEnvelope
+            ? t('budgets.archiveEnvelopeMessage', {name: confirmingEnvelope.name})
+            : ''
+        }
+        onRequestClose={closeArchiveConfirm}
+        secondaryLabel={t('common.cancel')}
+        onSecondaryPress={closeArchiveConfirm}
+        primaryLabel={t('budgets.archive')}
+        destructive
+        onPrimaryPress={onConfirmArchiveEnvelope}
+      />
+
+      <ConfirmDialog
+        visible={notice.visible}
+        tone={notice.tone}
+        title={notice.title}
+        message={notice.message}
+        onRequestClose={dismissNotice}
+        primaryLabel={t('common.ok')}
+        onPrimaryPress={dismissNotice}
       />
     </>
   );

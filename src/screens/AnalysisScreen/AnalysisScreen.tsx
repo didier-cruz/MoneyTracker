@@ -3,7 +3,13 @@ import {NavigationProp, useNavigation} from '@react-navigation/native';
 import {ScreenTemplate} from '@components/templates/ScreenTemplate';
 import {accent, colors} from '@constants/colors/colors';
 import {useAnalysisScreen} from '@hooks/useAnalysisScreen';
-import {buildDebtsInsight, buildFundsInsight, toDebtSectorInputs, toFundSectorInputs} from './mappers';
+import {
+  buildDebtsInsight,
+  buildFundsInsight,
+  getCurrentMonthLabel,
+  toDebtSectorInputs,
+  toFundSectorInputs,
+} from './mappers';
 import {AnalysisPieCard} from './partials/AnalysisPieCard/AnalysisPieCard';
 import {useTranslation} from 'react-i18next';
 
@@ -66,6 +72,7 @@ const AnalysisScreen = () => {
   return (
     <ScreenTemplate
       headerTitle={t('analysis.title')}
+      headerSubtitle={getCurrentMonthLabel()}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}

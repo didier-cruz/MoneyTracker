@@ -85,3 +85,23 @@ export const formatMonthAbbreviation = (period: string): string => {
   const date = new Date(2000, Number(monthStr) - 1, 1);
   return new Intl.DateTimeFormat(getIntlLocale(), {month: 'short'}).format(date);
 };
+
+/** `'2026-08'` -> `'Agosto'` (es) / `'August'` (en) — a `'YYYY-MM'`
+ * period's full month name, CAPITALIZED, no year — for a screen's
+ * two-line header subtitle (e.g. `AnalysisScreen`'s "Analítica" /
+ * "Agosto", per the approved prototype). `Intl.DateTimeFormat`'s own
+ * `month: 'long'` already returns a capitalized `"August"` in en-US,
+ * but a lowercase `"agosto"` in es-ES (Spanish's own convention for
+ * month names, same as this file's own top-of-file note on verified
+ * `Intl` behavior) — this uppercases just the first codepoint so both
+ * locales render a capitalized single-word subtitle, matching the
+ * prototype exactly, without a `textTransform: 'capitalize'` on the
+ * consuming `Text` (which would ALSO capitalize the language's OWN
+ * "de"/"of" if `formatMonthYearLong`'s longer string were ever reused
+ * here instead — not a risk this narrower, month-only helper has). */
+export const formatMonthNameCapitalized = (period: string): string => {
+  const monthStr = period.split('-')[1];
+  const date = new Date(2000, Number(monthStr) - 1, 1);
+  const monthName = new Intl.DateTimeFormat(getIntlLocale(), {month: 'long'}).format(date);
+  return monthName.charAt(0).toUpperCase() + monthName.slice(1);
+};

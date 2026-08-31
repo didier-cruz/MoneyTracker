@@ -12,6 +12,9 @@ interface CategoryLimitsSectionProps {
   budgets: ICategoryBudgetWithSpent[];
   status: LoadStatus;
   errorMessage: string;
+  /** Right-hand subtitle next to the section heading, per the approved
+   * prototype ("Quedan 9 días") — see `getDaysRemainingInMonth`. */
+  daysRemainingInMonth: number;
   onRetry: () => void;
   onPressBudget: (budget: ICategoryBudgetWithSpent) => void;
   onPressAddLimit: () => void;
@@ -30,6 +33,7 @@ export const CategoryLimitsSection: FC<CategoryLimitsSectionProps> = ({
   budgets,
   status,
   errorMessage,
+  daysRemainingInMonth,
   onRetry,
   onPressBudget,
   onPressAddLimit,
@@ -37,9 +41,14 @@ export const CategoryLimitsSection: FC<CategoryLimitsSectionProps> = ({
   const {t} = useTranslation();
   return (
     <View style={styles.section}>
-      <Text style={styles.heading} size={18} bold>
-        {t('budgets.monthlyLimitsHeading')}
-      </Text>
+      <View style={styles.headingRow}>
+        <Text size={18} bold>
+          {t('budgets.monthlyLimitsHeading')}
+        </Text>
+        <Text color={colors[gray][0]} size={12}>
+          {t('budgets.daysRemaining', {count: daysRemainingInMonth})}
+        </Text>
+      </View>
 
       {status === 'loading' && (
         <View style={styles.centered}>
@@ -104,8 +113,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 20,
   },
-  heading: {
-    paddingHorizontal: 20,
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
   centered: {
@@ -115,7 +126,6 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   message: {
-    paddingHorizontal: 20,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -129,7 +139,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    marginHorizontal: 20,
     marginTop: 10,
     paddingHorizontal: 16,
     paddingTop: 8,

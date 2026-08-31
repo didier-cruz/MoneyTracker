@@ -10,6 +10,12 @@ export type FinancesStatus = 'loading' | 'error' | 'success';
 
 interface FragmentSectionProps extends CatalogList {
   transactSections: SectionTransactItem[];
+  /** Passed straight through to `TransactList`'s own `headerTitle` —
+   * see that component's doc comment (the selected account's name). */
+  transactHeaderTitle: string;
+  /** Passed straight through to `TransactList`'s own `headerSubtitle`
+   * (the current month's name). */
+  transactHeaderSubtitle: string;
   financesStatus: FinancesStatus;
   financesErrorMessage?: string;
   onRetryFinances: () => void;
@@ -25,6 +31,8 @@ const FragmentSection: FC<FragmentSectionProps> = ({
   onPressItem,
   onPressManageItem,
   transactSections,
+  transactHeaderTitle,
+  transactHeaderSubtitle,
   financesStatus,
   financesErrorMessage,
   onRetryFinances,
@@ -87,6 +95,8 @@ const FragmentSection: FC<FragmentSectionProps> = ({
       {financesStatus === 'success' && transactSections.length > 0 && (
         <TransactList
           sectionData={transactSections}
+          headerTitle={transactHeaderTitle}
+          headerSubtitle={transactHeaderSubtitle}
           onEndReached={onEndReachedFinances}
           isLoadingMore={isLoadingMoreFinances}
           refreshing={refreshingFinances}

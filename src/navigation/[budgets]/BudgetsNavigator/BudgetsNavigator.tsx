@@ -24,7 +24,7 @@ const Stack = createNativeStackNavigator<BudgetsNavParams>();
 export const BudgetsNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{headerShown: false}}>
-      <Stack.Screen name="Budgets" component={BudgetsScreen} />
+      <Stack.Screen name="BudgetsHome" component={BudgetsScreen} />
       <Stack.Screen name="CreateEnvelope" component={CreateEnvelope} />
       <Stack.Screen name="EditEnvelope" component={CreateEnvelope} />
     </Stack.Navigator>

@@ -35,7 +35,12 @@ export interface DonutChartProps {
 }
 
 const DEFAULT_SIZE = 146;
-const DEFAULT_STROKE_WIDTH = 28;
+/** The approved prototype's own `stroke-width="22"` — a narrower ring
+ * than this component's earlier `28`, which left less clear space in
+ * the middle than the prototype calls for and made the center text
+ * overflow into the ring sooner (see `centerContent`'s own doc for the
+ * rest of that fix). */
+const DEFAULT_STROKE_WIDTH = 22;
 
 /**
  * A donut chart drawn directly with `react-native-svg` — NOT
@@ -86,6 +91,14 @@ export const DonutChart: FC<DonutChartProps> = ({
   const center = size / 2;
   const radius = center - strokeWidth / 2;
   const circumference = 2 * Math.PI * radius;
+  // The ring's actual clear space in the middle — `size - 2*strokeWidth`
+  // (see `strokeWidth`'s own prop doc). `centerContent` below is sized
+  // and centered to exactly THIS box, not the full `size x size` `Svg`
+  // — a fixed `paddingHorizontal` inside the full box (this
+  // component's earlier approach) left room for text to render OUT
+  // INTO the ring itself before ever touching the outer edge of that
+  // bigger box, which is exactly what a 5-digit amount was doing.
+  const holeDiameter = size - strokeWidth * 2;
 
   return (
     <View
@@ -129,11 +142,36 @@ export const DonutChart: FC<DonutChartProps> = ({
         })}
       </Svg>
 
-      <View style={styles.centerContent} pointerEvents="none">
-        <Text color={colors[gray][0]} size={11} align="center">
+      <View
+        style={[
+          styles.centerContent,
+          {
+            width: holeDiameter,
+            height: holeDiameter,
+            left: (size - holeDiameter) / 2,
+            top: (size - holeDiameter) / 2,
+          },
+        ]}
+        pointerEvents="none">
+        <Text color={colors[gray][0]} size={11} align="center" lines={1}>
           {centerLabel}
         </Text>
-        <Text bold size={21} align="center">
+        {/* `lines={1}` + `adjustsFontSizeToFit` (an RN `Text` prop this
+         * wrapper forwards straight through, see its own `[key:
+         * string]: unknown` prop signature) is the actual overflow
+         * guarantee "at any reasonable magnitude" the task asked for —
+         * bounding the box to `holeDiameter` above stops text from
+         * drawing OUT into the ring, but a wide-enough five-digit
+         * amount could still overflow even THAT box at a fixed 21px;
+         * this lets RN shrink the glyphs (down to `minimumFontScale`,
+         * never past it) instead. */}
+        <Text
+          bold
+          size={21}
+          align="center"
+          lines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.55}>
           {centerValue}
         </Text>
       </View>
@@ -143,10 +181,9 @@ export const DonutChart: FC<DonutChartProps> = ({
 
 const styles = StyleSheet.create({
   centerContent: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 8,
   },
 });
 

@@ -1,7 +1,13 @@
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 export type AccountsNavParams = {
-  Accounts: undefined;
+  /**
+   * La pantalla raiz de este stack. NO puede llamarse `Accounts`: asi se
+   * llama tambien la pestana que lo contiene, y react-navigation avisa de
+   * pantallas homonimas anidadas (`Home > RootNav > Accounts > Accounts`),
+   * que hace ambiguo a que ruta apunta un `navigate('Accounts')`.
+   */
+  AccountsHome: undefined;
   CreateAccount: undefined;
   /** Same screen component as `CreateAccount`, in edit mode — see
    * `CreateAccount`'s doc comment. */
@@ -16,7 +22,7 @@ export type AccountsNavParams = {
 
 export type AccountsNavigationProp = NativeStackNavigationProp<
   AccountsNavParams,
-  'Accounts'
+  'AccountsHome'
 >;
 
 export type CreateAccountNavigationProp = NativeStackNavigationProp<
