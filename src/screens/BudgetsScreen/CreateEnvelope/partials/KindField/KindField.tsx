@@ -1,5 +1,6 @@
-import {accent, colors, gray} from '@constants/colors/colors';
-import {Radio, Text} from '@redshank/native';
+import {colors, gray} from '@constants/colors/colors';
+import {SegmentedControl, SegmentedControlOption} from '@components/atoms/SegmentedControl';
+import {Text} from '@components/atoms/text/Text';
 import {ENVELOPE_KINDS, EnvelopeKind} from '@db/queries';
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
@@ -11,13 +12,6 @@ type Props = {
   /** Omitted (not just disabled) in edit mode — see below. */
   onChange?: (kind: EnvelopeKind) => void;
 };
-
-// Same guard pattern as accounts' `KindField` — the library's untyped
-// `onChange(key: string | number)` callback checked against the one
-// source of truth for valid values (`@db/queries`' `ENVELOPE_KINDS`)
-// instead of a bare `as` cast.
-const isEnvelopeKind = (value: string | number): value is EnvelopeKind =>
-  typeof value === 'string' && (ENVELOPE_KINDS as readonly string[]).includes(value);
 
 /** Translated label for an envelope `kind` — same pattern as accounts'
  * `getKindLabel` (`KindField.tsx` under `AccountsScreen/CreateAccount`):
@@ -38,14 +32,21 @@ const styles = StyleSheet.create({
 });
 
 /**
- * `onChange` omitted entirely (not merely a disabled `Radio.Group`)
- * switches this into a plain, read-only label — `updateEnvelope` has no
- * `kind` field at all (see its doc comment: flipping a `fund` into a
- * `debt` mid-life would silently change what every past movement
- * already recorded against it means), so `CreateEnvelope` never renders
- * an editable kind control once it's in edit mode; there is nothing to
+ * `onChange` omitted entirely (not merely a disabled control) switches
+ * this into a plain, read-only label — `updateEnvelope` has no `kind`
+ * field at all (see its doc comment: flipping a `fund` into a `debt`
+ * mid-life would silently change what every past movement already
+ * recorded against it means), so `CreateEnvelope` never renders an
+ * editable kind control once it's in edit mode; there is nothing to
  * disable-but-show, the choice genuinely no longer exists for this
  * envelope.
+ *
+ * Was `@redshank/native`'s `Radio.Group` — now the shared
+ * `SegmentedControl` atom, see that component's doc comment. The old
+ * `isEnvelopeKind` runtime guard against `Radio.Group`'s untyped
+ * `onChange(key: string | number)` is gone too — `SegmentedControl`'s
+ * `onChange` is typed straight from `options` (`EnvelopeKind`), no
+ * cast/guard needed.
  */
 const KindField = ({value, onChange}: Props) => {
   const {t} = useTranslation();
@@ -61,21 +62,14 @@ const KindField = ({value, onChange}: Props) => {
     );
   }
 
+  const options: SegmentedControlOption<EnvelopeKind>[] = ENVELOPE_KINDS.map(kind => ({
+    value: kind,
+    label: getKindLabel(kind),
+  }));
+
   return (
     <View style={styles.container}>
-      <Radio.Group
-        value={value}
-        onChange={key => {
-          if (isEnvelopeKind(key)) {
-            onChange(key);
-          }
-        }}
-        size="middle"
-        activeColor={colors[accent][1]}>
-        {ENVELOPE_KINDS.map(kind => (
-          <Radio key={kind} label={getKindLabel(kind)} value={kind} />
-        ))}
-      </Radio.Group>
+      <SegmentedControl value={value} onChange={onChange} options={options} />
     </View>
   );
 };

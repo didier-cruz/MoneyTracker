@@ -2,9 +2,7 @@ import 'react-native-gesture-handler';
 import {useEffect} from 'react';
 import {initDatabase} from '@db/db';
 import {DrawerNav} from '@navigation/DrawerNav';
-import {ThemeProvider} from '@redshank/native';
 import {NavigationContainer} from '@react-navigation/native';
-import {themeLight} from '@constants/theme/theme';
 import icons from './src/icons';
 import {hydrateStoredLanguage} from '@i18n';
 
@@ -35,18 +33,7 @@ function App(): JSX.Element {
 }
 
 const AppState = ({children}: any) => {
-  return (
-    <NavigationContainer>
-      <ThemeProvider
-        theme={{
-          theme: 'light',
-          colors: themeLight.colors,
-        }}
-        disableDarkMode>
-        {children}
-      </ThemeProvider>
-    </NavigationContainer>
-  );
+  return <NavigationContainer>{children}</NavigationContainer>;
 };
 
 export default App;

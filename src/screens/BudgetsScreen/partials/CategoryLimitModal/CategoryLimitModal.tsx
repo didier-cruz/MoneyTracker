@@ -1,6 +1,5 @@
 import {useEffect, useState} from 'react';
 import {
-  BackHandler,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -8,7 +7,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {Modal, Text, Title} from '@redshank/native';
+import {BottomSheet} from '@components/organisms/feedback/BottomSheet';
+import {Text} from '@components/atoms/text/Text';
+import {Title} from '@components/atoms/text/Title';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import InputField from '@screens/[categories]/CreateCategory/partials/InputField/InputField';
 import SaveAction from '@screens/[categories]/CreateCategory/partials/SaveAction/SaveAction';
@@ -43,10 +44,16 @@ interface CategoryLimitModalProps {
  * 'add'`, category picker + amount) and "edit an existing category's
  * limit" (`mode: 'edit'`, category locked, amount prefilled) — not part
  * of the approved `BudgetsScreen` prototype (that mock only shows the
- * resulting rows, not the interaction that creates them), reuses
- * `AccountPickerModal`'s bottom-sheet shape (see that component's doc
- * comment for the `BackHandler`/`closable={false}` reasoning, identical
- * here). Flagged for design review in this slice's HANDOFF.
+ * resulting rows, not the interaction that creates them), built on the
+ * shared `BottomSheet`. Flagged for design review in this slice's
+ * HANDOFF.
+ *
+ * Was `@redshank/native`'s `Modal`, reusing `AccountPickerModal`'s old
+ * shape — see that component's doc comment (and the `@redshank/native`
+ * removal slice's HANDOFF) for why its `BackHandler` listener is gone
+ * here too, not ported: `BottomSheet` renders RN's OWN `Modal` with
+ * `onRequestClose` already wired to `onClose`, which RN wires to
+ * Android's hardware back button natively.
  *
  * Editing never lets the category itself change — `setCategoryBudget`
  * is keyed on `(idCategory, period)` (see its doc comment: it UPDATEs
@@ -89,17 +96,6 @@ export const CategoryLimitModal = ({
     // mid-edit) should not blow away what the user already typed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, mode, initialCategory?.id, initialLimitAmount]);
-
-  useEffect(() => {
-    if (!visible) {
-      return undefined;
-    }
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      onClose();
-      return true;
-    });
-    return () => subscription.remove();
-  }, [visible, onClose]);
 
   const title =
     mode === 'edit'
@@ -146,18 +142,12 @@ export const CategoryLimitModal = ({
   );
 
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      position="bottom"
-      maskClosable
-      closable={false}
-      contentStyle={styles.content}
-      contentContainerStyle={styles.contentContainer}>
+    <BottomSheet visible={visible} onClose={onClose} maxHeight="80%">
       <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {mode === 'edit' ? (
-          <>
+          <View style={styles.paddedContent}>
             <Title level={4} style={styles.title}>
               {title}
             </Title>
@@ -174,27 +164,31 @@ export const CategoryLimitModal = ({
               </View>
             )}
             {amountField}
-          </>
+          </View>
         ) : (
           // The ONLY scrollable element in "add" mode — title/empty-state/
           // amount field/Save all ride along as its header/footer instead
           // of living in a separate outer `ScrollView`, so there is never
-          // a nested `VirtualizedList` here.
+          // a nested `VirtualizedList` here. `flexShrink: 1` (`styles.list`)
+          // is what lets it actually shrink/scroll under `BottomSheet`'s
+          // own `maxHeight="80%"` — see that prop's doc comment.
           <FlatList
             data={categories}
             keyExtractor={item => item.id.toString()}
             style={styles.list}
             ListHeaderComponent={
-              <Title level={4} style={styles.title}>
+              <Title level={4} style={[styles.title, styles.paddedContent]}>
                 {title}
               </Title>
             }
             ListEmptyComponent={
-              <Text color={colors[gray][0]} style={styles.empty}>
+              <Text color={colors[gray][0]} style={[styles.empty, styles.paddedContent]}>
                 {t('budgets.everyCategoryHasLimit')}
               </Text>
             }
-            ListFooterComponent={<View style={styles.footer}>{amountField}</View>}
+            ListFooterComponent={
+              <View style={[styles.footer, styles.paddedContent]}>{amountField}</View>
+            }
             renderItem={({item}) => {
               const isSelected = selectedCategory?.id === item.id;
               return (
@@ -214,22 +208,26 @@ export const CategoryLimitModal = ({
           />
         )}
       </KeyboardAvoidingView>
-    </Modal>
+    </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    width: '100%',
-    maxHeight: '80%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+  // `flexShrink: 1` propagates the panel's `maxHeight` cap down through
+  // this `KeyboardAvoidingView` to the `FlatList` inside it — without
+  // it here too, the chain from `BottomSheet`'s own `body` wrapper down
+  // to `styles.list` would break at this link. A no-op in `mode ===
+  // 'edit'` (no list, content is always short).
+  keyboardAvoiding: {
+    flexShrink: 1,
   },
-  contentContainer: {
-    width: '100%',
-    paddingBottom: 10,
+  // `BottomSheet`'s panel carries no horizontal padding of its own
+  // (`ActionSheet` pads each row individually) — this sheet's rows
+  // (`styles.row`) already do the same, so only the non-list content
+  // (the title/locked-category/amount-field block) needs its own
+  // explicit inset.
+  paddedContent: {
+    paddingHorizontal: 20,
   },
   title: {
     marginBottom: 10,
@@ -239,11 +237,13 @@ const styles = StyleSheet.create({
     // the whole "add" sheet (title + rows + amount field + Save all
     // ride along as its header/footer, see the component body), so it
     // needs enough room to show the amount field without scrolling on
-    // an ordinary phone with a handful of categories. `content`'s own
-    // `maxHeight: '80%'` is still the real safety cap for a long
-    // category list.
+    // an ordinary phone with a handful of categories. `BottomSheet`'s
+    // own `maxHeight="80%"` is still the real safety cap for a long
+    // category list. `flexShrink: 1` — see `keyboardAvoiding`'s
+    // comment above.
     width: '100%',
     maxHeight: 480,
+    flexShrink: 1,
   },
   footer: {
     marginTop: 10,
@@ -255,6 +255,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 20,
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors[gray][0],

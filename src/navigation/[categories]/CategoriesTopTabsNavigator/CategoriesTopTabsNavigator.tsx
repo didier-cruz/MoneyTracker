@@ -4,8 +4,7 @@ import {createMaterialTopTabNavigator} from '@react-navigation/material-top-tabs
 // TODO(slice B): wire `categoriesTopTabsRouter` (./router) into Tab.Navigator via
 // map() instead of the hardcoded <Tab.Screen> pair below — router.tsx already
 // defines the same Expenses/Incomes tabs but nothing consumes it yet.
-import {colors, primary} from '@constants/colors/colors';
-import {useTheme} from '@redshank/native';
+import {accent, colors, primary} from '@constants/colors/colors';
 import {useTranslation} from 'react-i18next';
 import Header from '@screens/[categories]/components/Header/Header';
 import {CategoriesScreen} from '@screens/[categories]';
@@ -14,7 +13,6 @@ import {CategoriesTopTabsNavigatorParams} from './types';
 const Tab = createMaterialTopTabNavigator<CategoriesTopTabsNavigatorParams>();
 
 export const CategoriesTopTabsNavigator = () => {
-  const {colors: colorTheme} = useTheme();
   const {t} = useTranslation();
   return (
     <>
@@ -24,8 +22,14 @@ export const CategoriesTopTabsNavigator = () => {
       <Tab.Navigator
         tabBarPosition="bottom"
         screenOptions={{
-          tabBarActiveTintColor: colorTheme.accent,
-          tabBarInactiveTintColor: colorTheme.secondary,
+          // Was `useTheme()`'s `colors.accent`/`.secondary`
+          // (`@redshank/native`'s `ThemeProvider`, fed by
+          // `themeLight.colors`) — migrated 1:1 to
+          // `@constants/colors/colors`, verified hex-for-hex:
+          // `themeLight.colors.accent` (`#C7FF70`) is `tokens.accent[0]`,
+          // `.secondary` (`#8CC63F`) is `tokens.accent[1]`.
+          tabBarActiveTintColor: colors[accent][0],
+          tabBarInactiveTintColor: colors[accent][1],
           //   tabBarActiveBackgroundColor: `${colors.secondary}33`,
           //   tabBarPressColor: `${colorTheme.secondary}33`,
           tabBarLabelStyle: {fontSize: 12, fontWeight: '900'},
@@ -50,7 +54,7 @@ export const CategoriesTopTabsNavigator = () => {
             // backgroundColor: 'red',
           },
           tabBarIndicatorStyle: {
-            backgroundColor: `${colorTheme.secondary}33`,
+            backgroundColor: `${colors[accent][1]}33`,
             height: 50,
             borderTopRightRadius: 30,
             borderTopLeftRadius: 30,

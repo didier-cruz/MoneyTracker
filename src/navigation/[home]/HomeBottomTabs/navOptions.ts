@@ -1,4 +1,5 @@
 import {BottomTabNavigationOptions} from '@react-navigation/bottom-tabs';
+import {accent, colors, primary} from '@constants/colors/colors';
 import {heightDP} from '@utils/responsive';
 
 /**
@@ -13,21 +14,30 @@ export const TAB_BAR_HEIGHT = heightDP(9);
 export const FAB_SIZE = 70;
 export const FAB_OVERHANG = 24;
 
-type BottomTabNavType = (colors: any) => BottomTabNavigationOptions;
-
-export const bottomTabNavScreenOptions: BottomTabNavType = (colors: any) => ({
+/**
+ * Used to read `@redshank/native`'s `useTheme()` (`ThemeProvider`'s
+ * `themeLight.colors` override) — `primary`/`secondary`/`inactive`
+ * below are that same 1:1 migration to `@constants/colors/colors`,
+ * verified hex-for-hex rather than assumed from the similarly-named
+ * token in this file (`colors.secondary`/`colors.inactive` mean
+ * DIFFERENT colors than `themeLight.colors.secondary`/`.inactive`
+ * did): `themeLight.colors.primary` (`#010062`) is `tokens.primary[0]`,
+ * `.secondary` (`#8CC63F`) is `tokens.accent[1]`, `.inactive`
+ * (`#5CA41B`) is `tokens.accent[2]`.
+ */
+export const bottomTabNavScreenOptions = (): BottomTabNavigationOptions => ({
   headerShown: false,
   tabBarHideOnKeyboard: true,
   tabBarStyle: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors[primary][0],
     borderTopRightRadius: 50,
     borderTopLeftRadius: 50,
     height: TAB_BAR_HEIGHT,
     paddingBottom: 0,
   },
-  tabBarActiveTintColor: colors.secondary,
-  tabBarInactiveTintColor: colors.inactive,
-  tabBarActiveBackgroundColor: `${colors.secondary}33`,
+  tabBarActiveTintColor: colors[accent][1],
+  tabBarInactiveTintColor: colors[accent][2],
+  tabBarActiveBackgroundColor: `${colors[accent][1]}33`,
   tabBarItemStyle: {
     borderRadius: 50,
     marginVertical: 6,
