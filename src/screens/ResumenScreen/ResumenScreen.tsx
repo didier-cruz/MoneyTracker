@@ -5,6 +5,8 @@ import {ScreenTemplate} from '@components/templates/ScreenTemplate';
 import {BalanceCard} from '@components/molecules/Cards/BalanceCard';
 import {TransactCard} from '@components/molecules/Cards/TransactCard';
 import {CashFlowChart} from '@components/organisms/Charts/CashFlowChart';
+// import {PieChart} from '@components/organisms/Charts/PieChart';
+// import {heightDP} from '@utils/responsive';
 import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
 import {useResumenScreen} from '@hooks/useResumenScreen';
 import {getCurrentMonthCashFlow, mapFinancesToTransactItems} from './mappers';
@@ -145,6 +147,21 @@ const ResumenScreen = () => {
             expenseCents={currentMonth.expense}
             savingsCents={currentMonth.savings}
           />
+
+          {/*
+            PieChart oculto a peticion del usuario: con los datos actuales
+            la porcion de ahorros es tan pequena frente a ingresos y gastos
+            que el pastel no se lee bien. Se conserva cableado a datos
+            reales (`mapCashFlowToPieChart` sigue exportado en `./mappers`)
+            para reactivarlo descomentando este bloque y sus imports.
+
+            {cashFlowMonths.length > 0 && (
+              <PieChart
+                {...mapCashFlowToPieChart(cashFlowMonths)}
+                radius={heightDP(13)}
+              />
+            )}
+          */}
 
           <CashFlowChart months={cashFlowMonths} />
 
