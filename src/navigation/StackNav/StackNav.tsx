@@ -1,6 +1,7 @@
 import {createStackNavigator} from '@react-navigation/stack';
 import {DashboardScreen} from '@screens/DashboardScreen';
 import {FormScreen} from '@screens/FormScreen';
+import {CategoriesNavigator} from '@navigation/[categories]/CategoriesNavigator/CategoriesNavigator';
 import {StackNavParams} from './types';
 
 const Stack = createStackNavigator<StackNavParams>();
@@ -28,6 +29,7 @@ export const StackNav = () => {
           animation: 'none',
         }}
       />
+      <Stack.Screen name="Categories" component={CategoriesNavigator} />
     </Stack.Navigator>
   );
 };

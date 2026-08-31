@@ -2,8 +2,6 @@ import {HomeNavigator} from '@navigation/[home]/HomeNavigator';
 import {DrawerLabel} from './partials/DrawerLabel';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faHome} from '@fortawesome/free-solid-svg-icons/faHome';
-import {faBookBookmark} from '@fortawesome/free-solid-svg-icons/faBookBookmark';
-import {CategoriesNavigator} from '@navigation/[categories]/CategoriesNavigator/CategoriesNavigator';
 
 export const drawerRouter: IDrawer[] = [
   {
@@ -16,16 +14,6 @@ export const drawerRouter: IDrawer[] = [
       drawerLabel: ({color}) => <DrawerLabel i18nKey="drawer.home" color={color} />,
       drawerIcon: ({color, focused: _focused, size}: any) => (
         <FontAwesomeIcon icon={faHome} color={color} size={size} />
-      ),
-    },
-  },
-  {
-    name: 'Categories',
-    component: CategoriesNavigator,
-    options: {
-      drawerLabel: ({color}) => <DrawerLabel i18nKey="drawer.categories" color={color} />,
-      drawerIcon: ({color, focused: _focused, size}) => (
-        <FontAwesomeIcon icon={faBookBookmark} color={color} size={size} />
       ),
     },
   },
