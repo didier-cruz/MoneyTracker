@@ -40,7 +40,12 @@ local.properties
 node_modules/
 npm-debug.log
 yarn-error.log
-yarn.lock
+# Los lockfiles SI se versionan. Estaban ignorados, asi que cada
+# `install` volvia a resolver el grafo entero y dos maquinas —o la
+# misma en dos momentos— no construian lo mismo; de ahi la racha de
+# commits "fix: upgrade libraries" / "babel config conflicts".
+# Este proyecto usa Yarn 4 (`.yarnrc.yml`, nodeLinker: node-modules),
+# asi que el lockfile que cuenta es `yarn.lock`; npm no se usa.
 package-lock.json
 
 # fastlane
@@ -60,7 +65,8 @@ package-lock.json
 
 # Ruby / CocoaPods
 **/Pods/
-**/Podfile.lock
+# `Podfile.lock` tambien se versiona: fija las versiones nativas de los
+# pods, que es justo lo que hace reproducible un build de iOS.
 /vendor/bundle/
 
 # Temporary files created by Metro to check the health of the file watcher
