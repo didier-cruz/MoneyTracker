@@ -1,12 +1,6 @@
 import {Text, Title} from '@redshank/native';
 import React from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {
@@ -15,9 +9,11 @@ import {
   ScrollContainer,
   Spacer,
 } from '@components/atoms';
+import {ConfirmDialog} from '@components/organisms/feedback';
 import {AccountsNavParams} from '@navigation/[accounts]/AccountsNavigator/types';
 import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
 import {useTransferScreen} from '@hooks/useTransferScreen';
+import {useNoticeDialog} from '@hooks/useNoticeDialog';
 import AccountSelectorCard from './partials/AccountSelectorCard';
 import TransferDivider from './partials/TransferDivider';
 import AmountCard from './partials/AmountCard';
@@ -76,14 +72,24 @@ export const Transfer = ({navigation}: TransferProps) => {
     submitTransfer,
   } = useTransferScreen();
 
+  const {notice, showNotice, dismissNotice} = useNoticeDialog();
+
+  // Was `Alert.alert(...); navigation.goBack();` fired back to back —
+  // a native `Alert` renders OUTSIDE the React tree, so it stayed on
+  // screen even after `goBack()` popped this screen underneath it. A
+  // JS-rendered `ConfirmDialog` would instead unmount WITH this screen,
+  // so the equivalent behavior here is to wait for the dialog's own
+  // dismissal before navigating back (see `onDismissDoneNotice`).
   const handleConfirm = async () => {
     const success = await submitTransfer();
     if (success) {
-      Alert.alert(t('transfer.doneTitle'), t('transfer.doneMessage'), [{text: t('common.ok')}], {
-        cancelable: false,
-      });
-      navigation.goBack();
+      showNotice('info', t('transfer.doneTitle'), t('transfer.doneMessage'));
     }
+  };
+
+  const onDismissDoneNotice = () => {
+    dismissNotice();
+    navigation.goBack();
   };
 
   const pickerAccounts = pickerTarget ? accountsForPicker(pickerTarget) : [];
@@ -91,6 +97,7 @@ export const Transfer = ({navigation}: TransferProps) => {
     pickerTarget === 'from' ? t('transfer.pickFromTitle') : t('transfer.pickToTitle');
 
   return (
+    <>
     <KeyboardContainer>
       <ScrollContainer>
         <ScreenContainer>
@@ -106,7 +113,10 @@ export const Transfer = ({navigation}: TransferProps) => {
             <Title level={2}>{t('transfer.title')}</Title>
           </View>
 
-          <Text color={colors[gray][0]} style={styles.explainer}>
+          <Text
+            color={colors[gray][0]}
+            containerStyle={styles.explainerContainer}
+            style={styles.explainer}>
             {t('transfer.explainer')}
           </Text>
 
@@ -224,6 +234,17 @@ export const Transfer = ({navigation}: TransferProps) => {
         </ScreenContainer>
       </ScrollContainer>
     </KeyboardContainer>
+
+      <ConfirmDialog
+        visible={notice.visible}
+        tone={notice.tone}
+        title={notice.title}
+        message={notice.message}
+        onRequestClose={onDismissDoneNotice}
+        primaryLabel={t('common.ok')}
+        onPrimaryPress={onDismissDoneNotice}
+      />
+    </>
   );
 };
 
@@ -237,8 +258,21 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 10,
   },
-  explainer: {
+  // `Text` (from `@redshank/native`) wraps its `TextNative` in an outer
+  // `View` (see `Text.js`) that only gets `containerStyle`, never `style`
+  // — `style`'s `width` was applied to the INNER text node while the
+  // outer wrapper stayed unconstrained. Inside `ScreenContainer`
+  // (`alignItems: 'center'`, no stretch), an unconstrained wrapper
+  // shrink-wraps to the text's intrinsic single-line width instead of
+  // the screen's, so the sentence rendered on one line wider than the
+  // screen and overflowed symmetrically on both edges — in every
+  // language, since it's a layout bug, not a copy-length one. Forcing
+  // the WRAPPER to full width (via `containerStyle`) is what actually
+  // bounds the inner text and lets it wrap.
+  explainerContainer: {
     width: '100%',
+  },
+  explainer: {
     marginBottom: 5,
   },
   confirmRow: {

@@ -1,19 +1,27 @@
-import {ActivityIndicator, Alert, FlatList, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {useState} from 'react';
+import {ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text, Title} from '@redshank/native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {ScreenContainer} from '@components/atoms';
+import {ConfirmDialog} from '@components/organisms/feedback';
 import Header from '@screens/[categories]/components/Header/Header';
-import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
+import {accent, colors, gray, secondary, text as textColorKey, white} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
 import {formatDisplayDate} from '@utils/dateFormat';
 import {AccountsNavParams} from '@navigation/[accounts]/AccountsNavigator/types';
+import {useNoticeDialog} from '@hooks/useNoticeDialog';
 import {getKindLabel} from '../CreateAccount/partials/KindField/KindField';
 import {IArchivedAccount, useArchivedAccounts} from './useArchivedAccounts';
 import {useTranslation} from 'react-i18next';
 
 interface ArchivedAccountsProps
   extends NativeStackScreenProps<AccountsNavParams, 'ArchivedAccounts'> {}
+
+interface RestoreConfirmState {
+  visible: boolean;
+  account: IArchivedAccount | null;
+}
 
 /**
  * Now wires `unarchiveAccount` (added to `@db/queries` after this
@@ -39,7 +47,15 @@ export const ArchivedAccounts = (_props: ArchivedAccountsProps) => {
   const {accounts, status, errorMessage, reload, restoreAccountById} =
     useArchivedAccounts();
 
-  const onRestoreAccount = (account: IArchivedAccount) => {
+  const {notice, showNotice, dismissNotice} = useNoticeDialog();
+  const [restoreConfirm, setRestoreConfirm] = useState<RestoreConfirmState>({
+    visible: false,
+    account: null,
+  });
+  const closeRestoreConfirm = () => setRestoreConfirm(prev => ({...prev, visible: false}));
+  const confirmingAccount = restoreConfirm.account;
+
+  const restoreMessageFor = (account: IArchivedAccount) => {
     const direction = account.balance > 0 ? t('accounts.movingItUp') : t('accounts.movingItDown');
     const balanceImpact =
       account.balance !== 0
@@ -48,25 +64,26 @@ export const ArchivedAccounts = (_props: ArchivedAccountsProps) => {
             direction,
           })}`
         : '';
-    Alert.alert(
-      t('accounts.restoreTitle'),
-      `${t('accounts.restoreMessage', {name: account.name})}${balanceImpact}`,
-      [
-        {text: t('common.cancel'), style: 'cancel'},
-        {
-          text: t('accounts.restore'),
-          onPress: async () => {
-            const success = await restoreAccountById(account.id);
-            if (!success) {
-              Alert.alert(t('common.error'), t('accounts.restoreErrorMessage'));
-            }
-          },
-        },
-      ],
-    );
+    return `${t('accounts.restoreMessage', {name: account.name})}${balanceImpact}`;
+  };
+
+  const onPressRestoreAccount = (account: IArchivedAccount) => {
+    setRestoreConfirm({visible: true, account});
+  };
+
+  const onConfirmRestoreAccount = async () => {
+    if (!confirmingAccount) {
+      return;
+    }
+    closeRestoreConfirm();
+    const success = await restoreAccountById(confirmingAccount.id);
+    if (!success) {
+      showNotice('danger', t('common.error'), t('accounts.restoreErrorMessage'));
+    }
   };
 
   return (
+    <>
     <ScreenContainer>
       <Header
         title={t('accounts.archivedTitle')}
@@ -129,14 +146,14 @@ export const ArchivedAccounts = (_props: ArchivedAccountsProps) => {
               accessibilityActions={[{name: 'restore', label: t('accounts.restoreAccountAction')}]}
               onAccessibilityAction={event => {
                 if (event.nativeEvent.actionName === 'restore') {
-                  onRestoreAccount(item);
+                  onPressRestoreAccount(item);
                 }
               }}>
               <View style={styles.rowIcon}>
                 <Icon name={item.icon} color={colors[white][0]} size={18} />
               </View>
               <View style={styles.rowBody}>
-                <Text color="#373737">{item.name}</Text>
+                <Text color={colors[textColorKey][0]}>{item.name}</Text>
                 <Text color={colors[gray][0]} size={12}>
                   {t('accounts.archivedRowSubtitle', {
                     kind: getKindLabel(item.kind),
@@ -154,7 +171,7 @@ export const ArchivedAccounts = (_props: ArchivedAccountsProps) => {
                   accessibilityElementsHidden
                   importantForAccessibility="no-hide-descendants"
                   hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
-                  onPress={() => onRestoreAccount(item)}
+                  onPress={() => onPressRestoreAccount(item)}
                   style={styles.restoreButton}>
                   <Text color={colors[accent][2]} size={12}>
                     {t('accounts.restore')}
@@ -166,6 +183,29 @@ export const ArchivedAccounts = (_props: ArchivedAccountsProps) => {
         />
       )}
     </ScreenContainer>
+
+      <ConfirmDialog
+        visible={restoreConfirm.visible}
+        tone="info"
+        title={t('accounts.restoreTitle')}
+        message={confirmingAccount ? restoreMessageFor(confirmingAccount) : ''}
+        onRequestClose={closeRestoreConfirm}
+        secondaryLabel={t('common.cancel')}
+        onSecondaryPress={closeRestoreConfirm}
+        primaryLabel={t('accounts.restore')}
+        onPrimaryPress={onConfirmRestoreAccount}
+      />
+
+      <ConfirmDialog
+        visible={notice.visible}
+        tone={notice.tone}
+        title={notice.title}
+        message={notice.message}
+        onRequestClose={dismissNotice}
+        primaryLabel={t('common.ok')}
+        onPrimaryPress={dismissNotice}
+      />
+    </>
   );
 };
 

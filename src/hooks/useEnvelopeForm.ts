@@ -1,5 +1,4 @@
 import {useCallback, useEffect, useState} from 'react';
-import {Alert} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
 import {
@@ -10,6 +9,7 @@ import {
 } from '@db/queries';
 import {formatCentsToCurrency, parseAmountToCents} from '@utils/currency';
 import {icons} from '@data/icons';
+import {useNoticeDialog} from '@hooks/useNoticeDialog';
 
 const DEFAULT_ENVELOPE_KIND: EnvelopeKind = 'fund';
 
@@ -44,6 +44,11 @@ const centsToEditableAmountText = (cents: number): string =>
 export const useEnvelopeForm = (envelopeId?: number) => {
   const {t} = useTranslation();
   const mode: EnvelopeFormMode = envelopeId !== undefined ? 'edit' : 'create';
+
+  // Same fix as `useAccountForm` — see that hook's doc comment for why
+  // this state (not `Alert.alert`) is how a hook shows a save
+  // success/failure notice; `CreateEnvelope` owns the `<ConfirmDialog>`.
+  const {notice, showNotice, dismissNotice} = useNoticeDialog();
 
   const [inputText, setInputText] = useState<string>('');
   const [selectedIcon, onChangeSelectedIcon] = useState<IIcon>();
@@ -152,12 +157,7 @@ export const useEnvelopeForm = (envelopeId?: number) => {
           targetAmount,
         });
         setError('');
-        Alert.alert(
-          t('common.success'),
-          t('budgets.envelopeForm.updated'),
-          [{text: t('common.ok')}],
-          {cancelable: false},
-        );
+        showNotice('info', t('common.success'), t('budgets.envelopeForm.updated'));
         return true;
       }
       await insertEnvelope(db, {
@@ -171,12 +171,7 @@ export const useEnvelopeForm = (envelopeId?: number) => {
       onChangeSelectedIcon(undefined);
       setSelectedKind(DEFAULT_ENVELOPE_KIND);
       setTargetAmountText('');
-      Alert.alert(
-        t('common.success'),
-        t('budgets.envelopeForm.created'),
-        [{text: t('common.ok')}],
-        {cancelable: false},
-      );
+      showNotice('info', t('common.success'), t('budgets.envelopeForm.created'));
       return true;
     } catch (e: any) {
       setError(t('budgets.envelopeForm.saveError', {message: e.message}));
@@ -203,5 +198,7 @@ export const useEnvelopeForm = (envelopeId?: number) => {
     loadStatus,
     loadErrorMessage,
     reloadEnvelope: loadEnvelope,
+    notice,
+    dismissNotice,
   };
 };
