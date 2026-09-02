@@ -141,6 +141,9 @@ export const EnvelopesSection: FC<EnvelopesSectionProps> = ({
           keyExtractor={item => item.id.toString()}
           horizontal
           showsHorizontalScrollIndicator={false}
+          // Mismo motivo que en `CatalogList`: el recorte por celda de
+          // Android cortaba la sombra de las tarjetas por los lados.
+          removeClippedSubviews={false}
           style={styles.list}
           contentContainerStyle={styles.listContent}
           renderItem={({item}) => (

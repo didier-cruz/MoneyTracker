@@ -26,6 +26,18 @@ const CatalogList: FC<CatalogList> = ({
       data={data}
       horizontal
       showsHorizontalScrollIndicator={false}
+      /**
+       * `removeClippedSubviews={false}`: en Android va activado por
+       * defecto y RECORTA cada celda a sus propios limites. Como la
+       * sombra de `CatalogCard` (`elevation: 10`) se dibuja FUERA de la
+       * tarjeta, quedaba cortada a los lados en un rectangulo de bordes
+       * duros, visible como una costura alrededor de cada tarjeta.
+       *
+       * El coste de desactivarlo es que las celdas fuera de pantalla
+       * siguen montadas: con tres o cuatro cuentas —el caso real de
+       * esta lista— no se nota, y a cambio la sombra se ve entera.
+       */
+      removeClippedSubviews={false}
       style={styles.list}
       contentContainerStyle={styles.content}
       renderItem={({item}) => (
