@@ -1,6 +1,4 @@
 import React, {useState} from 'react';
-import {faPen} from '@fortawesome/free-solid-svg-icons/faPen';
-import {faTrash} from '@fortawesome/free-solid-svg-icons/faTrash';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from '@components/atoms/text/Text';
 import {ScreenContainer, ScrollContainer} from '@components/atoms';
@@ -14,15 +12,18 @@ import {CategoriesAdminNavigationProp as CreateCategoryNavigationProp} from '@na
 import {useCategoriesScreen} from '@hooks/useCategoriesScreen';
 import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
 import {
-  ActionSheet,
-  ConfirmDialog,
   TransactionActionsDialogs,
   useTransactionActions,
 } from '@components/organisms/feedback';
-import {useNoticeDialog} from '@hooks/useNoticeDialog';
-import {CategoriesHeader, CategoryGrid, CategoryMovementsList} from './partials';
-import {groupCategoryFinancesByDate, mapCategoriesToTiles} from './mappers';
+import CatalogList from '@components/organisms/Lists/CatalogList/CatalogList';
+import {CategoryMovementsList} from './partials';
+import {
+  ADD_CATEGORY_CARD_ID,
+  groupCategoryFinancesByDate,
+  mapCategoriesToCatalogCards,
+} from './mappers';
 import {useTranslation} from 'react-i18next';
+import {formatCentsToCurrency} from '@utils/currency';
 
 /**
  * El tipo (gastos / ingresos) ya NO viene en la ruta.
@@ -82,11 +83,8 @@ export const CategoriesScreen = () => {
     loadMoreFinances,
     isRefreshing,
     refresh,
-    fetchCategoryUsage,
-    deleteCategoryById,
   } = useCategoriesScreen(financeType);
 
-  const {notice, showNotice, dismissNotice} = useNoticeDialog();
 
   // `navigation` aqui es el de las pestanas Gastos/Ingresos; la ruta de
   // edicion vive en el stack de arriba, asi que se navega sin tipar el
@@ -101,88 +99,28 @@ export const CategoriesScreen = () => {
   // El menu guarda la categoria completa, no solo su id: al confirmar el
   // borrado la lista ya se habra recargado y buscarla por id daria
   // `undefined` justo cuando hace falta su nombre para el mensaje.
-  const [manageMenu, setManageMenu] = useState<{
-    visible: boolean;
-    category?: ICategory;
-  }>({visible: false});
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    visible: boolean;
-    category?: ICategory;
-    movements: number;
-    budgets: number;
-  }>({visible: false, movements: 0, budgets: 0});
-
-  const menuCategory = manageMenu.category;
-  const confirmCategory = deleteConfirm.category;
-
-  const closeManageMenu = () => setManageMenu(prev => ({...prev, visible: false}));
-  const closeDeleteConfirm = () =>
-    setDeleteConfirm(prev => ({...prev, visible: false}));
-
   const onPressAdd = () => navigation.navigate('CreateCategory');
 
-  const onLongPressCategory = (categoryId: number) => {
-    const category = categories.find(item => item.id === categoryId);
-    if (category) {
-      setManageMenu({visible: true, category});
-    }
-  };
+  /**
+   * Administrar categorias ya NO vive aqui: la pulsacion larga
+   * desaparecio con la rejilla, y editar/eliminar estan en el menu
+   * lateral (`CategoriesAdminScreen`), igual que las cuentas. Esta
+   * pestana es para RECORRER los movimientos de una categoria.
+   */
+  const cards = mapCategoriesToCatalogCards(categories, categoryTotals);
 
-  const onPressEdit = () => {
-    if (!menuCategory) {
+  /**
+   * Un toque en la tarjeta de alta crea; en cualquier otra, selecciona.
+   * Misma bifurcacion que `AccountsScreen.onPressCatalogItem`, porque la
+   * tarjeta de "crear" viaja dentro de los mismos datos que las reales.
+   */
+  const onPressCatalogItem = (id: number) => {
+    if (id === ADD_CATEGORY_CARD_ID) {
+      onPressAdd();
       return;
     }
-    closeManageMenu();
-    navigation.navigate('EditCategory', {categoryId: menuCategory.id});
+    selectCategory(id);
   };
-
-  // Se consulta el uso ANTES de abrir la confirmacion para poder decir
-  // cuantos movimientos hay en juego. El menu se cierra primero y la
-  // confirmacion se abre despues del `await`, con el retardo que
-  // documenta `MODAL_CHAIN_DELAY_MS`: encadenar dos modales sin pausa en
-  // Android deja el segundo sin aparecer.
-  const onPressDelete = async () => {
-    if (!menuCategory) {
-      return;
-    }
-    const category = menuCategory;
-    closeManageMenu();
-    const usage = await fetchCategoryUsage(category.id);
-    setDeleteConfirm({visible: true, category, ...usage});
-  };
-
-  const onConfirmDelete = async () => {
-    if (!confirmCategory) {
-      return;
-    }
-    closeDeleteConfirm();
-    const success = await deleteCategoryById(confirmCategory.id);
-    if (!success) {
-      showNotice('danger', t('common.error'), t('categories.deleteCategoryError'));
-    }
-  };
-
-  const deleteMessage = (): string => {
-    if (!confirmCategory) {
-      return '';
-    }
-    const {movements, budgets} = deleteConfirm;
-    if (budgets > 0) {
-      return t('categories.deleteCategoryWithBudgets', {
-        name: confirmCategory.name,
-        count: movements,
-      });
-    }
-    if (movements > 0) {
-      return t('categories.deleteCategoryWithMovements', {
-        name: confirmCategory.name,
-        count: movements,
-      });
-    }
-    return t('categories.deleteCategoryPlain', {name: confirmCategory.name});
-  };
-
-  const tiles = mapCategoriesToTiles(categories, categoryTotals);
   const sections = groupCategoryFinancesByDate(financeItems);
   const selectedCategory = categories.find(category => category.id === selectedCategoryId);
 
@@ -209,11 +147,35 @@ export const CategoriesScreen = () => {
             />
           </View>
 
-          <CategoriesHeader
-            financeType={financeType}
-            totalForPeriod={totalForPeriod}
-            status={categoriesStatus}
-          />
+          {/* Solo la leyenda del periodo y su cifra. Fuera el titulo
+              ("Categorias de gastos", que la pestana ya dice) y el texto
+              de ayuda: entre los dos empujaban la lista de movimientos
+              por debajo del pliegue, y el objetivo de este rediseno es
+              que se vean al abrir la pantalla. */}
+          <View style={styles.totalBlock} accessible accessibilityRole="text">
+            <Text color={colors[gray][0]} size={12}>
+              {t(`categories.tabCopy.${financeType}.totalLabel`)}
+            </Text>
+            {categoriesStatus === 'loading' ? (
+              <ActivityIndicator
+                size="small"
+                color={colors[gray][0]}
+                accessibilityLabel={t('categories.loadingCategories')}
+                style={styles.totalSpinner}
+              />
+            ) : (
+              <Text
+                color={
+                  financeType === 'expenses'
+                    ? colors.error[0]
+                    : colors.success[0]
+                }
+                size={32}
+                bold>
+                {formatCentsToCurrency(totalForPeriod)}
+              </Text>
+            )}
+          </View>
 
           {categoriesStatus === 'loading' && (
             <View style={styles.centered}>
@@ -242,18 +204,17 @@ export const CategoriesScreen = () => {
 
           {categoriesStatus === 'success' && (
             <>
-              {/* The grid always renders (even with zero real categories
-                  for this type) so its trailing "New" tile — the only way
-                  to create a category from this screen — is always
-                  reachable; see `mapCategoriesToTiles`'s doc comment. Not
-                  from an approved prototype for the zero-categories case
-                  specifically, flagged for review. */}
-              <CategoryGrid
-                tiles={tiles}
-                selectedId={selectedCategoryId}
-                onPressCategory={selectCategory}
-                onPressAdd={onPressAdd}
-                onLongPressCategory={onLongPressCategory}
+              {/* La MISMA lista horizontal que las cuentas: las dos
+                  mitades de Movimientos hacen lo mismo —elegir un
+                  elemento para ver sus movimientos— asi que comparten
+                  componente, incluido el aire para las sombras y el
+                  desplazamiento hasta el borde. La tarjeta de alta va
+                  siempre al final, tambien sin categorias, para que
+                  crear la primera sea alcanzable. */}
+              <CatalogList
+                data={cards}
+                selectedId={selectedCategoryId ?? -2}
+                onPressItem={onPressCatalogItem}
               />
 
               {categories.length === 0 ? (
@@ -282,53 +243,8 @@ export const CategoriesScreen = () => {
         </View>
       </ScrollContainer>
 
-      <ActionSheet
-        visible={manageMenu.visible}
-        onClose={closeManageMenu}
-        title={
-          menuCategory ? t('categories.manageCategory', {name: menuCategory.name}) : ''
-        }
-        actions={[
-          {
-            key: 'edit',
-            label: t('categories.edit'),
-            icon: faPen,
-            onPress: onPressEdit,
-          },
-          {
-            key: 'delete',
-            label: t('categories.delete'),
-            icon: faTrash,
-            tone: 'destructive',
-            onPress: onPressDelete,
-          },
-        ]}
-      />
-
-      <ConfirmDialog
-        visible={deleteConfirm.visible}
-        tone="danger"
-        title={t('categories.deleteCategoryTitle')}
-        message={deleteMessage()}
-        onRequestClose={closeDeleteConfirm}
-        secondaryLabel={t('common.cancel')}
-        onSecondaryPress={closeDeleteConfirm}
-        primaryLabel={t('categories.delete')}
-        destructive
-        onPrimaryPress={onConfirmDelete}
-      />
-
       <TransactionActionsDialogs {...transactionActions.dialogProps} />
 
-      <ConfirmDialog
-        visible={notice.visible}
-        tone={notice.tone}
-        title={notice.title}
-        message={notice.message}
-        onRequestClose={dismissNotice}
-        primaryLabel={t('common.ok')}
-        onPrimaryPress={dismissNotice}
-      />
     </ScreenContainer>
   );
 };
@@ -340,6 +256,14 @@ const styles = StyleSheet.create({
   typeFilter: {
     paddingHorizontal: 20,
     marginBottom: 12,
+  },
+  totalBlock: {
+    paddingHorizontal: 20,
+    marginBottom: 6,
+  },
+  totalSpinner: {
+    alignSelf: 'flex-start',
+    marginVertical: 8,
   },
   content: {
     width: '100%',
