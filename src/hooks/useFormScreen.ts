@@ -1,10 +1,20 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
-import {getAccounts, getCategories, IAccountWithBalance, insertFinance} from '@db/queries';
+import {
+  getAccounts,
+  getCategories,
+  getFinanceById,
+  IAccountWithBalance,
+  insertFinance,
+  updateFinance,
+} from '@db/queries';
+import {formatCentsToCurrency} from '@utils/currency';
 import {parseAmountToCents} from '@utils/currency';
 
 export type CategoriesStatus = 'loading' | 'success' | 'error';
+export type FormMode = 'create' | 'edit';
+export type FinanceLoadStatus = 'idle' | 'loading' | 'success' | 'error';
 export type AccountsStatus = 'loading' | 'success' | 'error';
 export type TransactionType = 'expense' | 'income';
 
@@ -14,7 +24,20 @@ export type TransactionType = 'expense' | 'income';
 // since money parsing/formatting isn't specific to this one screen.
 export {parseAmountToCents};
 
-export const useFormScreen = () => {
+/**
+ * Estado del formulario de movimiento, para crear Y para editar.
+ *
+ * Con `financeId` entra en modo edicion: precarga importe, tipo,
+ * categoria y cuenta del movimiento, y al guardar llama a
+ * `updateFinance` en vez de `insertFinance`.
+ *
+ * Una PATA DE TRANSFERENCIA no se puede editar aqui —ver
+ * `updateFinance`—, asi que el modo edicion la rechaza al cargarla en
+ * vez de dejar al usuario rellenar un formulario que va a fallar al
+ * guardar.
+ */
+export const useFormScreen = (financeId?: number) => {
+  const mode: FormMode = financeId === undefined ? 'create' : 'edit';
   const {t} = useTranslation();
   const [inputText, onChangeInputText] = useState<string>('');
 
@@ -47,6 +70,11 @@ export const useFormScreen = () => {
 
   const [amountError, setAmountError] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const [financeStatus, setFinanceStatus] = useState<FinanceLoadStatus>(
+    financeId === undefined ? 'success' : 'loading',
+  );
+  const [financeErrorMessage, setFinanceErrorMessage] = useState<string>('');
 
   const loadCategories = useCallback(async () => {
     setCategoriesStatus('loading');
@@ -125,6 +153,66 @@ export const useFormScreen = () => {
     onChangeSelectedCategory(category);
   };
 
+  /**
+   * Precarga el movimiento en modo edicion. Depende de `categories` y
+   * `accounts` porque el formulario trabaja con los OBJETOS
+   * seleccionados, no con ids: hay que resolver la categoria y la
+   * cuenta del movimiento contra las listas ya cargadas para que la
+   * grilla y los chips los marquen.
+   */
+  const loadFinance = useCallback(async () => {
+    if (financeId === undefined) {
+      return;
+    }
+    if (categoriesStatus !== 'success' || accountsStatus !== 'success') {
+      return;
+    }
+    setFinanceStatus('loading');
+    setFinanceErrorMessage('');
+    try {
+      const db = await getDbConnection();
+      const row = await getFinanceById(db, financeId);
+      if (!row) {
+        setFinanceErrorMessage(t('form.transactionNotFound'));
+        setFinanceStatus('error');
+        return;
+      }
+      if (row.transferGroupId !== null) {
+        setFinanceErrorMessage(t('form.transferNotEditable'));
+        setFinanceStatus('error');
+        return;
+      }
+      // El importe se muestra como MAGNITUD: el signo lo lleva el tipo,
+      // igual que al crear.
+      onChangeInputText(
+        formatCentsToCurrency(Math.abs(row.amount)).replace(/[$,]/g, ''),
+      );
+      if (row.category) {
+        setSelectedType(row.category.type === 'income' ? 'income' : 'expense');
+        onChangeSelectedCategory(
+          categories.find(category => category.id === row.category?.id) ??
+            row.category,
+        );
+      }
+      const account = accounts.find(item => item.id === row.account.id);
+      if (account) {
+        setSelectedAccount(account);
+      }
+      setFinanceStatus('success');
+    } catch (e: any) {
+      setFinanceErrorMessage(
+        t('form.loadTransactionError', {
+          message: e?.message ?? t('common.unknownError'),
+        }),
+      );
+      setFinanceStatus('error');
+    }
+  }, [financeId, categoriesStatus, accountsStatus, categories, accounts, t]);
+
+  useEffect(() => {
+    loadFinance();
+  }, [loadFinance]);
+
   const saveTransaction = async (): Promise<boolean> => {
     if (!selectedCategory) {
       setAmountError(t('form.chooseCategoryFirst'));
@@ -143,6 +231,17 @@ export const useFormScreen = () => {
     setIsSaving(true);
     try {
       const db = await getDbConnection();
+      if (mode === 'edit' && financeId !== undefined) {
+        await updateFinance(db, financeId, {
+          amount: amountInCents,
+          idCategory: selectedCategory.id,
+          idAccount: selectedAccount.id,
+        });
+        // Al editar NO se limpia el formulario: la pantalla vuelve atras
+        // y limpiar dejaria ver los campos vaciarse durante la
+        // transicion.
+        return true;
+      }
       await insertFinance(db, {
         amount: amountInCents,
         idCategory: selectedCategory.id,
@@ -164,6 +263,10 @@ export const useFormScreen = () => {
   };
 
   return {
+    mode,
+    financeStatus,
+    financeErrorMessage,
+    reloadFinance: loadFinance,
     inputText,
     onChangeInputText,
     selectedType,

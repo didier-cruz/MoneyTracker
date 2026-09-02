@@ -1,6 +1,6 @@
 import {Title} from '@components/atoms/text/Title';
 import {Text} from '@components/atoms/text/Text';
-import {StyleSheet, View} from 'react-native';
+import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 
 import {colors, gray} from '@constants/colors/colors';
@@ -11,9 +11,17 @@ import {formatCentsToCurrency} from '@utils/currency';
 import i18n from '@i18n';
 import {useTranslation} from 'react-i18next';
 
+/**
+ * `onLongPress` (opcional) convierte la fila en pulsable para abrir el
+ * menu de administrar el movimiento — ver `useTransactionActions`. Sin
+ * el, la fila sigue siendo una `View` sin ningun tactil: no todas las
+ * listas que pintan movimientos permiten administrarlos (la vista previa
+ * de Balance sí, un resumen de solo lectura no tendria por que).
+ */
 function TransactItem(transactItem: TransactItem) {
   useTranslation();
-  const {category, color, date, icon, amount, containerStyle} = transactItem;
+  const {category, color, date, icon, amount, containerStyle, onLongPress} =
+    transactItem;
   // `amount` is SIGNED integer cents (see the global `TransactItem` type)
   // — never a float, never dollars. `formatCentsToCurrency` already
   // prefixes a negative amount with "-"; only the "+" for a positive one
@@ -26,11 +34,16 @@ function TransactItem(transactItem: TransactItem) {
     direction: positive ? i18n.t('common.directionIn') : i18n.t('common.directionOut'),
     amount: formatCentsToCurrency(Math.abs(amount)),
   });
+  const Wrapper: any = onLongPress ? TouchableOpacity : View;
   return (
-    <View
+    <Wrapper
       style={[styles.container, containerStyle]}
       accessible
-      accessibilityLabel={accessibilityLabel}>
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={onLongPress ? i18n.t('form.manageTransactionHint') : undefined}
+      onLongPress={onLongPress}
+      delayLongPress={350}
+      activeOpacity={0.7}>
       <View style={styles.left}>
         <View
           style={{
@@ -71,7 +84,7 @@ function TransactItem(transactItem: TransactItem) {
           size={20}
         />
       </View>
-    </View>
+    </Wrapper>
   );
 }
 

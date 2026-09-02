@@ -23,9 +23,11 @@
       "to": "Transferencia a {{name}}",
       "from": "Transferencia de {{name}}",
       "paymentFrom": "Pago de {{name}}",
-      "unknownAccount": "cuenta desconocida"
+      "unknownAccount": "cuenta desconocida",
+      "label": "Transferencia"
     },
-    "noCategory": "Sin categoría"
+    "noCategory": "Sin categoría",
+    "back": "Volver"
   },
   "drawer": {
     "home": "Inicio",
@@ -381,7 +383,21 @@
     "categoryHeading": "Categoría",
     "categoryCountExpense": "{{count}} de gasto",
     "categoryCountIncome": "{{count}} de ingreso",
-    "manageCategories": "Más categorías"
+    "manageCategories": "Más categorías",
+    "editTitle": "Editar movimiento",
+    "loadingTransaction": "Cargando movimiento",
+    "transactionNotFound": "No se encontró el movimiento",
+    "loadTransactionError": "No se pudo cargar el movimiento: {{message}}",
+    "loadTransactionFailed": "No se pudo cargar el movimiento.",
+    "editTransaction": "Editar",
+    "deleteTransaction": "Eliminar",
+    "manageTransactionHint": "Mantén pulsado un movimiento para editarlo o eliminarlo",
+    "deleteTransactionTitle": "¿Eliminar el movimiento?",
+    "deleteTransactionMessage": "Se eliminará {{description}}. El saldo de la cuenta se recalcula al instante.",
+    "deleteTransferMessage": "Se eliminará la transferencia completa de {{amount}} entre {{from}} y {{to}}. Se borran LAS DOS partes: media transferencia dejaría dinero descontado que nadie recibió.",
+    "deleteTransactionError": "No se pudo eliminar el movimiento. Inténtalo de nuevo.",
+    "transferNotEditableTitle": "Las transferencias no se editan",
+    "transferNotEditable": "Una transferencia son dos movimientos espejo, y cambiar solo uno inventaría dinero. Elimínala y vuelve a crearla desde Transferir."
   },
   "icons": {
     "pickerTitle": "Elige un ícono",

@@ -9,6 +9,9 @@ import {useTranslation} from 'react-i18next';
 
 type TransactList = {
   sectionData: SectionTransactItem[];
+  /** Pulsacion larga sobre una fila: abre administrar el movimiento.
+   * Opcional — sin el las filas no son pulsables. */
+  onLongPressItem?: (financeId: number) => void;
   /**
    * The list's header title — the SELECTED account's name (e.g.
    * "Efectivo"), per the approved prototype, which pairs it with
@@ -34,6 +37,7 @@ type TransactList = {
 
 const TransactList: FC<TransactList> = ({
   sectionData,
+  onLongPressItem,
   headerTitle,
   headerSubtitle,
   onEndReached,
@@ -61,7 +65,15 @@ const TransactList: FC<TransactList> = ({
             }
             style={styles.section}
             renderItem={({item}) => (
-              <TransactItem {...item} containerStyle={styles.row} />
+              <TransactItem
+                {...item}
+                containerStyle={styles.row}
+                onLongPress={
+                  onLongPressItem && item.id !== undefined
+                    ? () => onLongPressItem(item.id as number)
+                    : undefined
+                }
+              />
             )}
             ItemSeparatorComponent={() => <View style={styles.divider} />}
             onEndReached={onEndReached}

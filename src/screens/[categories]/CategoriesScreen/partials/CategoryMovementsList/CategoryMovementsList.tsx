@@ -11,6 +11,8 @@ interface CategoryMovementsListProps {
   /** Selected category's display name, for the empty-state message. */
   categoryName?: string;
   sections: SectionTransactItem[];
+  /** Pulsacion larga sobre una fila: administrar el movimiento. */
+  onLongPressItem?: (financeId: number) => void;
   /** Rows currently loaded (grows as `onEndReached` pages in more) — not
    * a total row count from the DB (`@db/queries` exposes no such
    * count), so this reads as "N movements loaded so far", not
@@ -42,6 +44,7 @@ interface CategoryMovementsListProps {
  */
 export const CategoryMovementsList: FC<CategoryMovementsListProps> = ({
   categoryName,
+  onLongPressItem,
   sections,
   count,
   status,
@@ -107,7 +110,16 @@ export const CategoryMovementsList: FC<CategoryMovementsListProps> = ({
           keyExtractor={(item, index) =>
             item.id !== undefined ? String(item.id) : `${item.category}-${index}`
           }
-          renderItem={({item}) => <TransactItem {...item} />}
+          renderItem={({item}) => (
+            <TransactItem
+              {...item}
+              onLongPress={
+                onLongPressItem && item.id !== undefined
+                  ? () => onLongPressItem(item.id as number)
+                  : undefined
+              }
+            />
+          )}
           renderSectionHeader={({section: {date}}) => (
             <Title level={3} style={styles.sectionTitle}>
               {date}

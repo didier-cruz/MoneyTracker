@@ -23,9 +23,11 @@
       "to": "Transfer to {{name}}",
       "from": "Transfer from {{name}}",
       "paymentFrom": "Payment from {{name}}",
-      "unknownAccount": "unknown account"
+      "unknownAccount": "unknown account",
+      "label": "Transfer"
     },
-    "noCategory": "No category"
+    "noCategory": "No category",
+    "back": "Back"
   },
   "drawer": {
     "home": "Home",
@@ -381,7 +383,21 @@
     "categoryHeading": "Category",
     "categoryCountExpense": "{{count}} expense categories",
     "categoryCountIncome": "{{count}} income categories",
-    "manageCategories": "More categories"
+    "manageCategories": "More categories",
+    "editTitle": "Edit transaction",
+    "loadingTransaction": "Loading transaction",
+    "transactionNotFound": "Transaction not found",
+    "loadTransactionError": "The transaction could not be loaded: {{message}}",
+    "loadTransactionFailed": "The transaction could not be loaded.",
+    "editTransaction": "Edit",
+    "deleteTransaction": "Delete",
+    "manageTransactionHint": "Long-press a transaction to edit or delete it",
+    "deleteTransactionTitle": "Delete this transaction?",
+    "deleteTransactionMessage": "{{description}} will be deleted. The account balance is recalculated immediately.",
+    "deleteTransferMessage": "The whole {{amount}} transfer between {{from}} and {{to}} will be deleted. BOTH halves go: half a transfer would leave money debited that nobody received.",
+    "deleteTransactionError": "The transaction could not be deleted. Please try again.",
+    "transferNotEditableTitle": "Transfers cannot be edited",
+    "transferNotEditable": "A transfer is two mirrored movements, and changing only one would invent money. Delete it and create it again from Transfer."
   },
   "icons": {
     "pickerTitle": "Choose an icon",

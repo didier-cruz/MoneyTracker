@@ -9,6 +9,8 @@ import {useTranslation} from 'react-i18next';
 export type FinancesStatus = 'loading' | 'error' | 'success';
 
 interface FragmentSectionProps extends CatalogList {
+  /** Pulsacion larga sobre un movimiento: administrarlo. */
+  onLongPressFinance?: (financeId: number) => void;
   transactSections: SectionTransactItem[];
   /** Passed straight through to `TransactList`'s own `headerTitle` —
    * see that component's doc comment (the selected account's name). */
@@ -27,6 +29,7 @@ interface FragmentSectionProps extends CatalogList {
 
 const FragmentSection: FC<FragmentSectionProps> = ({
   data,
+  onLongPressFinance,
   selectedId,
   onPressItem,
   onPressManageItem,
@@ -94,6 +97,7 @@ const FragmentSection: FC<FragmentSectionProps> = ({
 
       {financesStatus === 'success' && transactSections.length > 0 && (
         <TransactList
+          onLongPressItem={onLongPressFinance}
           sectionData={transactSections}
           headerTitle={transactHeaderTitle}
           headerSubtitle={transactHeaderSubtitle}

@@ -29,6 +29,14 @@ export const StackNav = () => {
           animation: 'none',
         }}
       />
+      <Stack.Screen
+        name="EditTransaction"
+        component={FormScreen}
+        options={{
+          title: '',
+          animation: 'none',
+        }}
+      />
       <Stack.Screen name="Categories" component={CategoriesNavigator} />
     </Stack.Navigator>
   );

@@ -61,6 +61,9 @@ declare global {
      * list (out of this slice's scope), so this is opt-in per caller
      * instead. */
     containerStyle?: ViewStyle;
+    /** Abre el menu de administrar el movimiento (editar / eliminar).
+     * Opcional: sin el, la fila no es pulsable — ver `TransactItem`. */
+    onLongPress?: () => void;
   }
   interface CatalogCard {
     id: number;

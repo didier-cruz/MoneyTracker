@@ -6,7 +6,12 @@ import {faPen} from '@fortawesome/free-solid-svg-icons/faPen';
 import {faBoxArchive} from '@fortawesome/free-solid-svg-icons/faBoxArchive';
 import {ScreenTemplate} from '@components/templates/ScreenTemplate';
 import {FragmentSection} from '@components/templates/FragmentSection';
-import {ActionSheet, ConfirmDialog} from '@components/organisms/feedback';
+import {
+  ActionSheet,
+  ConfirmDialog,
+  TransactionActionsDialogs,
+  useTransactionActions,
+} from '@components/organisms/feedback';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AccountsNavParams} from '@navigation/[accounts]/AccountsNavigator/types';
 import {accent, colors, gray, primary, secondary, white} from '@constants/colors/colors';
@@ -55,6 +60,18 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
     isRefreshing,
     refresh,
   } = useAccountsScreen();
+
+  // La edicion vive en otro stack (`Outcomes` -> `EditTransaction`), asi
+  // que se navega por el navegador padre sin tipar el destino, igual que
+  // hace `FormScreen` para volver a Balance.
+  const transactionActions = useTransactionActions({
+    onEdit: financeId =>
+      (navigation.getParent() as any)?.navigate('Outcomes', {
+        screen: 'EditTransaction',
+        params: {financeId},
+      }),
+    onChanged: refresh,
+  });
 
   const {notice, showNotice, dismissNotice} = useNoticeDialog();
   const [accountMenu, setAccountMenu] = useState<AccountMenuState>({
@@ -236,6 +253,7 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
           ) : null}
 
           <FragmentSection
+            onLongPressFinance={transactionActions.open}
             data={mapAccountsToCatalogCards(accounts)}
             selectedId={selectedAccountId ?? ADD_ACCOUNT_CARD_ID}
             onPressItem={onPressCatalogItem}
@@ -303,6 +321,8 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
         primaryLabel={t('common.ok')}
         onPrimaryPress={dismissNotice}
       />
+      <TransactionActionsDialogs {...transactionActions.dialogProps} />
+
     </>
   );
 };

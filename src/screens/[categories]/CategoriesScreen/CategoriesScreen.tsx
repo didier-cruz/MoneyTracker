@@ -10,7 +10,12 @@ import {CategoriesTopTabsNavigatorParams} from '@navigation/[categories]/Categor
 import {CreateCategoryNavigationProp} from '@navigation/[categories]/CategoriesNavigator/types';
 import {useCategoriesScreen} from '@hooks/useCategoriesScreen';
 import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
-import {ActionSheet, ConfirmDialog} from '@components/organisms/feedback';
+import {
+  ActionSheet,
+  ConfirmDialog,
+  TransactionActionsDialogs,
+  useTransactionActions,
+} from '@components/organisms/feedback';
 import {useNoticeDialog} from '@hooks/useNoticeDialog';
 import {CategoriesHeader, CategoryGrid, CategoryMovementsList} from './partials';
 import {groupCategoryFinancesByDate, mapCategoriesToTiles} from './mappers';
@@ -72,6 +77,16 @@ export const CategoriesScreen = ({route}: CategoriesScreenProps) => {
   } = useCategoriesScreen(financeType);
 
   const {notice, showNotice, dismissNotice} = useNoticeDialog();
+
+  // `navigation` aqui es el de las pestanas Gastos/Ingresos; la ruta de
+  // edicion vive en el stack de arriba, asi que se navega sin tipar el
+  // destino — mismo apano pragmatico que ya usa `onPressAdd` y que
+  // documenta `SiblingTabParamList` en `ResumenScreen`.
+  const transactionActions = useTransactionActions({
+    onEdit: financeId =>
+      (navigation as any).navigate('EditTransaction', {financeId}),
+    onChanged: refresh,
+  });
 
   // El menu guarda la categoria completa, no solo su id: al confirmar el
   // borrado la lista ya se habra recargado y buscarla por id daria
@@ -220,6 +235,7 @@ export const CategoriesScreen = ({route}: CategoriesScreenProps) => {
                 </View>
               ) : (
                 <CategoryMovementsList
+                  onLongPressItem={transactionActions.open}
                   categoryName={selectedCategory?.name}
                   sections={sections}
                   count={financeItems.length}
@@ -272,6 +288,8 @@ export const CategoriesScreen = ({route}: CategoriesScreenProps) => {
         destructive
         onPrimaryPress={onConfirmDelete}
       />
+
+      <TransactionActionsDialogs {...transactionActions.dialogProps} />
 
       <ConfirmDialog
         visible={notice.visible}
