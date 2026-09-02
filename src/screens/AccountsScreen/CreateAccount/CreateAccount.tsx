@@ -3,6 +3,7 @@ import {RouteProp} from '@react-navigation/native';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from '@components/atoms/text/Text';
 import {ScreenContainer, KeyboardContainer, Spacer} from '@components/atoms';
+import {ChipSelect} from '@components/atoms/ChipSelect';
 import {ConfirmDialog} from '@components/organisms/feedback';
 import {useAccountForm} from '@hooks/useAccountForm';
 import {ScrollView} from 'react-native-gesture-handler';
@@ -12,7 +13,7 @@ import SymbolList from '@screens/[categories]/CreateCategory/partials/SymbolList
 import SaveAction from '@screens/[categories]/CreateCategory/partials/SaveAction/SaveAction';
 import KindField from './partials/KindField/KindField';
 import {AccountsNavParams} from '@navigation/[accounts]/AccountsNavigator/types';
-import {accent, colors, secondary, white} from '@constants/colors/colors';
+import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
 import {useTranslation} from 'react-i18next';
 
 /**
@@ -67,6 +68,9 @@ export const CreateAccount = ({navigation, route}: CreateAccountProps) => {
     onChangeSelectedKind,
     initialBalanceText,
     onChangeInitialBalanceText,
+    balanceSign,
+    onChangeBalanceSign,
+    allowsNegativeBalance,
     nameError,
     amountError,
     formError,
@@ -157,6 +161,28 @@ export const CreateAccount = ({navigation, route}: CreateAccountProps) => {
             <Spacer space={20} />
             <KindField value={selectedKind} onChange={onChangeSelectedKind} />
             <Spacer space={20} />
+            {/* Solo en tarjeta y prestamo: el signo del saldo se elige
+                aqui en vez de teclearse, porque el `decimal-pad` de
+                Android no tiene tecla `-`. Ver `useAccountForm`. */}
+            {allowsNegativeBalance && (
+              <>
+                <ChipSelect
+                  label={t('accounts.balanceSignLabel')}
+                  value={balanceSign}
+                  onChange={onChangeBalanceSign}
+                  options={[
+                    {value: 'negative', label: t('accounts.balanceSignOwed')},
+                    {value: 'positive', label: t('accounts.balanceSignPositive')},
+                  ]}
+                />
+                <Text
+                  size={12}
+                  color={colors[gray][0]}
+                  style={stateStyles.hint}>
+                  {t('accounts.debtBalanceHint')}
+                </Text>
+              </>
+            )}
             <InputField
               inputText={initialBalanceText}
               onChangeInputText={onChangeInitialBalanceText}
@@ -211,6 +237,10 @@ const stateStyles = StyleSheet.create({
   formError: {
     paddingHorizontal: 20,
     marginBottom: 10,
+  },
+  hint: {
+    marginTop: 8,
+    marginBottom: 12,
   },
   retryButton: {
     marginTop: 15,

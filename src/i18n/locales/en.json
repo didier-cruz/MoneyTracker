@@ -99,7 +99,11 @@
       "created": "Account created",
       "saveError": "An error occurred saving the account: {{message}}"
     },
-    "titlePrefix": "My"
+    "titlePrefix": "My",
+    "balanceSignLabel": "Is this balance debt or credit?",
+    "balanceSignOwed": "I owe it",
+    "balanceSignPositive": "In my favor",
+    "debtBalanceHint": "On a card or a loan, what you owe is stored as a negative balance so it subtracts from your net worth."
   },
   "budgets": {
     "title": "Budgets",

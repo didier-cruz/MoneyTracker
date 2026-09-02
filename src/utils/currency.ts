@@ -19,7 +19,10 @@
  * why: a transaction amount is always a magnitude, and an account's
  * initial balance is typed the same way).
  */
-const parseDecimalStringToCents = (raw: string): number | null => {
+const parseDecimalStringToCents = (
+  raw: string,
+  {allowNegative = false}: {allowNegative?: boolean} = {},
+): number | null => {
   const trimmed = raw.trim();
   if (trimmed === '') {
     return null;
@@ -27,6 +30,20 @@ const parseDecimalStringToCents = (raw: string): number | null => {
 
   // `decimal-pad` can produce either separator depending on locale/keyboard.
   let normalized = trimmed.replace(',', '.');
+
+  // El signo se separa antes de validar el resto: asi la expresion
+  // regular sigue describiendo solo el numero, y un `-` en un campo que
+  // no admite negativos se rechaza igual que cualquier otro caracter
+  // invalido en vez de colarse.
+  let isNegative = false;
+  if (normalized.startsWith('-')) {
+    if (!allowNegative) {
+      return null;
+    }
+    isNegative = true;
+    normalized = normalized.slice(1).trim();
+  }
+
   if (normalized.startsWith('.')) {
     normalized = `0${normalized}`;
   }
@@ -56,7 +73,7 @@ const parseDecimalStringToCents = (raw: string): number | null => {
     return null;
   }
 
-  return cents;
+  return isNegative ? -cents : cents;
 };
 
 /**
@@ -80,13 +97,22 @@ export const parseAmountToCents = (raw: string): number | null => {
  * the same default `insertAccount` itself applies) and a typed `0` is
  * valid too — "start this account at $0.00" is a normal, common case,
  * not an error. Still returns `null` for genuinely invalid text.
+ *
+ * `allowNegative` lo activan las cuentas de tipo prestamo y tarjeta de
+ * credito, donde el saldo NORMAL es negativo porque representa una
+ * deuda. Para las demas sigue rechazando el signo: una cuenta de
+ * efectivo o un banco en negativo casi siempre es un error de tecleo, y
+ * dejarlo pasar en silencio falsea el patrimonio neto sin avisar.
  */
-export const parseInitialBalanceToCents = (raw: string): number | null => {
+export const parseInitialBalanceToCents = (
+  raw: string,
+  {allowNegative = false}: {allowNegative?: boolean} = {},
+): number | null => {
   const trimmed = raw.trim();
   if (trimmed === '') {
     return 0;
   }
-  return parseDecimalStringToCents(trimmed);
+  return parseDecimalStringToCents(trimmed, {allowNegative});
 };
 
 /**

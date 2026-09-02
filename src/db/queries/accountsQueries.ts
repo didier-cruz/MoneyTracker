@@ -31,6 +31,21 @@ import {isFiniteInteger} from './numberGuards';
  */
 export type AccountKind = 'cash' | 'bank' | 'credit_card' | 'loan' | 'receivable';
 
+/**
+ * Los tipos cuyo saldo NORMAL es negativo, porque representa una deuda.
+ * Es lo que decide si el formulario ofrece elegir el signo del saldo
+ * inicial: en una cuenta de efectivo o un banco un saldo negativo casi
+ * siempre es un error de tecleo, en una tarjeta o un prestamo es el
+ * caso corriente.
+ */
+export const DEBT_ACCOUNT_KINDS: readonly AccountKind[] = [
+  'credit_card',
+  'loan',
+] as const;
+
+export const isDebtAccountKind = (kind: AccountKind): boolean =>
+  DEBT_ACCOUNT_KINDS.includes(kind);
+
 export const ACCOUNT_KINDS: readonly AccountKind[] = [
   'cash',
   'bank',

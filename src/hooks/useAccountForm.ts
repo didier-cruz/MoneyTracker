@@ -3,6 +3,7 @@ import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
 import {AccountKind, getAccountById, insertAccount, updateAccount} from '@db/queries';
 import {formatCentsToCurrency, parseInitialBalanceToCents} from '@utils/currency';
+import {isDebtAccountKind} from '@db/queries';
 import {toIcon} from '@data/iconCatalog';
 import {useNoticeDialog} from '@hooks/useNoticeDialog';
 
@@ -26,12 +27,12 @@ type AccountFormError = {field: AccountFormErrorField; message: string};
  * reuses both existing money utilities instead of writing a new
  * cents<->string conversion.
  *
- * `Math.abs` is defensive, not expected to ever fire: this field's
- * keyboard has no `-` key (see `parseInitialBalanceToCents`), so every
- * `initialBalance` this form has ever produced is >= 0. Only a value
- * written outside this UI could be negative; showing its magnitude here
- * is a safer fallback than mis-parsing (or crashing on) a leading `-`
- * this field has never had to handle.
+ * Devuelve la MAGNITUD, sin signo: el signo no vive en este campo sino
+ * en `balanceSign`, un control aparte que solo aparece en las cuentas
+ * de tipo deuda. El teclado `decimal-pad` de Android no tiene tecla
+ * `-`, asi que pedirlo escrito no era viable; y separarlo obliga a
+ * declarar la intencion ("debo" / "a favor") en vez de depender de que
+ * el usuario se acuerde de un guion.
  */
 const centsToEditableAmountText = (cents: number): string =>
   formatCentsToCurrency(Math.abs(cents)).replace(/[$,]/g, '');
@@ -69,6 +70,11 @@ export const useAccountForm = (accountId?: number) => {
     useState<AccountKind>(DEFAULT_ACCOUNT_KIND);
 
   const [initialBalanceText, setInitialBalanceText] = useState<string>('');
+  /** Signo del saldo inicial. Solo se puede elegir en cuentas de tipo
+   * deuda; en las demas se fuerza a positivo. */
+  const [balanceSign, setBalanceSign] = useState<'positive' | 'negative'>(
+    'positive',
+  );
 
   // Un solo error a la vez, ETIQUETADO con el campo al que pertenece.
   // Antes era un `string` suelto que la pantalla pintaba siempre bajo el
@@ -108,6 +114,7 @@ export const useAccountForm = (accountId?: number) => {
       onChangeSelectedIcon(toIcon(account.icon));
       setSelectedKind(account.kind);
       setInitialBalanceText(centsToEditableAmountText(account.initialBalance));
+      setBalanceSign(account.initialBalance < 0 ? 'negative' : 'positive');
       setLoadStatus('success');
     } catch (e: any) {
       setLoadErrorMessage(
@@ -134,7 +141,21 @@ export const useAccountForm = (accountId?: number) => {
 
   const onChangeSelectedKind = (kind: AccountKind) => {
     setSelectedKind(kind);
+    // Al pasar a un tipo que no admite deuda, el signo vuelve a
+    // positivo: dejarlo en negativo guardaria un saldo negativo en una
+    // cuenta de efectivo por un control que ya no esta a la vista.
+    if (!isDebtAccountKind(kind)) {
+      setBalanceSign('positive');
+    }
   };
+
+  const onChangeBalanceSign = (sign: 'positive' | 'negative') => {
+    clearErrorFor('amount');
+    setBalanceSign(sign);
+  };
+
+  /** Si este tipo de cuenta ofrece elegir el signo del saldo. */
+  const allowsNegativeBalance = isDebtAccountKind(selectedKind);
 
   const onChangeInitialBalanceText = (text: string) => {
     clearErrorFor('amount');
@@ -164,7 +185,18 @@ export const useAccountForm = (accountId?: number) => {
       setFormError({field: 'form', message: t('accounts.form.iconRequired')});
       return false;
     }
-    const initialBalance = parseInitialBalanceToCents(initialBalanceText);
+    const magnitude = parseInitialBalanceToCents(initialBalanceText, {
+      // Se acepta tambien un `-` escrito a mano, no solo el control de
+      // signo: un valor pegado desde fuera o escrito con un teclado
+      // fisico no deberia rechazarse por la forma en que llego.
+      allowNegative: allowsNegativeBalance,
+    });
+    const initialBalance =
+      magnitude === null
+        ? null
+        : allowsNegativeBalance && balanceSign === 'negative'
+          ? -Math.abs(magnitude)
+          : magnitude;
     if (initialBalance === null) {
       setFormError({field: 'amount', message: t('accounts.form.invalidInitialBalance')});
       return false;
@@ -194,6 +226,7 @@ export const useAccountForm = (accountId?: number) => {
       onChangeSelectedIcon(undefined);
       setSelectedKind(DEFAULT_ACCOUNT_KIND);
       setInitialBalanceText('');
+      setBalanceSign('positive');
       showNotice('info', t('common.success'), t('accounts.form.created'));
       return true;
     } catch (e: any) {
@@ -213,6 +246,9 @@ export const useAccountForm = (accountId?: number) => {
     selectedKind,
     onChangeSelectedKind,
     initialBalanceText,
+    balanceSign,
+    onChangeBalanceSign,
+    allowsNegativeBalance,
     onChangeInitialBalanceText,
     nameError: formError?.field === 'name' ? formError.message : '',
     amountError: formError?.field === 'amount' ? formError.message : '',
