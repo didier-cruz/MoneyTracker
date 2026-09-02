@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: 8,
   },
   headerTitle: {
     flexShrink: 1,

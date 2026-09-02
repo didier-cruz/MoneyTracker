@@ -31,7 +31,13 @@ const MainHeader = ({title = '', subtitle}: MainHeaderProps) => {
     <View
       style={{
         flexDirection: 'row',
-        padding: 30,
+        // Menos aire por DEBAJO que a los lados: los 30 uniformes
+        // separaban el titulo de su propio contenido tanto como del
+        // borde de la pantalla, y en Movimientos dejaban un hueco
+        // grande entre el titulo y sus pestanas.
+        paddingHorizontal: 30,
+        paddingTop: 30,
+        paddingBottom: 12,
         width: '100%',
       }}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>

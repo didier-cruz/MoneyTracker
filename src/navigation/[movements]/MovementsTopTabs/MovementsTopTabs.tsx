@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   },
   track: {
     marginHorizontal: SCREEN_HORIZONTAL_PADDING,
-    marginTop: 10,
+    marginTop: 2,
     marginBottom: 6,
     backgroundColor: TRACK_BG,
     borderRadius: TRACK_RADIUS,

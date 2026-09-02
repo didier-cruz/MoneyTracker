@@ -157,7 +157,13 @@ const AccountsScreen = () => {
                 style={stateStyles.netWorthLabel}>
                 {t('accounts.netWorth')}
               </Text>
-              <Title level={2} color={colors[primary][0]}>
+              {/* `marginBottom={0}`: `Title` nivel 2 trae 15 por
+                  defecto —heredado de la libreria que se retiro— y aqui
+                  no separa nada, porque la fila esta alineada por
+                  linea base y el hueco de abajo ya lo pone el
+                  contenedor. Era la mayor parte del espacio entre el
+                  patrimonio y las tarjetas. */}
+              <Title level={2} color={colors[primary][0]} marginBottom={0}>
                 {formatCentsToCurrency(netWorth)}
               </Title>
             </View>
