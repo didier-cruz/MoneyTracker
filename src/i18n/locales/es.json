@@ -182,7 +182,12 @@
     },
     "envelopesSubtitle": "Dinero apartado",
     "daysRemaining_one": "Queda {{count}} día",
-    "daysRemaining_other": "Quedan {{count}} días"
+    "daysRemaining_other": "Quedan {{count}} días",
+    "deleteLimit": "Eliminar",
+    "deleteLimitTitle": "¿Eliminar el límite?",
+    "deleteLimitMessage": "Se quitará el límite mensual de «{{name}}». Sus movimientos no se tocan: solo dejas de tener un tope para esta categoría.",
+    "deleteLimitErrorMessage": "No se pudo eliminar el límite. Inténtalo de nuevo.",
+    "deleteLimitAccessibilityLabel": "Eliminar el límite de {{name}}"
   },
   "categories": {
     "expenses": "Gastos",

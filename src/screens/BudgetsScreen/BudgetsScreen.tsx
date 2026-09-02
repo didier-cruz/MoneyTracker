@@ -46,6 +46,11 @@ interface EnvelopeMenuState {
   envelope: IEnvelopeWithBalance | null;
 }
 
+interface DeleteLimitConfirmState {
+  visible: boolean;
+  budget: ICategoryBudgetWithSpent | null;
+}
+
 interface ArchiveEnvelopeConfirmState {
   visible: boolean;
   envelope: IEnvelopeWithBalance | null;
@@ -122,6 +127,7 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
     archiveEnvelopeById,
     setCategoryLimit,
     isSavingLimit,
+    deleteCategoryLimitById,
   } = useBudgetsScreen();
 
   const {notice, showNotice, dismissNotice} = useNoticeDialog();
@@ -134,6 +140,8 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
     useState<EnvelopeMenuState>({visible: false, envelope: null});
   const [archiveConfirm, setArchiveConfirm] =
     useState<ArchiveEnvelopeConfirmState>({visible: false, envelope: null});
+  const [deleteLimitConfirm, setDeleteLimitConfirm] =
+    useState<DeleteLimitConfirmState>({visible: false, budget: null});
   const [isSubmittingMovement, setIsSubmittingMovement] = useState(false);
 
   const closeAssignWithdrawSheet = () =>
@@ -142,6 +150,8 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
     setCategoryLimitSheet(prev => ({...prev, visible: false}));
   const closeEnvelopeMenu = () => setEnvelopeMenu(prev => ({...prev, visible: false}));
   const closeArchiveConfirm = () => setArchiveConfirm(prev => ({...prev, visible: false}));
+  const closeDeleteLimitConfirm = () =>
+    setDeleteLimitConfirm(prev => ({...prev, visible: false}));
 
   // Local `const`s (not the raw `envelopeMenu.envelope`/`archiveConfirm
   // .envelope` property accesses) so TypeScript can actually narrow
@@ -149,6 +159,7 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
   // doesn't narrow across a nested function boundary, a `const` does.
   const menuEnvelope = envelopeMenu.envelope;
   const confirmingEnvelope = archiveConfirm.envelope;
+  const confirmingBudget = deleteLimitConfirm.budget;
 
   // The one gesture for "manage this envelope" — no approved prototype
   // covers this interaction at all (see this screen's doc comment
@@ -170,6 +181,25 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
     const success = await archiveEnvelopeById(confirmingEnvelope.id);
     if (!success) {
       showNotice('danger', t('common.error'), t('budgets.archiveEnvelopeErrorMessage'));
+    }
+  };
+
+  // Borrar un limite se confirma igual que archivar un sobre: es
+  // irreversible y no hay deshacer. El mensaje aclara lo que la gente
+  // suele temer al borrar algo en una app de dinero — que se lleve por
+  // delante los movimientos de la categoria, cosa que no ocurre.
+  const onPressDeleteBudget = (budget: ICategoryBudgetWithSpent) => {
+    setDeleteLimitConfirm({visible: true, budget});
+  };
+
+  const onConfirmDeleteBudget = async () => {
+    if (!confirmingBudget) {
+      return;
+    }
+    closeDeleteLimitConfirm();
+    const success = await deleteCategoryLimitById(confirmingBudget.id);
+    if (!success) {
+      showNotice('danger', t('common.error'), t('budgets.deleteLimitErrorMessage'));
     }
   };
 
@@ -263,6 +293,7 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
           daysRemainingInMonth={getDaysRemainingInMonth(period)}
           onRetry={reloadBudgets}
           onPressBudget={onPressBudget}
+          onDeleteBudget={onPressDeleteBudget}
           onPressAddLimit={onPressAddLimit}
           categoriesWithoutLimitCount={categoriesWithoutBudget.length}
         />
@@ -348,6 +379,25 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
         primaryLabel={t('budgets.archive')}
         destructive
         onPrimaryPress={onConfirmArchiveEnvelope}
+      />
+
+      <ConfirmDialog
+        visible={deleteLimitConfirm.visible}
+        tone="danger"
+        title={t('budgets.deleteLimitTitle')}
+        message={
+          confirmingBudget
+            ? t('budgets.deleteLimitMessage', {
+                name: confirmingBudget.category.name,
+              })
+            : ''
+        }
+        onRequestClose={closeDeleteLimitConfirm}
+        secondaryLabel={t('common.cancel')}
+        onSecondaryPress={closeDeleteLimitConfirm}
+        primaryLabel={t('budgets.deleteLimit')}
+        destructive
+        onPrimaryPress={onConfirmDeleteBudget}
       />
 
       <ConfirmDialog

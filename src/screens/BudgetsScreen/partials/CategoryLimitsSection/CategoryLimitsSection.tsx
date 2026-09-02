@@ -17,6 +17,7 @@ interface CategoryLimitsSectionProps {
   daysRemainingInMonth: number;
   onRetry: () => void;
   onPressBudget: (budget: ICategoryBudgetWithSpent) => void;
+  onDeleteBudget: (budget: ICategoryBudgetWithSpent) => void;
   onPressAddLimit: () => void;
   /**
    * Cuantas categorias de gasto quedan SIN limite este mes
@@ -53,6 +54,7 @@ export const CategoryLimitsSection: FC<CategoryLimitsSectionProps> = ({
   daysRemainingInMonth,
   onRetry,
   onPressBudget,
+  onDeleteBudget,
   onPressAddLimit,
   categoriesWithoutLimitCount,
 }) => {
@@ -111,6 +113,7 @@ export const CategoryLimitsSection: FC<CategoryLimitsSectionProps> = ({
                 key={budget.id}
                 budget={budget}
                 onPress={() => onPressBudget(budget)}
+                onDelete={() => onDeleteBudget(budget)}
                 showSeparator={canAddLimit || index < budgets.length - 1}
               />
             ))

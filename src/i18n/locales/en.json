@@ -182,7 +182,12 @@
     },
     "envelopesSubtitle": "Money set aside",
     "daysRemaining_one": "{{count}} day left",
-    "daysRemaining_other": "{{count}} days left"
+    "daysRemaining_other": "{{count}} days left",
+    "deleteLimit": "Delete",
+    "deleteLimitTitle": "Delete this limit?",
+    "deleteLimitMessage": "The monthly limit for “{{name}}” will be removed. Its transactions are left untouched — you just stop having a cap for this category.",
+    "deleteLimitErrorMessage": "The limit could not be deleted. Please try again.",
+    "deleteLimitAccessibilityLabel": "Delete the limit for {{name}}"
   },
   "categories": {
     "expenses": "Expenses",
