@@ -12,6 +12,14 @@ export type AccountFormMode = 'create' | 'edit';
 export type AccountFormLoadStatus = 'idle' | 'loading' | 'success' | 'error';
 
 /**
+ * A que campo pertenece el error que se esta mostrando. `form` es para
+ * los que no cuelgan de ningun input —falta de icono, fallo al
+ * guardar— y la pantalla los pinta junto al boton de guardar.
+ */
+export type AccountFormErrorField = 'name' | 'amount' | 'form';
+type AccountFormError = {field: AccountFormErrorField; message: string};
+
+/**
  * Strips `formatCentsToCurrency`'s display decoration ("$", thousands
  * commas) so its output can seed the same editable `decimal-pad` text
  * field that `parseInitialBalanceToCents` later re-parses on save —
@@ -62,7 +70,11 @@ export const useAccountForm = (accountId?: number) => {
 
   const [initialBalanceText, setInitialBalanceText] = useState<string>('');
 
-  const [error, setError] = useState<string>('');
+  // Un solo error a la vez, ETIQUETADO con el campo al que pertenece.
+  // Antes era un `string` suelto que la pantalla pintaba siempre bajo el
+  // input del nombre, asi que "Saldo inicial no valido" aparecia debajo
+  // de un nombre correcto. Mismo arreglo que `useEnvelopeForm`.
+  const [formError, setFormError] = useState<AccountFormError | null>(null);
 
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
@@ -113,7 +125,14 @@ export const useAccountForm = (accountId?: number) => {
     loadAccount();
   }, [loadAccount]);
 
+  // Cada error se borra en cuanto el usuario toca el campo del que
+  // hablaba: dejarlo puesto mientras se corrige el valor hace que la
+  // pantalla contradiga lo que se esta escribiendo.
+  const clearErrorFor = (field: AccountFormErrorField) =>
+    setFormError(current => (current?.field === field ? null : current));
+
   const onChangeInputText = (text: string) => {
+    clearErrorFor('name');
     setInputText(text);
   };
 
@@ -122,10 +141,12 @@ export const useAccountForm = (accountId?: number) => {
   };
 
   const onChangeInitialBalanceText = (text: string) => {
+    clearErrorFor('amount');
     setInitialBalanceText(text);
   };
 
   const handlePressItem = (id: number, icon: string) => {
+    clearErrorFor('form');
     onChangeSelectedIcon({id, icon});
   };
 
@@ -140,16 +161,16 @@ export const useAccountForm = (accountId?: number) => {
    * without this hook reaching into navigation itself. */
   const saveAccount = async (): Promise<boolean> => {
     if (inputText.trim() === '') {
-      setError(t('accounts.form.nameRequired'));
+      setFormError({field: 'name', message: t('accounts.form.nameRequired')});
       return false;
     }
     if (!selectedIcon) {
-      setError(t('accounts.form.iconRequired'));
+      setFormError({field: 'form', message: t('accounts.form.iconRequired')});
       return false;
     }
     const initialBalance = parseInitialBalanceToCents(initialBalanceText);
     if (initialBalance === null) {
-      setError(t('accounts.form.invalidInitialBalance'));
+      setFormError({field: 'amount', message: t('accounts.form.invalidInitialBalance')});
       return false;
     }
     setIsSaving(true);
@@ -162,7 +183,7 @@ export const useAccountForm = (accountId?: number) => {
           kind: selectedKind,
           initialBalance,
         });
-        setError('');
+        setFormError(null);
         showNotice('info', t('common.success'), t('accounts.form.updated'));
         return true;
       }
@@ -172,7 +193,7 @@ export const useAccountForm = (accountId?: number) => {
         kind: selectedKind,
         initialBalance,
       });
-      setError('');
+      setFormError(null);
       setInputText('');
       onChangeSelectedIcon(undefined);
       setSelectedKind(DEFAULT_ACCOUNT_KIND);
@@ -180,7 +201,7 @@ export const useAccountForm = (accountId?: number) => {
       showNotice('info', t('common.success'), t('accounts.form.created'));
       return true;
     } catch (e: any) {
-      setError(t('accounts.form.saveError', {message: e.message}));
+      setFormError({field: 'form', message: t('accounts.form.saveError', {message: e.message})});
       return false;
     } finally {
       setIsSaving(false);
@@ -197,7 +218,9 @@ export const useAccountForm = (accountId?: number) => {
     onChangeSelectedKind,
     initialBalanceText,
     onChangeInitialBalanceText,
-    error,
+    nameError: formError?.field === 'name' ? formError.message : '',
+    amountError: formError?.field === 'amount' ? formError.message : '',
+    formError: formError?.field === 'form' ? formError.message : '',
     isSaving,
     canSave,
     saveAccount,

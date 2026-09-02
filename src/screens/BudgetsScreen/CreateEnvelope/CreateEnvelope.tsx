@@ -59,7 +59,9 @@ export const CreateEnvelope = ({navigation, route}: CreateEnvelopeProps) => {
     onChangeSelectedKind,
     targetAmountText,
     onChangeTargetAmountText,
-    error,
+    nameError,
+    amountError,
+    formError,
     canSave,
     saveEnvelope,
     loadStatus,
@@ -143,7 +145,7 @@ export const CreateEnvelope = ({navigation, route}: CreateEnvelopeProps) => {
               onChangeInputText={onChangeInputText}
               placeholder={t('budgets.envelopeNamePlaceholder')}
               accessibilityLabel={t('budgets.envelopeNamePlaceholder')}
-              error={error}
+              error={nameError}
             />
             <Spacer space={20} />
             <KindField
@@ -161,10 +163,18 @@ export const CreateEnvelope = ({navigation, route}: CreateEnvelopeProps) => {
                   : t('budgets.savingsGoalAccessibilityLabel')
               }
               keyboardType="decimal-pad"
-              error=""
+              error={amountError}
             />
             <SymbolList selectedIcon={selectedIcon} onPressItem={handlePressItem} />
             <Spacer space={20} />
+            {formError !== '' && (
+              <Text
+                color={colors[secondary][0]}
+                style={stateStyles.formError}
+                accessibilityLiveRegion="polite">
+                {formError}
+              </Text>
+            )}
             <SaveAction onSave={handleSave} disabled={!canSave} />
             <Spacer space={30} />
           </ScreenContainer>
@@ -195,6 +205,12 @@ const stateStyles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 8,
     textAlign: 'center',
+  },
+  // Los errores que no cuelgan de ningun input —falta el icono, fallo
+  // al guardar— se pintan aqui, junto al boton que los provoca.
+  formError: {
+    paddingHorizontal: 20,
+    marginBottom: 10,
   },
   retryButton: {
     marginTop: 15,
