@@ -82,6 +82,7 @@
     "createAccountTitle": "Crear cuenta",
     "createAccountMessage": "Registra efectivo guardado, una cuenta bancaria/tarjeta de crédito, o dinero que alguien te debe",
     "accountNamePlaceholder": "Nombre de la cuenta",
+    "accountTypeLabel": "Tipo de cuenta",
     "initialBalancePlaceholder": "Saldo inicial (opcional, ej. 0.00)",
     "initialBalanceAccessibilityLabel": "Saldo inicial",
     "loadingAccount": "Cargando cuenta",

@@ -1,4 +1,4 @@
-import {SegmentedControl, SegmentedControlOption} from '@components/atoms/SegmentedControl';
+import {ChipSelect, ChipSelectOption} from '@components/atoms/ChipSelect';
 import {ACCOUNT_KINDS, AccountKind} from '@db/queries';
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
@@ -25,25 +25,36 @@ const styles = StyleSheet.create({
 });
 
 /**
- * Was `@redshank/native`'s `Radio.Group`, now the shared
- * `SegmentedControl` atom — see that component's doc comment for why:
- * this app already has this exact "pick one of two" pattern solved
- * visually in `TypeSegment`/`LanguageSwitch`, no need for a third
- * style. The old `isAccountKind` runtime guard against `Radio.Group`'s
- * untyped `onChange(key: string | number)` is gone too —
- * `SegmentedControl`'s `onChange` is typed straight from `options`
- * (`AccountKind`), no cast/guard needed.
+ * Tipo de cuenta: efectivo / banco / tarjeta / por cobrar.
+ *
+ * Fue `@redshank/native`'s `Radio.Group` y despues `SegmentedControl`.
+ * Ahora usa `ChipSelect`, y es el unico campo de la app que lo hace: con
+ * CUATRO opciones el control segmentado se partia en una rejilla 2x2 que
+ * ya no se leia como un control sino como cuatro botones sueltos sobre
+ * un fondo compartido. Los demas selectores del proyecto (Gasto/Ingreso,
+ * Fondo/Deuda, gasto/ingreso de una categoria) tienen dos opciones que
+ * se leen como extremos de un mismo eje, y ahi el segmentado sigue
+ * siendo el control correcto.
+ *
+ * Lleva etiqueta propia porque, a diferencia de los campos de texto que
+ * lo rodean, un grupo de chips no tiene placeholder donde decir que se
+ * esta eligiendo.
  */
 const KindField = ({value, onChange}: Props) => {
-  useTranslation();
-  const options: SegmentedControlOption<AccountKind>[] = ACCOUNT_KINDS.map(kind => ({
+  const {t} = useTranslation();
+  const options: ChipSelectOption<AccountKind>[] = ACCOUNT_KINDS.map(kind => ({
     value: kind,
     label: getKindLabel(kind),
   }));
 
   return (
     <View style={styles.container}>
-      <SegmentedControl value={value} onChange={onChange} options={options} />
+      <ChipSelect
+        label={t('accounts.accountTypeLabel')}
+        value={value}
+        onChange={onChange}
+        options={options}
+      />
     </View>
   );
 };

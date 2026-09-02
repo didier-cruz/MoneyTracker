@@ -82,6 +82,7 @@
     "createAccountTitle": "Create Account",
     "createAccountMessage": "Track a cash stash, a bank/credit card, or money someone owes you",
     "accountNamePlaceholder": "Account name",
+    "accountTypeLabel": "Account type",
     "initialBalancePlaceholder": "Initial balance (optional, e.g. 0.00)",
     "initialBalanceAccessibilityLabel": "Initial balance",
     "loadingAccount": "Loading account",
