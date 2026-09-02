@@ -351,5 +351,25 @@
     "categoryCountExpense": "{{count}} expense categories",
     "categoryCountIncome": "{{count}} income categories",
     "manageCategories": "More categories"
+  },
+  "icons": {
+    "pickerTitle": "Choose an icon",
+    "searchPlaceholder": "Search: home, car, food...",
+    "noResults": "No icon matches “{{query}}”",
+    "seeAllIcons": "See all icons",
+    "groups": {
+      "money": "Money",
+      "home": "Home",
+      "shopping": "Shopping",
+      "food": "Food",
+      "transport": "Transport",
+      "health": "Health",
+      "leisure": "Leisure",
+      "work": "Work & study",
+      "tech": "Technology",
+      "people": "People",
+      "travel": "Travel",
+      "other": "Other"
+    }
   }
 }

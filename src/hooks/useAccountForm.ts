@@ -3,7 +3,7 @@ import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
 import {AccountKind, getAccountById, insertAccount, updateAccount} from '@db/queries';
 import {formatCentsToCurrency, parseInitialBalanceToCents} from '@utils/currency';
-import {icons} from '@data/icons';
+import {toIcon} from '@data/iconCatalog';
 import {useNoticeDialog} from '@hooks/useNoticeDialog';
 
 const DEFAULT_ACCOUNT_KIND: AccountKind = 'cash';
@@ -102,14 +102,10 @@ export const useAccountForm = (accountId?: number) => {
         return;
       }
       setInputText(account.name);
-      // `icons` (the static picker list `SymbolList` renders) may not
-      // contain this exact icon string in the unlikely case it was
-      // written by something other than this same form — falling back
-      // to a synthetic `{id: -1, icon}` still lets the field display
-      // and save the account unchanged, just without a highlighted
-      // match in the picker.
-      const matchedIcon = icons.find(i => i.icon === account.icon);
-      onChangeSelectedIcon(matchedIcon ?? {id: -1, icon: account.icon});
+      // `toIcon` resuelve el id contra el catalogo COMPLETO. Antes se
+      // buscaba solo entre los 16 fijos y cualquier otro icono entraba
+      // con id -1, asi que al editar no aparecia marcado en la rejilla.
+      onChangeSelectedIcon(toIcon(account.icon));
       setSelectedKind(account.kind);
       setInitialBalanceText(centsToEditableAmountText(account.initialBalance));
       setLoadStatus('success');

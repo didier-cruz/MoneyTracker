@@ -8,7 +8,7 @@ import {
   updateEnvelope,
 } from '@db/queries';
 import {formatCentsToCurrency, parseAmountToCents} from '@utils/currency';
-import {icons} from '@data/icons';
+import {toIcon} from '@data/iconCatalog';
 import {useNoticeDialog} from '@hooks/useNoticeDialog';
 
 const DEFAULT_ENVELOPE_KIND: EnvelopeKind = 'fund';
@@ -92,8 +92,10 @@ export const useEnvelopeForm = (envelopeId?: number) => {
         return;
       }
       setInputText(envelope.name);
-      const matchedIcon = icons.find(i => i.icon === envelope.icon);
-      onChangeSelectedIcon(matchedIcon ?? {id: -1, icon: envelope.icon});
+      // `toIcon` resuelve el id contra el catalogo COMPLETO. Antes se
+      // buscaba solo entre los 16 fijos y cualquier otro icono entraba
+      // con id -1, asi que al editar no aparecia marcado en la rejilla.
+      onChangeSelectedIcon(toIcon(envelope.icon));
       setSelectedKind(envelope.kind);
       setTargetAmountText(
         envelope.targetAmount !== null

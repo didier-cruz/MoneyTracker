@@ -351,5 +351,25 @@
     "categoryCountExpense": "{{count}} de gasto",
     "categoryCountIncome": "{{count}} de ingreso",
     "manageCategories": "Más categorías"
+  },
+  "icons": {
+    "pickerTitle": "Elige un ícono",
+    "searchPlaceholder": "Buscar: casa, coche, comida...",
+    "noResults": "Ningún ícono coincide con «{{query}}»",
+    "seeAllIcons": "Ver todos los íconos",
+    "groups": {
+      "money": "Dinero",
+      "home": "Hogar",
+      "shopping": "Compras",
+      "food": "Comida",
+      "transport": "Transporte",
+      "health": "Salud",
+      "leisure": "Ocio",
+      "work": "Trabajo y estudio",
+      "tech": "Tecnología",
+      "people": "Personas",
+      "travel": "Viajes",
+      "other": "Otros"
+    }
   }
 }
