@@ -361,6 +361,7 @@
   "icons": {
     "pickerTitle": "Choose an icon",
     "searchPlaceholder": "Search: home, car, food...",
+    "searching": "Searching…",
     "noResults": "No icon matches “{{query}}”",
     "seeAllIcons": "See all icons",
     "groups": {

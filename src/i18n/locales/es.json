@@ -361,6 +361,7 @@
   "icons": {
     "pickerTitle": "Elige un ícono",
     "searchPlaceholder": "Buscar: casa, coche, comida...",
+    "searching": "Buscando…",
     "noResults": "Ningún ícono coincide con «{{query}}»",
     "seeAllIcons": "Ver todos los íconos",
     "groups": {

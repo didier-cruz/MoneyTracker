@@ -1,5 +1,12 @@
-import {useMemo, useState} from 'react';
-import {FlatList, StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {useTranslation} from 'react-i18next';
 
@@ -11,6 +18,15 @@ import {ICON_KEYWORDS_ES} from '@data/iconKeywords';
 
 const COLUMNS = 5;
 const SEARCH_RESULT_LIMIT = 60;
+
+/**
+ * Espera desde la ultima tecla hasta lanzar la busqueda. Cada tecla
+ * nueva CANCELA la espera anterior y arranca otra, asi que escribiendo
+ * "carro" del tiron se filtra una sola vez, al final, en vez de cinco
+ * veces —una por letra— recorriendo los 786 iconos y volviendo a montar
+ * la rejilla de resultados en cada una.
+ */
+const SEARCH_DEBOUNCE_MS = 1000;
 
 type Row =
   | {kind: 'heading'; key: string; label: string}
@@ -45,7 +61,30 @@ export const IconPicker = ({
   onSelect,
 }: IconPickerProps) => {
   const {t, i18n} = useTranslation();
+  // `query` es lo que se ve en el campo y cambia en cada tecla, para que
+  // escribir no se sienta lento. `searchTerm` es lo que se BUSCA y solo
+  // se pone al dia cuando el usuario para de escribir.
   const [query, setQuery] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+    }
+    // Vaciar el campo se aplica al momento: volver al listado por grupos
+    // no cuesta nada y hacerle esperar un segundo para eso seria raro.
+    if (query === '') {
+      setSearchTerm('');
+      return;
+    }
+    timerRef.current = setTimeout(() => setSearchTerm(query), SEARCH_DEBOUNCE_MS);
+    return () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [query]);
 
   // Los alias solo existen en espanol; en ingles el nombre del icono YA es
   // la palabra que el usuario escribiria.
@@ -65,8 +104,8 @@ export const IconPicker = ({
       return chunks;
     };
 
-    if (query.trim() !== '') {
-      const matches = searchIconNames(query, keywords).slice(
+    if (searchTerm.trim() !== '') {
+      const matches = searchIconNames(searchTerm, keywords).slice(
         0,
         SEARCH_RESULT_LIMIT,
       );
@@ -81,19 +120,23 @@ export const IconPicker = ({
       },
       ...chunk(group.icons, group.key),
     ]);
-  }, [query, t, keywords]);
+  }, [searchTerm, t, keywords]);
 
-  const isSearching = query.trim() !== '';
-  const noResults = isSearching && rows.length === 0;
+  // Hay algo escrito que todavia no se ha buscado: se esta esperando a
+  // que pare de teclear.
+  const isPending = query.trim() !== '' && query !== searchTerm;
+  const noResults = !isPending && searchTerm.trim() !== '' && rows.length === 0;
 
   const handleSelect = (name: string) => {
     onSelect(toIcon(name));
     setQuery('');
+    setSearchTerm('');
     onClose();
   };
 
   const handleClose = () => {
     setQuery('');
+    setSearchTerm('');
     onClose();
   };
 
@@ -141,7 +184,11 @@ export const IconPicker = ({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose} maxHeight="80%">
+    <BottomSheet
+      visible={visible}
+      onClose={handleClose}
+      maxHeight="80%"
+      contentStyle={styles.sheet}>
       <Text size={18} color={colors[secondary][1]} style={styles.title}>
         {t('icons.pickerTitle')}
       </Text>
@@ -155,9 +202,18 @@ export const IconPicker = ({
         autoCapitalize="none"
         style={styles.search}
       />
-      {noResults ? (
+      {isPending ? (
+        // Sin esto, el segundo de espera pareceria que la app se quedo
+        // colgada: el campo cambia pero la rejilla no.
+        <View style={styles.pending}>
+          <ActivityIndicator color={colors[accent][2]} />
+          <Text color={colors[gray][1]} style={styles.pendingLabel}>
+            {t('icons.searching')}
+          </Text>
+        </View>
+      ) : noResults ? (
         <Text color={colors[gray][1]} style={styles.empty}>
-          {t('icons.noResults', {query: query.trim()})}
+          {t('icons.noResults', {query: searchTerm.trim()})}
         </Text>
       ) : (
         <FlatList
@@ -174,6 +230,11 @@ export const IconPicker = ({
 };
 
 const styles = StyleSheet.create({
+  // `BottomSheet` no trae padding lateral propio: cada hoja pone el
+  // suyo. Sin esto la rejilla de iconos arrancaba pegada al borde.
+  sheet: {
+    paddingHorizontal: 20,
+  },
   title: {
     fontWeight: '700',
     marginBottom: 12,
@@ -219,6 +280,13 @@ const styles = StyleSheet.create({
   empty: {
     paddingVertical: 30,
     textAlign: 'center',
+  },
+  pending: {
+    paddingVertical: 30,
+    alignItems: 'center',
+  },
+  pendingLabel: {
+    marginTop: 10,
   },
 });
 
