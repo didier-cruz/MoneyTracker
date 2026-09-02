@@ -11,8 +11,11 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useTranslation} from 'react-i18next';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 
+import {useState} from 'react';
+import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
+import {faFilter} from '@fortawesome/free-solid-svg-icons/faFilter';
+
 import {ScreenContainer} from '@components/atoms';
-import {ChipSelect} from '@components/atoms/ChipSelect';
 import {Text} from '@components/atoms/text/Text';
 import {Title} from '@components/atoms/text/Title';
 import {TransactItem} from '@components/atoms/items/TransactItem';
@@ -20,9 +23,10 @@ import {
   TransactionActionsDialogs,
   useTransactionActions,
 } from '@components/organisms/feedback';
-import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
+import {accent, colors, gray, primary, secondary, white} from '@constants/colors/colors';
 import {HomeNavParams} from '@navigation/[home]/HomeNavigator/types';
 import {useAllMovements} from './useAllMovements';
+import {FiltersSheet} from './partials/FiltersSheet';
 import {TimeRange} from './mappers';
 
 type AllMovementsScreenProps = {
@@ -70,6 +74,8 @@ export const AllMovementsScreen = ({navigation, route}: AllMovementsScreenProps)
     categoryId: idCategory ?? 'all',
   });
 
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
   const transactionActions = useTransactionActions({
     onEdit: financeId =>
       (navigation as any).navigate('Outcomes', {
@@ -82,6 +88,41 @@ export const AllMovementsScreen = ({navigation, route}: AllMovementsScreenProps)
   // `'all'` viaja como cadena y los ids como numero: los chips trabajan
   // con cadenas, asi que se convierte en los dos sentidos aqui y el
   // hook sigue recibiendo el id como numero.
+  /**
+   * Los filtros ACTIVOS, ya resueltos a etiqueta y con como quitarlos.
+   * Se construye aqui y no en el hook porque son puro texto de
+   * pantalla: el hook no conoce las traducciones ni el nombre visible
+   * de una cuenta.
+   */
+  const appliedFilters: {key: string; label: string; onRemove: () => void}[] = [];
+  if (filters.range !== 'all') {
+    appliedFilters.push({
+      key: 'range',
+      label: t(`allMovements.range.${filters.range}`),
+      onRemove: () => setFilter('range', 'all'),
+    });
+  }
+  if (filters.accountId !== 'all') {
+    const account = accounts.find(item => item.id === filters.accountId);
+    appliedFilters.push({
+      key: 'account',
+      label: account?.name ?? t('allMovements.accountLabel'),
+      onRemove: () => setFilter('accountId', 'all'),
+    });
+  }
+  if (filters.categoryId !== 'all') {
+    const category = categories.find(item => item.id === filters.categoryId);
+    appliedFilters.push({
+      key: 'category',
+      label: category?.name ?? t('allMovements.categoryLabel'),
+      onRemove: () => setFilter('categoryId', 'all'),
+    });
+  }
+
+  const rangeOptions = TIME_RANGES.map(range => ({
+    value: range,
+    label: t(`allMovements.range.${range}`),
+  }));
   const accountOptions = [
     {value: 'all', label: t('allMovements.allAccounts')},
     ...accounts.map(account => ({
@@ -113,37 +154,50 @@ export const AllMovementsScreen = ({navigation, route}: AllMovementsScreenProps)
         </Title>
       </View>
 
-      <View style={styles.filters}>
-        <ChipSelect
-          scrollable
-          label={t('allMovements.periodLabel')}
-          value={filters.range}
-          onChange={value => setFilter('range', value as TimeRange)}
-          options={TIME_RANGES.map(range => ({
-            value: range,
-            label: t(`allMovements.range.${range}`),
-          }))}
-        />
-        <View style={styles.filterGap} />
-        <ChipSelect
-          scrollable
-          label={t('allMovements.accountLabel')}
-          value={String(filters.accountId)}
-          onChange={value =>
-            setFilter('accountId', value === 'all' ? 'all' : Number(value))
-          }
-          options={accountOptions}
-        />
-        <View style={styles.filterGap} />
-        <ChipSelect
-          scrollable
-          label={t('allMovements.categoryLabel')}
-          value={String(filters.categoryId)}
-          onChange={value =>
-            setFilter('categoryId', value === 'all' ? 'all' : Number(value))
-          }
-          options={categoryOptions}
-        />
+      {/* Solo los filtros YA APLICADOS, cada uno con su aspa para
+          quitarlo suelto. Elegirlos se hace en la hoja: con veinte
+          categorias una fila de chips es un carrusel donde encontrar
+          una concreta cuesta mas que buscarla escribiendo. */}
+      <View style={styles.filterBar}>
+        <View style={styles.appliedRow}>
+          {appliedFilters.length === 0 ? (
+            <Text size={12} color={colors[gray][0]}>
+              {t('allMovements.noFilters')}
+            </Text>
+          ) : (
+            appliedFilters.map(applied => (
+              <TouchableOpacity
+                key={applied.key}
+                accessibilityRole="button"
+                accessibilityLabel={t('allMovements.removeFilter', {
+                  name: applied.label,
+                })}
+                onPress={applied.onRemove}
+                style={styles.appliedChip}>
+                <Text size={12} color={colors[accent][0]}>
+                  {applied.label}
+                </Text>
+                <VectorIcon
+                  name="times"
+                  size={11}
+                  color={colors[accent][0]}
+                  style={styles.appliedChipIcon}
+                />
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t('allMovements.filtersTitle')}
+          onPress={() => setFiltersOpen(true)}
+          style={styles.filtersButton}>
+          <FontAwesomeIcon icon={faFilter} size={13} color={colors[primary][0]} />
+          <Text size={12} color={colors[primary][0]} style={styles.filtersLabel}>
+            {t('allMovements.filtersButton')}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.countRow}>
@@ -237,6 +291,17 @@ export const AllMovementsScreen = ({navigation, route}: AllMovementsScreenProps)
         />
       )}
 
+      <FiltersSheet
+        visible={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        filters={filters}
+        onChange={setFilter}
+        onClear={clearFilters}
+        rangeOptions={rangeOptions}
+        accountOptions={accountOptions}
+        categoryOptions={categoryOptions}
+      />
+
       <TransactionActionsDialogs {...transactionActions.dialogProps} />
     </ScreenContainer>
   );
@@ -258,12 +323,45 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 10,
   },
-  filters: {
+  filterBar: {
     width: '100%',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     paddingHorizontal: 15,
   },
-  filterGap: {
-    height: 10,
+  appliedRow: {
+    flex: 1,
+    flexShrink: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginRight: 10,
+    paddingTop: 4,
+  },
+  appliedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 28,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: colors[primary][0],
+  },
+  appliedChipIcon: {
+    marginLeft: 6,
+  },
+  filtersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors[primary][0],
+  },
+  filtersLabel: {
+    marginLeft: 8,
+    fontWeight: '600',
   },
   countRow: {
     width: '100%',

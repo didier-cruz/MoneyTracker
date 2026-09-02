@@ -459,6 +459,14 @@
       "month": "Este mes",
       "quarter": "Últimos 3 meses",
       "year": "Este año"
-    }
+    },
+    "filtersButton": "Filtros",
+    "filtersTitle": "Filtrar movimientos",
+    "applyFilters": "Aplicar",
+    "noFilters": "Sin filtros",
+    "removeFilter": "Quitar el filtro {{name}}",
+    "selectPlaceholder": "Elegir…",
+    "searchPlaceholder": "Buscar…",
+    "noOptions": "Nada coincide con tu búsqueda."
   }
 }

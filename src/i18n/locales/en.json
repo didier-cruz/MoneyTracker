@@ -459,6 +459,14 @@
       "month": "This month",
       "quarter": "Last 3 months",
       "year": "This year"
-    }
+    },
+    "filtersButton": "Filters",
+    "filtersTitle": "Filter transactions",
+    "applyFilters": "Apply",
+    "noFilters": "No filters",
+    "removeFilter": "Remove the {{name}} filter",
+    "selectPlaceholder": "Choose…",
+    "searchPlaceholder": "Search…",
+    "noOptions": "Nothing matches your search."
   }
 }
