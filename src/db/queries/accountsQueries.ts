@@ -13,18 +13,29 @@ import {isFiniteInteger} from './numberGuards';
  * - `credit_card` — a credit line; expected to carry a NEGATIVE derived
  *   balance in normal use (money owed), which is why this schema never
  *   forbids negative balances anywhere.
+ * - `loan` — a financing the user OWES: a personal loan, an
+ *   "extrafinanciamiento", a mortgage. Like `credit_card` it is
+ *   expected to carry a NEGATIVE derived balance (money owed), but it
+ *   is its own kind because the two are not the same instrument: a loan
+ *   has principal, term and a fixed installment, a card is a revolving
+ *   line. Paying an installment is a transfer INTO this account
+ *   (reducing what is owed); the interest of that installment is an
+ *   ordinary EXPENSE against it (increasing it), which is what makes
+ *   net worth move by the interest alone and not by the principal —
+ *   paying principal moves money, it does not make the user poorer.
  * - `receivable` — money a third party owes the user ("Juan me debe").
  *   Modeled as an account, not a separate module: lending money to them
  *   is a transfer INTO this account (slice B3), each repayment a
  *   transfer back OUT of it. A positive balance here means the third
  *   party still owes that amount.
  */
-export type AccountKind = 'cash' | 'bank' | 'credit_card' | 'receivable';
+export type AccountKind = 'cash' | 'bank' | 'credit_card' | 'loan' | 'receivable';
 
 export const ACCOUNT_KINDS: readonly AccountKind[] = [
   'cash',
   'bank',
   'credit_card',
+  'loan',
   'receivable',
 ] as const;
 

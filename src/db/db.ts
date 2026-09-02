@@ -4,6 +4,7 @@ import {migration002Statements} from './migrations/002_categoryTypeAndFinanceCle
 import {migration003Statements} from './migrations/003_seedDefaultCategories';
 import {migration004Statements} from './migrations/004_accountsAndSignedFinances';
 import {migration005Statements} from './migrations/005_envelopesAndCategoryBudgets';
+import {migration006Statements} from './migrations/006_loanAccountKindAndInterestCategory';
 
 enablePromise(true);
 
@@ -43,6 +44,13 @@ const DATABASE_NAME = 'moneytracker.db';
  *   one new index on the existing `finances` table for the category/
  *   period spend aggregate this slice reads. No existing table is
  *   recreated — every statement is a fresh `CREATE TABLE`/`CREATE INDEX`.
+ * - Version 6 (`migration006Statements`, see
+ *   `src/db/migrations/006_loanAccountKindAndInterestCategory.ts`):
+ *   anade `'loan'` a los tipos de cuenta —reconstruyendo `accounts`,
+ *   porque su `CHECK` no se puede alterar— y siembra una categoria de
+ *   GASTO "Interests", que faltaba (la de la migracion 3 es de
+ *   ingreso). Ambos para poder registrar un financiamiento separando
+ *   amortizacion de capital y coste financiero.
  * - To ship a schema change later, ADD a new entry with an incremented
  *   `version` and the `CREATE`/`ALTER` statements needed to get from
  *   the previous version to this one. Never edit an already-shipped
@@ -83,6 +91,13 @@ const migrations: Migration[] = [
     requiresForeignKeysOff: true,
   },
   {version: 5, statements: migration005Statements},
+  {
+    version: 6,
+    statements: migration006Statements,
+    // Reconstruye `accounts`, a la que `finances.idAccount` apunta con
+    // una clave ajena — ver la migracion para el detalle.
+    requiresForeignKeysOff: true,
+  },
 ];
 
 const SCHEMA_VERSION = migrations[migrations.length - 1].version;

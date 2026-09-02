@@ -76,11 +76,12 @@
       "cash": "Cash",
       "bank": "Bank",
       "credit_card": "Credit Card",
+      "loan": "Loan",
       "receivable": "Receivable"
     },
     "editAccountTitle": "Edit Account",
     "createAccountTitle": "Create Account",
-    "createAccountMessage": "Track a cash stash, a bank/credit card, or money someone owes you",
+    "createAccountMessage": "Track cash, a bank account or card, financing you owe, or money someone owes you",
     "accountNamePlaceholder": "Account name",
     "accountTypeLabel": "Account type",
     "initialBalancePlaceholder": "Initial balance (optional, e.g. 0.00)",

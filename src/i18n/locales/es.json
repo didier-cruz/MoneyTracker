@@ -76,11 +76,12 @@
       "cash": "Efectivo",
       "bank": "Banco",
       "credit_card": "Tarjeta de crédito",
+      "loan": "Préstamo",
       "receivable": "Por cobrar"
     },
     "editAccountTitle": "Editar cuenta",
     "createAccountTitle": "Crear cuenta",
-    "createAccountMessage": "Registra efectivo guardado, una cuenta bancaria/tarjeta de crédito, o dinero que alguien te debe",
+    "createAccountMessage": "Registra efectivo, una cuenta bancaria o tarjeta, un financiamiento que debes, o dinero que alguien te debe",
     "accountNamePlaceholder": "Nombre de la cuenta",
     "accountTypeLabel": "Tipo de cuenta",
     "initialBalancePlaceholder": "Saldo inicial (opcional, ej. 0.00)",
