@@ -12,6 +12,13 @@ import {useTranslation} from 'react-i18next';
 interface CategoryLimitRowProps {
   budget: ICategoryBudgetWithSpent;
   onPress: () => void;
+  /**
+   * Linea inferior de separacion. Se apaga en la ultima fila cuando
+   * debajo no queda nada —es decir, cuando el boton de anadir limite
+   * esta oculto porque todas las categorias ya tienen uno—, para que no
+   * quede una raya suelta contra el borde de la tarjeta.
+   */
+  showSeparator?: boolean;
 }
 
 /**
@@ -27,7 +34,11 @@ interface CategoryLimitRowProps {
  * for the same reason: there is no separate "detail" view for a budget
  * row to open into first.
  */
-export const CategoryLimitRow: FC<CategoryLimitRowProps> = ({budget, onPress}) => {
+export const CategoryLimitRow: FC<CategoryLimitRowProps> = ({
+  budget,
+  onPress,
+  showSeparator = true,
+}) => {
   const {t} = useTranslation();
   const {ratio, color, overMessage} = getCategoryBudgetProgress(budget);
   const spentOverLimit = `${formatCentsToCurrency(budget.spent)} / ${formatCentsToCurrency(
@@ -43,7 +54,7 @@ export const CategoryLimitRow: FC<CategoryLimitRowProps> = ({budget, onPress}) =
       accessibilityHint={t('budgets.limitRowAccessibilityHint')}
       onPress={onPress}
       activeOpacity={0.8}
-      style={styles.row}>
+      style={[styles.row, !showSeparator && styles.rowWithoutSeparator]}>
       <View style={styles.topLine}>
         <View style={styles.nameGroup}>
           <View style={styles.icon}>
@@ -80,6 +91,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.inactive[0],
+  },
+  rowWithoutSeparator: {
+    borderBottomWidth: 0,
   },
   topLine: {
     flexDirection: 'row',

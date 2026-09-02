@@ -114,6 +114,7 @@
     "retryLoadingLimits": "Retry loading monthly limits",
     "loadLimitsError": "Could not load this month's limits: {{message}}",
     "limitsEmptyState": "No limits set for this month yet. Set one to start tracking how much you spend per category.",
+    "noExpenseCategories": "You have no expense categories yet. Create one to set a monthly limit for it.",
     "setNewLimit": "Set a new monthly limit",
     "setLimit": "Set a limit",
     "limitRowAccessibilityHint": "Opens this category's limit to edit it",

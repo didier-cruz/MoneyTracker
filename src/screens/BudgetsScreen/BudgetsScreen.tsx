@@ -264,6 +264,7 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
           onRetry={reloadBudgets}
           onPressBudget={onPressBudget}
           onPressAddLimit={onPressAddLimit}
+          categoriesWithoutLimitCount={categoriesWithoutBudget.length}
         />
       </ScreenTemplate>
 

@@ -114,6 +114,7 @@
     "retryLoadingLimits": "Reintentar carga de límites mensuales",
     "loadLimitsError": "No se pudieron cargar los límites de este mes: {{message}}",
     "limitsEmptyState": "Aún no hay límites establecidos este mes. Configura uno para empezar a controlar cuánto gastas por categoría.",
+    "noExpenseCategories": "Aún no tienes categorías de gasto. Crea una para poder ponerle un límite mensual.",
     "setNewLimit": "Establecer un nuevo límite mensual",
     "setLimit": "Establecer un límite",
     "limitRowAccessibilityHint": "Abre el límite de esta categoría para editarlo",
