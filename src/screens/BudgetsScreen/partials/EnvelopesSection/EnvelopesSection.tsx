@@ -35,6 +35,13 @@ const CARD_GAP = 20;
 // Never smaller than `CatalogCard`'s own square account card, never
 // larger than this card's original flat width (a tablet's much wider
 // screen shouldn't stretch two envelope cards absurdly wide).
+/**
+ * Aire vertical DENTRO del contenido de la lista, para que quepa la
+ * sombra de las tarjetas (`EnvelopeCard` usa `elevation: 10`). Sin esto
+ * el contenido mide exactamente lo que miden las tarjetas y la sombra se
+ * recorta arriba y abajo: se veia a los lados pero no en vertical.
+ */
+const CARD_SHADOW_PADDING = 12;
 const MIN_CARD_WIDTH = 150;
 const MAX_CARD_WIDTH = 190;
 
@@ -166,7 +173,9 @@ export const EnvelopesSection: FC<EnvelopesSectionProps> = ({
 const styles = StyleSheet.create({
   section: {
     width: '100%',
-    marginBottom: 10,
+    // Menor que el resto de secciones a proposito: el `paddingVertical`
+    // del contenido de la lista ya aporta su propia separacion abajo.
+    marginBottom: 2,
   },
   // Sin inset propio: la pantalla ya aporta su padding, igual que en
   // Balance, Cuentas y Analisis.
@@ -174,7 +183,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    // Idem arriba: el padding del contenido de la lista ya separa el
+    // encabezado de las tarjetas.
+    marginBottom: 0,
   },
   // El margen negativo saca la lista del padding de la pantalla para que
   // pueda desplazarse hasta el borde; el padding del contenido devuelve
@@ -184,6 +195,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: SCREEN_HORIZONTAL_PADDING,
+    paddingVertical: CARD_SHADOW_PADDING,
     gap: CARD_GAP,
   },
   centered: {

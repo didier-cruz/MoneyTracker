@@ -56,6 +56,11 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: SCREEN_HORIZONTAL_PADDING,
+    // Aire vertical para que quepa la sombra de las tarjetas
+    // (`CatalogCard` usa `elevation: 10`). Sin el, el contenido mide
+    // exactamente lo que miden las tarjetas y la sombra se recorta
+    // arriba y abajo. Mismo caso que `EnvelopesSection`.
+    paddingVertical: 12,
     // La separacion entre tarjetas vive aqui, no en el margen de cada
     // una: asi la primera queda alineada con el borde del contenido.
     gap: 20,
