@@ -31,6 +31,7 @@
   },
   "drawer": {
     "home": "Home",
+    "accounts": "Accounts",
     "categories": "Categories",
     "signOut": "Sign Out",
     "language": "Language"
@@ -106,7 +107,13 @@
     "balanceSignOwed": "I owe it",
     "balanceSignPositive": "In my favor",
     "debtBalanceHint": "On a card or a loan, what you owe is stored as a negative balance so it subtracts from your net worth.",
-    "tabLabel": "Accounts"
+    "tabLabel": "Accounts",
+    "adminTitle": "Manage accounts",
+    "adminMessage": "Create, edit or archive your accounts. To see an account’s transactions, go to Movements › Accounts.",
+    "adminEmptyState": "You have no accounts yet. Create the first one with the button below.",
+    "adminAddAccount": "New account",
+    "editAccountAccessibilityLabel": "Edit {{name}}",
+    "archiveAccountAccessibilityLabel": "Archive {{name}}"
   },
   "budgets": {
     "title": "Budgets",

@@ -12,7 +12,12 @@ import InputField from '@screens/[categories]/CreateCategory/partials/InputField
 import SymbolList from '@screens/[categories]/CreateCategory/partials/SymbolList/SymbolList';
 import SaveAction from '@screens/[categories]/CreateCategory/partials/SaveAction/SaveAction';
 import KindField from './partials/KindField/KindField';
-import {AccountsNavParams} from '@navigation/[accounts]/AccountsNavigator/types';
+// Se tipa contra el stack de ADMINISTRACION, que declara todas las
+// rutas que esta pantalla usa (`CreateAccount` y `EditAccount`). El
+// stack de Movimientos solo registra el alta, asi que no sirve de
+// referencia para el modo edicion. Tipado por forma, no por identidad
+// del navegador — igual que en categorias.
+import {AccountsAdminNavParams as AccountsNavParams} from '@navigation/[accounts]/AccountsAdminNavigator';
 import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
 import {useTranslation} from 'react-i18next';
 

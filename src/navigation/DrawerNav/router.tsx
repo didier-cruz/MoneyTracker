@@ -3,6 +3,8 @@ import {DrawerLabel} from './partials/DrawerLabel';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faHome} from '@fortawesome/free-solid-svg-icons/faHome';
 import {faLayerGroup} from '@fortawesome/free-solid-svg-icons/faLayerGroup';
+import {faWallet} from '@fortawesome/free-solid-svg-icons/faWallet';
+import {AccountsAdminNavigator} from '@navigation/[accounts]/AccountsAdminNavigator';
 import {CategoriesAdminNavigator} from '@navigation/[categories]/CategoriesAdminNavigator';
 
 export const drawerRouter: IDrawer[] = [
@@ -16,6 +18,21 @@ export const drawerRouter: IDrawer[] = [
       drawerLabel: ({color}) => <DrawerLabel i18nKey="drawer.home" color={color} />,
       drawerIcon: ({color, focused: _focused, size}: any) => (
         <FontAwesomeIcon icon={faHome} color={color} size={size} />
+      ),
+    },
+  },
+  {
+    // Administrar cuentas: listar, crear, editar y archivar, mas el
+    // acceso a las archivadas. Igual que categorias, sin movimientos:
+    // recorrerlos es lo que hace la pestana Movimientos.
+    name: 'AccountsAdmin',
+    component: AccountsAdminNavigator,
+    options: {
+      drawerLabel: ({color}) => (
+        <DrawerLabel i18nKey="drawer.accounts" color={color} />
+      ),
+      drawerIcon: ({color, focused: _focused, size}: any) => (
+        <FontAwesomeIcon icon={faWallet} color={color} size={size} />
       ),
     },
   },

@@ -10,7 +10,7 @@ import Header from '@screens/[categories]/components/Header/Header';
 import {accent, colors, gray, secondary, text as textColorKey, white} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
 import {formatDisplayDate} from '@utils/dateFormat';
-import {AccountsNavParams} from '@navigation/[accounts]/AccountsNavigator/types';
+import {AccountsAdminNavParams as AccountsNavParams} from '@navigation/[accounts]/AccountsAdminNavigator';
 import {useNoticeDialog} from '@hooks/useNoticeDialog';
 import {getKindLabel} from '../CreateAccount/partials/KindField/KindField';
 import {IArchivedAccount, useArchivedAccounts} from './useArchivedAccounts';

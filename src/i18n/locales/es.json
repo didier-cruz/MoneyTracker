@@ -31,6 +31,7 @@
   },
   "drawer": {
     "home": "Inicio",
+    "accounts": "Cuentas",
     "categories": "Categorías",
     "signOut": "Cerrar sesión",
     "language": "Idioma"
@@ -106,7 +107,13 @@
     "balanceSignOwed": "Lo debo",
     "balanceSignPositive": "A favor",
     "debtBalanceHint": "En una tarjeta o un préstamo, lo que debes se guarda como saldo negativo: así resta de tu patrimonio neto.",
-    "tabLabel": "Cuentas"
+    "tabLabel": "Cuentas",
+    "adminTitle": "Administrar cuentas",
+    "adminMessage": "Crea, edita o archiva tus cuentas. Para ver los movimientos de una, entra en Movimientos › Cuentas.",
+    "adminEmptyState": "Aún no tienes cuentas. Crea la primera con el botón de abajo.",
+    "adminAddAccount": "Nueva cuenta",
+    "editAccountAccessibilityLabel": "Editar {{name}}",
+    "archiveAccountAccessibilityLabel": "Archivar {{name}}"
   },
   "budgets": {
     "title": "Presupuestos",
