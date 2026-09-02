@@ -11,6 +11,8 @@ export type FinancesStatus = 'loading' | 'error' | 'success';
 interface FragmentSectionProps extends CatalogList {
   /** Pulsacion larga sobre un movimiento: administrarlo. */
   onLongPressFinance?: (financeId: number) => void;
+  /** "Ver todos" en la cabecera de la lista de movimientos. */
+  onPressSeeAllFinances?: () => void;
   transactSections: SectionTransactItem[];
   /** Passed straight through to `TransactList`'s own `headerTitle` —
    * see that component's doc comment (the selected account's name). */
@@ -30,6 +32,7 @@ interface FragmentSectionProps extends CatalogList {
 const FragmentSection: FC<FragmentSectionProps> = ({
   data,
   onLongPressFinance,
+  onPressSeeAllFinances,
   selectedId,
   onPressItem,
   onPressManageItem,
@@ -98,6 +101,7 @@ const FragmentSection: FC<FragmentSectionProps> = ({
       {financesStatus === 'success' && transactSections.length > 0 && (
         <TransactList
           onLongPressItem={onLongPressFinance}
+          onPressSeeAll={onPressSeeAllFinances}
           sectionData={transactSections}
           headerTitle={transactHeaderTitle}
           headerSubtitle={transactHeaderSubtitle}

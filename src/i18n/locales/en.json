@@ -437,5 +437,28 @@
   },
   "movements": {
     "title": "Movements"
+  },
+  "allMovements": {
+    "title": "All transactions",
+    "periodLabel": "Period",
+    "accountLabel": "Account",
+    "categoryLabel": "Category",
+    "allAccounts": "All",
+    "allCategories": "All",
+    "clearFilters": "Clear filters",
+    "loading": "Loading transactions",
+    "loadingMore": "Loading more transactions",
+    "loadError": "Transactions could not be loaded: {{message}}",
+    "empty": "No transactions recorded yet.",
+    "emptyFiltered": "No transaction matches these filters.",
+    "seeAll": "See all",
+    "count_one": "{{count}} transaction",
+    "count_other": "{{count}} transactions",
+    "range": {
+      "all": "All",
+      "month": "This month",
+      "quarter": "Last 3 months",
+      "year": "This year"
+    }
   }
 }

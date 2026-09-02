@@ -226,6 +226,11 @@ export const CategoriesScreen = () => {
               ) : (
                 <CategoryMovementsList
                   onLongPressItem={transactionActions.open}
+                  onPressSeeAll={() =>
+                    (navigation as any).navigate('AllMovements', {
+                      idCategory: selectedCategoryId,
+                    })
+                  }
                   categoryName={selectedCategory?.name}
                   sections={sections}
                   count={financeItems.length}

@@ -437,5 +437,28 @@
   },
   "movements": {
     "title": "Movimientos"
+  },
+  "allMovements": {
+    "title": "Todos los movimientos",
+    "periodLabel": "Periodo",
+    "accountLabel": "Cuenta",
+    "categoryLabel": "Categoría",
+    "allAccounts": "Todas",
+    "allCategories": "Todas",
+    "clearFilters": "Quitar filtros",
+    "loading": "Cargando movimientos",
+    "loadingMore": "Cargando más movimientos",
+    "loadError": "No se pudieron cargar los movimientos: {{message}}",
+    "empty": "Aún no hay movimientos registrados.",
+    "emptyFiltered": "Ningún movimiento coincide con estos filtros.",
+    "seeAll": "Ver todos",
+    "count_one": "{{count}} movimiento",
+    "count_other": "{{count}} movimientos",
+    "range": {
+      "all": "Todo",
+      "month": "Este mes",
+      "quarter": "Últimos 3 meses",
+      "year": "Este año"
+    }
   }
 }

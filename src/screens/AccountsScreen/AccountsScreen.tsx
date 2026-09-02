@@ -179,6 +179,11 @@ const AccountsScreen = () => {
 
           <FragmentSection
             onLongPressFinance={transactionActions.open}
+            onPressSeeAllFinances={() =>
+              (navigation as any).navigate('AllMovements', {
+                idAccount: selectedAccountId,
+              })
+            }
             data={mapAccountsToCatalogCards(accounts)}
             selectedId={selectedAccountId ?? ADD_ACCOUNT_CARD_ID}
             onPressItem={onPressCatalogItem}

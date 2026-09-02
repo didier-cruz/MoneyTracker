@@ -13,6 +13,9 @@ interface CategoryMovementsListProps {
   sections: SectionTransactItem[];
   /** Pulsacion larga sobre una fila: administrar el movimiento. */
   onLongPressItem?: (financeId: number) => void;
+  /** "Ver todos": abre la pantalla de todos los movimientos, ya
+   * filtrada por esta categoria. */
+  onPressSeeAll?: () => void;
   /** Rows currently loaded (grows as `onEndReached` pages in more) — not
    * a total row count from the DB (`@db/queries` exposes no such
    * count), so this reads as "N movements loaded so far", not
@@ -45,6 +48,7 @@ interface CategoryMovementsListProps {
 export const CategoryMovementsList: FC<CategoryMovementsListProps> = ({
   categoryName,
   onLongPressItem,
+  onPressSeeAll,
   sections,
   count,
   status,
@@ -63,9 +67,23 @@ export const CategoryMovementsList: FC<CategoryMovementsListProps> = ({
           {t('categories.movementsHeading')}
         </Title>
         {status === 'success' && (
-          <Text color={colors[gray][0]} size={12}>
-            {t('categories.movementsCount', {count})}
-          </Text>
+          <View style={styles.headerRight}>
+            <Text color={colors[gray][0]} size={12}>
+              {t('categories.movementsCount', {count})}
+            </Text>
+            {onPressSeeAll && (
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={t('allMovements.seeAll')}
+                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                onPress={onPressSeeAll}
+                style={styles.seeAll}>
+                <Text color={colors[accent][2]} size={12}>
+                  {t('allMovements.seeAll')}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </View>
 
@@ -150,6 +168,12 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
     marginTop: 8,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
+  seeAll: {
+    marginTop: 2,
   },
   headerRow: {
     flexDirection: 'row',

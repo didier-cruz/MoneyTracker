@@ -133,6 +133,16 @@ export interface IGetFinancesOptions {
   /** Filter to a single account (e.g. per-account transaction history —
    * backed by `idx_finances_idAccount_date_id` for the keyset predicate). */
   idAccount?: number;
+  /**
+   * Rango de fechas, ambos ISO. `from` INCLUSIVE, `to` EXCLUSIVO — la
+   * misma convencion `[inicio, fin)` que usa `periodToRange`, para que
+   * el ultimo instante de un mes no caiga en dos rangos a la vez.
+   *
+   * Se combinan con `idAccount`/`idCategory` con AND, asi que la
+   * pantalla de todos los movimientos puede mezclar los tres filtros.
+   */
+  from?: string;
+  to?: string;
 }
 
 export interface IGetFinancesResult {
@@ -270,6 +280,16 @@ export const getFinances = async (
   if (opts.idCategory !== undefined) {
     conditions.push('finances.idCategory = ?');
     params.push(opts.idCategory);
+  }
+
+  if (opts.from !== undefined) {
+    conditions.push('finances.dateCreated >= ?');
+    params.push(opts.from);
+  }
+
+  if (opts.to !== undefined) {
+    conditions.push('finances.dateCreated < ?');
+    params.push(opts.to);
   }
 
   if (opts.idAccount !== undefined) {

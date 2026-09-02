@@ -116,7 +116,11 @@ const ResumenScreen = () => {
       <TransactCard
         onLongPressItem={transactionActions.open}
         transactions={mapFinancesToTransactItems(recentFinances)}
-        onPressSeeAll={() => navigation.navigate('Movements')}
+        // Abre la pantalla completa SIN filtros: desde Balance la
+        // pregunta es "todos mis movimientos", no los de una cuenta.
+        // Antes solo cambiaba a la pestana Movimientos, que muestra los
+        // de la cuenta seleccionada — no todos.
+        onPressSeeAll={() => (navigation as any).navigate('AllMovements')}
       />
     );
   };

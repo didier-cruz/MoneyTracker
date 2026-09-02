@@ -1,4 +1,4 @@
-import {StyleSheet, TouchableOpacity, View} from 'react-native';
+import {ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 
 import {Text} from '@components/atoms/text/Text';
 import {accent, colors, gray, primary} from '@constants/colors/colors';
@@ -30,15 +30,26 @@ export const ChipSelect = <T extends string>({
   onChange,
   options,
   label,
+  scrollable = false,
   testID,
-}: ChipSelectProps<T>) => (
+}: ChipSelectProps<T>) => {
+  const Row: any = scrollable ? ScrollView : View;
+  const rowProps = scrollable
+    ? {
+        horizontal: true,
+        showsHorizontalScrollIndicator: false,
+        contentContainerStyle: styles.scrollRow,
+      }
+    : {style: styles.row};
+
+  return (
   <View style={styles.container} testID={testID}>
     {label !== undefined && (
       <Text size={12} color={colors[gray][0]} style={styles.label}>
         {label}
       </Text>
     )}
-    <View style={styles.row} accessibilityRole="radiogroup">
+    <Row accessibilityRole="radiogroup" {...rowProps}>
       {options.map(option => {
         const isSelected = value === option.value;
         return (
@@ -60,9 +71,10 @@ export const ChipSelect = <T extends string>({
           </TouchableOpacity>
         );
       })}
-    </View>
+    </Row>
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -77,6 +89,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  // En scroll el `gap` va en el contenido, no en el ScrollView: en el
+  // contenedor no se aplicaria a los hijos que se desplazan.
+  scrollRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 8,
   },
   chip: {
     height: 36,
