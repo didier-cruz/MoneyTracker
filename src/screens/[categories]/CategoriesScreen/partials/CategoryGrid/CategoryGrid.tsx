@@ -9,6 +9,8 @@ interface CategoryGridProps {
   selectedId?: number;
   onPressCategory: (id: number) => void;
   onPressAdd: () => void;
+  /** Pulsacion larga sobre una categoria real — abre administrar. */
+  onLongPressCategory: (id: number) => void;
 }
 
 /**
@@ -34,6 +36,7 @@ export const CategoryGrid: FC<CategoryGridProps> = ({
   selectedId,
   onPressCategory,
   onPressAdd,
+  onLongPressCategory,
 }) => {
   return (
     <View style={styles.card}>
@@ -49,6 +52,11 @@ export const CategoryGrid: FC<CategoryGridProps> = ({
             isSelected={item.id === selectedId}
             onPress={() =>
               item.id === ADD_CATEGORY_TILE_ID ? onPressAdd() : onPressCategory(item.id)
+            }
+            onLongPress={
+              item.id === ADD_CATEGORY_TILE_ID
+                ? undefined
+                : () => onLongPressCategory(item.id)
             }
           />
         )}

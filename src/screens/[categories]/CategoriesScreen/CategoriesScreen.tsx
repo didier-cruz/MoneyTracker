@@ -1,4 +1,6 @@
-import React from 'react';
+import React, {useState} from 'react';
+import {faPen} from '@fortawesome/free-solid-svg-icons/faPen';
+import {faTrash} from '@fortawesome/free-solid-svg-icons/faTrash';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from '@components/atoms/text/Text';
 import {ScreenContainer, ScrollContainer} from '@components/atoms';
@@ -8,6 +10,8 @@ import {CategoriesTopTabsNavigatorParams} from '@navigation/[categories]/Categor
 import {CreateCategoryNavigationProp} from '@navigation/[categories]/CategoriesNavigator/types';
 import {useCategoriesScreen} from '@hooks/useCategoriesScreen';
 import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
+import {ActionSheet, ConfirmDialog} from '@components/organisms/feedback';
+import {useNoticeDialog} from '@hooks/useNoticeDialog';
 import {CategoriesHeader, CategoryGrid, CategoryMovementsList} from './partials';
 import {groupCategoryFinancesByDate, mapCategoriesToTiles} from './mappers';
 import {useTranslation} from 'react-i18next';
@@ -63,9 +67,95 @@ export const CategoriesScreen = ({route}: CategoriesScreenProps) => {
     loadMoreFinances,
     isRefreshing,
     refresh,
+    fetchCategoryUsage,
+    deleteCategoryById,
   } = useCategoriesScreen(financeType);
 
+  const {notice, showNotice, dismissNotice} = useNoticeDialog();
+
+  // El menu guarda la categoria completa, no solo su id: al confirmar el
+  // borrado la lista ya se habra recargado y buscarla por id daria
+  // `undefined` justo cuando hace falta su nombre para el mensaje.
+  const [manageMenu, setManageMenu] = useState<{
+    visible: boolean;
+    category?: ICategory;
+  }>({visible: false});
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    visible: boolean;
+    category?: ICategory;
+    movements: number;
+    budgets: number;
+  }>({visible: false, movements: 0, budgets: 0});
+
+  const menuCategory = manageMenu.category;
+  const confirmCategory = deleteConfirm.category;
+
+  const closeManageMenu = () => setManageMenu(prev => ({...prev, visible: false}));
+  const closeDeleteConfirm = () =>
+    setDeleteConfirm(prev => ({...prev, visible: false}));
+
   const onPressAdd = () => navigation.navigate('CreateCategory');
+
+  const onLongPressCategory = (categoryId: number) => {
+    const category = categories.find(item => item.id === categoryId);
+    if (category) {
+      setManageMenu({visible: true, category});
+    }
+  };
+
+  const onPressEdit = () => {
+    if (!menuCategory) {
+      return;
+    }
+    closeManageMenu();
+    navigation.navigate('EditCategory', {categoryId: menuCategory.id});
+  };
+
+  // Se consulta el uso ANTES de abrir la confirmacion para poder decir
+  // cuantos movimientos hay en juego. El menu se cierra primero y la
+  // confirmacion se abre despues del `await`, con el retardo que
+  // documenta `MODAL_CHAIN_DELAY_MS`: encadenar dos modales sin pausa en
+  // Android deja el segundo sin aparecer.
+  const onPressDelete = async () => {
+    if (!menuCategory) {
+      return;
+    }
+    const category = menuCategory;
+    closeManageMenu();
+    const usage = await fetchCategoryUsage(category.id);
+    setDeleteConfirm({visible: true, category, ...usage});
+  };
+
+  const onConfirmDelete = async () => {
+    if (!confirmCategory) {
+      return;
+    }
+    closeDeleteConfirm();
+    const success = await deleteCategoryById(confirmCategory.id);
+    if (!success) {
+      showNotice('danger', t('common.error'), t('categories.deleteCategoryError'));
+    }
+  };
+
+  const deleteMessage = (): string => {
+    if (!confirmCategory) {
+      return '';
+    }
+    const {movements, budgets} = deleteConfirm;
+    if (budgets > 0) {
+      return t('categories.deleteCategoryWithBudgets', {
+        name: confirmCategory.name,
+        count: movements,
+      });
+    }
+    if (movements > 0) {
+      return t('categories.deleteCategoryWithMovements', {
+        name: confirmCategory.name,
+        count: movements,
+      });
+    }
+    return t('categories.deleteCategoryPlain', {name: confirmCategory.name});
+  };
 
   const tiles = mapCategoriesToTiles(categories, categoryTotals);
   const sections = groupCategoryFinancesByDate(financeItems);
@@ -119,6 +209,7 @@ export const CategoriesScreen = ({route}: CategoriesScreenProps) => {
                 selectedId={selectedCategoryId}
                 onPressCategory={selectCategory}
                 onPressAdd={onPressAdd}
+                onLongPressCategory={onLongPressCategory}
               />
 
               {categories.length === 0 ? (
@@ -145,6 +236,52 @@ export const CategoriesScreen = ({route}: CategoriesScreenProps) => {
           )}
         </View>
       </ScrollContainer>
+
+      <ActionSheet
+        visible={manageMenu.visible}
+        onClose={closeManageMenu}
+        title={
+          menuCategory ? t('categories.manageCategory', {name: menuCategory.name}) : ''
+        }
+        actions={[
+          {
+            key: 'edit',
+            label: t('categories.edit'),
+            icon: faPen,
+            onPress: onPressEdit,
+          },
+          {
+            key: 'delete',
+            label: t('categories.delete'),
+            icon: faTrash,
+            tone: 'destructive',
+            onPress: onPressDelete,
+          },
+        ]}
+      />
+
+      <ConfirmDialog
+        visible={deleteConfirm.visible}
+        tone="danger"
+        title={t('categories.deleteCategoryTitle')}
+        message={deleteMessage()}
+        onRequestClose={closeDeleteConfirm}
+        secondaryLabel={t('common.cancel')}
+        onSecondaryPress={closeDeleteConfirm}
+        primaryLabel={t('categories.delete')}
+        destructive
+        onPrimaryPress={onConfirmDelete}
+      />
+
+      <ConfirmDialog
+        visible={notice.visible}
+        tone={notice.tone}
+        title={notice.title}
+        message={notice.message}
+        onRequestClose={dismissNotice}
+        primaryLabel={t('common.ok')}
+        onPrimaryPress={dismissNotice}
+      />
     </ScreenContainer>
   );
 };

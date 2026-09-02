@@ -23,6 +23,13 @@ export const CategoriesNavigator = () => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="EditCategory"
+        component={CreateCategory}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack.Navigator>
   );
 };

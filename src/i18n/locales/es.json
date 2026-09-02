@@ -24,7 +24,8 @@
       "from": "Transferencia de {{name}}",
       "paymentFrom": "Pago de {{name}}",
       "unknownAccount": "cuenta desconocida"
-    }
+    },
+    "noCategory": "Sin categoría"
   },
   "drawer": {
     "home": "Inicio",
@@ -205,12 +206,12 @@
     "tabCopy": {
       "expenses": {
         "title": "Categorías de gastos",
-        "help": "Toca una categoría para ver sus transacciones.",
+        "help": "Toca una categoría para ver sus transacciones. Mantén pulsada una para editarla o eliminarla.",
         "totalLabel": "Gastado este mes"
       },
       "incomes": {
         "title": "Categorías de ingresos",
-        "help": "Toca una categoría para ver sus transacciones.",
+        "help": "Toca una categoría para ver sus transacciones. Mantén pulsada una para editarla o eliminarla.",
         "totalLabel": "Ganado este mes"
       }
     },
@@ -234,8 +235,26 @@
       "nameRequired": "El nombre de la categoría es obligatorio",
       "iconRequired": "Elige un ícono antes de continuar",
       "created": "Categoría creada",
-      "saveError": "Ocurrió un error al guardar la categoría: {{message}}"
-    }
+      "saveError": "Ocurrió un error al guardar la categoría: {{message}}",
+      "notFound": "No se encontró la categoría",
+      "loadError": "No se pudo cargar la categoría: {{message}}",
+      "updated": "Categoría actualizada",
+      "typeLockedByMovements": "No puedes cambiar el tipo de una categoría que ya tiene movimientos: el signo de cada movimiento está guardado y cambiaría de significado. Crea otra categoría con el tipo que necesitas."
+    },
+    "editCategoryTitle": "Editar categoría",
+    "loadingCategory": "Cargando categoría",
+    "retryLoadingCategory": "Reintentar carga de categoría",
+    "manageCategory": "Administrar «{{name}}»",
+    "manageCategoryHint": "Mantén pulsada una categoría para editarla o eliminarla",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteCategoryTitle": "¿Eliminar la categoría?",
+    "deleteCategoryPlain": "Se eliminará «{{name}}». No tiene movimientos ni límites asociados.",
+    "deleteCategoryError": "No se pudo eliminar la categoría. Inténtalo de nuevo.",
+    "deleteCategoryWithMovements_one": "Se eliminará «{{name}}». Su movimiento NO se borra: se queda sin categoría, con su importe y su fecha intactos.",
+    "deleteCategoryWithMovements_other": "Se eliminará «{{name}}». Sus {{count}} movimientos NO se borran: se quedan sin categoría, con su importe y su fecha intactos.",
+    "deleteCategoryWithBudgets_one": "Se eliminará «{{name}}» y su límite mensual. Su movimiento NO se borra: se queda sin categoría.",
+    "deleteCategoryWithBudgets_other": "Se eliminará «{{name}}» y su límite mensual. Sus {{count}} movimientos NO se borran: se quedan sin categoría."
   },
   "transfer": {
     "title": "Transferir",

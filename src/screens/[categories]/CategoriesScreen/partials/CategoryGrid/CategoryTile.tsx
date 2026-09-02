@@ -11,6 +11,13 @@ interface CategoryTileProps {
   tile: ICategoryTile;
   isSelected: boolean;
   onPress: () => void;
+  /**
+   * Abre el menu de administrar (editar / eliminar). Va en la pulsacion
+   * LARGA y no en un boton "..." como en las tarjetas de cuenta: esta
+   * casilla mide 104px e incrustarle un boton de 34 se comeria un tercio
+   * del ancho. La pista esta en el texto de cabecera de la pantalla.
+   */
+  onLongPress?: () => void;
 }
 
 /**
@@ -22,7 +29,12 @@ interface CategoryTileProps {
  * name still reads as the primary label and the amount as secondary,
  * same hierarchy the unselected state already has via `gray[1]`/`gray[0]`.
  */
-export const CategoryTile: FC<CategoryTileProps> = ({tile, isSelected, onPress}) => {
+export const CategoryTile: FC<CategoryTileProps> = ({
+  tile,
+  isSelected,
+  onPress,
+  onLongPress,
+}) => {
   const {t} = useTranslation();
   const {icon, name, amount, isAdd} = tile;
 
@@ -58,6 +70,8 @@ export const CategoryTile: FC<CategoryTileProps> = ({tile, isSelected, onPress})
       accessibilityState={{selected: isSelected}}
       accessibilityHint={t('categories.tileAccessibilityHint')}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={350}
       activeOpacity={0.8}
       style={[styles.tile, isSelected ? styles.tileSelected : styles.tileDefault]}>
       <VectorIcon name={icon} color={iconColor} size={30} />

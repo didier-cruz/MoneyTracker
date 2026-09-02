@@ -24,7 +24,8 @@
       "from": "Transfer from {{name}}",
       "paymentFrom": "Payment from {{name}}",
       "unknownAccount": "unknown account"
-    }
+    },
+    "noCategory": "No category"
   },
   "drawer": {
     "home": "Home",
@@ -205,12 +206,12 @@
     "tabCopy": {
       "expenses": {
         "title": "Expense categories",
-        "help": "Tap a category to see its transactions.",
+        "help": "Tap a category to see its transactions. Long-press one to edit or delete it.",
         "totalLabel": "Spent this month"
       },
       "incomes": {
         "title": "Income categories",
-        "help": "Tap a category to see its transactions.",
+        "help": "Tap a category to see its transactions. Long-press one to edit or delete it.",
         "totalLabel": "Earned this month"
       }
     },
@@ -234,8 +235,26 @@
       "nameRequired": "A category name is required before submitting",
       "iconRequired": "Choose an icon before submitting",
       "created": "Category created",
-      "saveError": "An error occurred saving the category: {{message}}"
-    }
+      "saveError": "An error occurred saving the category: {{message}}",
+      "notFound": "Category not found",
+      "loadError": "The category could not be loaded: {{message}}",
+      "updated": "Category updated",
+      "typeLockedByMovements": "You cannot change the type of a category that already has transactions: each transaction stores its own sign and would change meaning. Create another category with the type you need instead."
+    },
+    "editCategoryTitle": "Edit category",
+    "loadingCategory": "Loading category",
+    "retryLoadingCategory": "Retry loading category",
+    "manageCategory": "Manage “{{name}}”",
+    "manageCategoryHint": "Long-press a category to edit or delete it",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteCategoryTitle": "Delete this category?",
+    "deleteCategoryPlain": "“{{name}}” will be deleted. It has no transactions or limits attached.",
+    "deleteCategoryError": "The category could not be deleted. Please try again.",
+    "deleteCategoryWithMovements_one": "“{{name}}” will be deleted. Its transaction is NOT removed: it stays without a category, with its amount and date intact.",
+    "deleteCategoryWithMovements_other": "“{{name}}” will be deleted. Its {{count}} transactions are NOT removed: they stay without a category, with their amount and date intact.",
+    "deleteCategoryWithBudgets_one": "“{{name}}” and its monthly limit will be deleted. Its transaction is NOT removed: it stays without a category.",
+    "deleteCategoryWithBudgets_other": "“{{name}}” and its monthly limit will be deleted. Its {{count}} transactions are NOT removed: they stay without a category."
   },
   "transfer": {
     "title": "Transfer",
