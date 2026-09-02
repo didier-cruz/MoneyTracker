@@ -31,7 +31,7 @@ type SiblingTabParamList = {
   Outcomes:
     | undefined
     | {screen: 'EditTransaction'; params: {financeId: number}};
-  Accounts: undefined;
+  Movements: undefined;
 };
 
 /**
@@ -116,7 +116,7 @@ const ResumenScreen = () => {
       <TransactCard
         onLongPressItem={transactionActions.open}
         transactions={mapFinancesToTransactItems(recentFinances)}
-        onPressSeeAll={() => navigation.navigate('Accounts')}
+        onPressSeeAll={() => navigation.navigate('Movements')}
       />
     );
   };

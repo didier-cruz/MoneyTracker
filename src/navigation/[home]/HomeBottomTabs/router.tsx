@@ -47,11 +47,14 @@ export const useBottomTabsRoutes = (): IBottomTab[] => {
       },
     },
     {
-      name: 'Accounts',
+      // Se llamaba `Accounts` y mostraba solo cuentas. Ahora agrupa las
+      // dos formas de recorrer los movimientos (por cuenta y por
+      // categoria), asi que la pestana pasa a llamarse por lo que hay
+      // dentro y no por una de sus dos mitades.
+      name: 'Movements',
       component: AccountsNavigator,
-      initialParams: {category: 'fixedExpenses'},
       options: {
-        title: t('accounts.title'),
+        title: t('movements.title'),
         tabBarIcon: ({color, size}) => (
           <FontAwesomeIcon icon={faLayerGroup} color={color} size={size} />
         ),

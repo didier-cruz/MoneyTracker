@@ -11,10 +11,8 @@ export type StackNavParams = {
    */
   EditTransaction: {financeId: number};
   /**
-   * Administrar categorias. Vive en ESTE stack, no en el menu lateral:
-   * se entra desde la grilla de categorias del formulario, asi que su
-   * boton de volver tiene un destino real (el formulario) en vez de ser
-   * la raiz de una rama del drawer.
+   * Alta de categoria, empujada desde la grilla del formulario: su
+   * boton de volver devuelve al formulario, que es de donde se vino.
    */
-  Categories: undefined;
+  CreateCategory: undefined;
 };

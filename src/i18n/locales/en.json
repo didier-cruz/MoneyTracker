@@ -105,7 +105,8 @@
     "balanceSignLabel": "Is this balance debt or credit?",
     "balanceSignOwed": "I owe it",
     "balanceSignPositive": "In my favor",
-    "debtBalanceHint": "On a card or a loan, what you owe is stored as a negative balance so it subtracts from your net worth."
+    "debtBalanceHint": "On a card or a loan, what you owe is stored as a negative balance so it subtracts from your net worth.",
+    "tabLabel": "Accounts"
   },
   "budgets": {
     "title": "Budgets",
@@ -260,7 +261,14 @@
     "deleteCategoryWithMovements_one": "“{{name}}” will be deleted. Its transaction is NOT removed: it stays without a category, with its amount and date intact.",
     "deleteCategoryWithMovements_other": "“{{name}}” will be deleted. Its {{count}} transactions are NOT removed: they stay without a category, with their amount and date intact.",
     "deleteCategoryWithBudgets_one": "“{{name}}” and its monthly limit will be deleted. Its transaction is NOT removed: it stays without a category.",
-    "deleteCategoryWithBudgets_other": "“{{name}}” and its monthly limit will be deleted. Its {{count}} transactions are NOT removed: they stay without a category."
+    "deleteCategoryWithBudgets_other": "“{{name}}” and its monthly limit will be deleted. Its {{count}} transactions are NOT removed: they stay without a category.",
+    "tabLabel": "Categories",
+    "adminTitle": "Manage categories",
+    "adminMessage": "Create, edit or delete your categories. To see a category’s transactions, go to Movements › Categories.",
+    "adminEmptyState": "You have no categories yet. Create the first one with the button below.",
+    "adminAddCategory": "New category",
+    "editCategoryAccessibilityLabel": "Edit {{name}}",
+    "deleteCategoryAccessibilityLabel": "Delete {{name}}"
   },
   "transfer": {
     "title": "Transfer",
@@ -419,5 +427,8 @@
       "travel": "Travel",
       "other": "Other"
     }
+  },
+  "movements": {
+    "title": "Movements"
   }
 }

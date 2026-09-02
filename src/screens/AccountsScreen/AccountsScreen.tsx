@@ -12,8 +12,8 @@ import {
   TransactionActionsDialogs,
   useTransactionActions,
 } from '@components/organisms/feedback';
-import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {AccountsNavParams} from '@navigation/[accounts]/AccountsNavigator/types';
+import {useNavigation} from '@react-navigation/native';
+import {AccountsNavigationProp} from '@navigation/[accounts]/AccountsNavigator/types';
 import {accent, colors, gray, primary, secondary, white} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
 import {useAccountsScreen} from '@hooks/useAccountsScreen';
@@ -27,9 +27,6 @@ import {
 } from './mappers';
 import {useTranslation} from 'react-i18next';
 
-interface AccountsScreenProps
-  extends NativeStackScreenProps<AccountsNavParams, 'AccountsHome'> {}
-
 interface AccountMenuState {
   visible: boolean;
   account: IAccountWithBalance | null;
@@ -40,7 +37,17 @@ interface ArchiveAccountConfirmState {
   account: IAccountWithBalance | null;
 }
 
-const AccountsScreen = ({navigation}: AccountsScreenProps) => {
+const AccountsScreen = () => {
+  /**
+   * La navegacion se toma con `useNavigation` y no de las props porque
+   * esta pantalla ya no es una pantalla de stack: es una de las dos
+   * pestanas de `MovementsTopTabs`. Las rutas que empuja
+   * (`CreateAccount`, `Transfer`, `ArchivedAccounts`, `EditAccount`)
+   * viven en el stack de ARRIBA, y react-navigation resuelve un nombre
+   * desconocido subiendo por el arbol — el mismo apano que ya usaba
+   * `CategoriesScreen` con `CreateCategoryNavigationProp`.
+   */
+  const navigation = useNavigation<AccountsNavigationProp>();
   const {t} = useTranslation();
   const {
     accounts,
@@ -66,7 +73,10 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
   // hace `FormScreen` para volver a Balance.
   const transactionActions = useTransactionActions({
     onEdit: financeId =>
-      (navigation.getParent() as any)?.navigate('Outcomes', {
+      // `Outcomes` es una pestana INFERIOR: no esta en este stack ni en
+      // el navegador de pestanas superiores, asi que se navega por
+      // nombre y react-navigation sube hasta encontrarla.
+      (navigation as any).navigate('Outcomes', {
         screen: 'EditTransaction',
         params: {financeId},
       }),
@@ -151,15 +161,10 @@ const AccountsScreen = ({navigation}: AccountsScreenProps) => {
 
   return (
     <>
-      {/* Two-line "Mis" / "Cuentas" header per the approved prototype —
-          `accounts.title` ("Cuentas") is ALSO this tab's route title (see
-          `HomeBottomTabs/router.tsx`), so it stays the bare noun and the
-          "Mis" line is its own key (`accounts.titlePrefix`) rather than
-          baking both words into `accounts.title` itself, which would leak
-          "Mis" into the tab bar label too. */}
-      <ScreenTemplate
-        headerTitle={t('accounts.titlePrefix')}
-        headerSubtitle={t('accounts.title')}>
+      {/* Sin `headerTitle`: el encabezado de esta pantalla lo pinta
+          `MovementsTopTabs`, una sola vez y encima de la fila de
+          pestanas — ver su comentario. */}
+      <ScreenTemplate>
       {accountsStatus === 'loading' && (
         <View style={stateStyles.centered}>
           <ActivityIndicator

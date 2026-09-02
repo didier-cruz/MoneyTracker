@@ -5,9 +5,12 @@ import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-nativ
 import {Text} from '@components/atoms/text/Text';
 import {ScreenContainer, ScrollContainer} from '@components/atoms';
 import {useNavigation} from '@react-navigation/native';
-import {MaterialTopTabScreenProps} from '@react-navigation/material-top-tabs';
-import {CategoriesTopTabsNavigatorParams} from '@navigation/[categories]/CategoriesTopTabsNavigator/types';
-import {CreateCategoryNavigationProp} from '@navigation/[categories]/CategoriesNavigator/types';
+import {ChipSelect} from '@components/atoms/ChipSelect';
+// El tipo de navegacion se toma del stack de administracion, que
+// declara las MISMAS rutas (`CreateCategory`, `EditCategory`) que los
+// otros dos stacks donde esta pantalla puede vivir. Es un tipado por
+// forma, no por identidad del navegador.
+import {CategoriesAdminNavigationProp as CreateCategoryNavigationProp} from '@navigation/[categories]/CategoriesAdminNavigator';
 import {useCategoriesScreen} from '@hooks/useCategoriesScreen';
 import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
 import {
@@ -21,11 +24,18 @@ import {CategoriesHeader, CategoryGrid, CategoryMovementsList} from './partials'
 import {groupCategoryFinancesByDate, mapCategoriesToTiles} from './mappers';
 import {useTranslation} from 'react-i18next';
 
-interface CategoriesScreenProps
-  extends MaterialTopTabScreenProps<
-    CategoriesTopTabsNavigatorParams,
-    'Expenses' | 'Incomes'
-  > {}
+/**
+ * El tipo (gastos / ingresos) ya NO viene en la ruta.
+ *
+ * Antes esta pantalla se montaba dos veces bajo un navegador de
+ * pestanas Gastos|Ingresos que le pasaba `financeType` como parametro.
+ * Ahora vive bajo las pestanas Cuentas|Categorias de Movimientos, y
+ * apilar una segunda fila de pestanas dentro de la primera es
+ * exactamente el amontonamiento que este rediseno viene a quitar. El
+ * tipo pasa a ser un filtro segmentado DENTRO de la pantalla: se ve
+ * igual de claro y no compite con la navegacion de arriba.
+ */
+type FinanceType = 'expenses' | 'incomes';
 
 /**
  * "Categorías" — lists the active tab's REAL categories
@@ -50,9 +60,9 @@ interface CategoriesScreenProps
  * listing/detail view now, not a category-creation form, so it has no
  * use for that hook's form state at all.
  */
-export const CategoriesScreen = ({route}: CategoriesScreenProps) => {
+export const CategoriesScreen = () => {
   const {t} = useTranslation();
-  const {financeType} = route.params;
+  const [financeType, setFinanceType] = useState<FinanceType>('expenses');
   const navigation = useNavigation<CreateCategoryNavigationProp>();
 
   const {
@@ -180,6 +190,25 @@ export const CategoriesScreen = ({route}: CategoriesScreenProps) => {
     <ScreenContainer>
       <ScrollContainer style={styles.scroll}>
         <View style={styles.content}>
+          {/* Filtro de tipo, en CHIPS y no en un control segmentado.
+              Con la anatomia del segmentado —carril claro y pastilla
+              blanca a todo el ancho— quedaba identico a las pestanas
+              Cuentas|Categorias que tiene justo encima, y se leia como
+              una segunda fila de navegacion: exactamente el
+              amontonamiento que este rediseno quitaba. Dos chips
+              estrechos se leen como lo que son, un filtro del
+              contenido. */}
+          <View style={styles.typeFilter}>
+            <ChipSelect
+              value={financeType}
+              onChange={setFinanceType}
+              options={[
+                {value: 'expenses', label: t('categories.expenses')},
+                {value: 'incomes', label: t('categories.incomes')},
+              ]}
+            />
+          </View>
+
           <CategoriesHeader
             financeType={financeType}
             totalForPeriod={totalForPeriod}
@@ -307,6 +336,10 @@ export const CategoriesScreen = ({route}: CategoriesScreenProps) => {
 const styles = StyleSheet.create({
   scroll: {
     width: '100%',
+  },
+  typeFilter: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
   },
   content: {
     width: '100%',

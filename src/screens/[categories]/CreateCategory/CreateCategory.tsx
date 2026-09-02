@@ -9,7 +9,7 @@ import {useCategoryForm} from '@hooks/useCategoryForm';
 import {InputField, SymbolList, SaveAction, RadioField} from './partials';
 import {ScrollView} from 'react-native-gesture-handler';
 import Header from '../components/Header/Header';
-import {CategoriesNavParams} from '@navigation/[categories]/CategoriesNavigator/types';
+import {CategoriesAdminNavParams as CategoriesNavParams} from '@navigation/[categories]/CategoriesAdminNavigator';
 import {useTranslation} from 'react-i18next';
 
 /**

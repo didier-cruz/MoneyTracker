@@ -105,7 +105,8 @@
     "balanceSignLabel": "¿Este saldo es deuda o saldo a favor?",
     "balanceSignOwed": "Lo debo",
     "balanceSignPositive": "A favor",
-    "debtBalanceHint": "En una tarjeta o un préstamo, lo que debes se guarda como saldo negativo: así resta de tu patrimonio neto."
+    "debtBalanceHint": "En una tarjeta o un préstamo, lo que debes se guarda como saldo negativo: así resta de tu patrimonio neto.",
+    "tabLabel": "Cuentas"
   },
   "budgets": {
     "title": "Presupuestos",
@@ -260,7 +261,14 @@
     "deleteCategoryWithMovements_one": "Se eliminará «{{name}}». Su movimiento NO se borra: se queda sin categoría, con su importe y su fecha intactos.",
     "deleteCategoryWithMovements_other": "Se eliminará «{{name}}». Sus {{count}} movimientos NO se borran: se quedan sin categoría, con su importe y su fecha intactos.",
     "deleteCategoryWithBudgets_one": "Se eliminará «{{name}}» y su límite mensual. Su movimiento NO se borra: se queda sin categoría.",
-    "deleteCategoryWithBudgets_other": "Se eliminará «{{name}}» y su límite mensual. Sus {{count}} movimientos NO se borran: se quedan sin categoría."
+    "deleteCategoryWithBudgets_other": "Se eliminará «{{name}}» y su límite mensual. Sus {{count}} movimientos NO se borran: se quedan sin categoría.",
+    "tabLabel": "Categorías",
+    "adminTitle": "Administrar categorías",
+    "adminMessage": "Crea, edita o elimina tus categorías. Para ver los movimientos de una, entra en Movimientos › Categorías.",
+    "adminEmptyState": "Aún no tienes categorías. Crea la primera con el botón de abajo.",
+    "adminAddCategory": "Nueva categoría",
+    "editCategoryAccessibilityLabel": "Editar {{name}}",
+    "deleteCategoryAccessibilityLabel": "Eliminar {{name}}"
   },
   "transfer": {
     "title": "Transferir",
@@ -419,5 +427,8 @@
       "travel": "Viajes",
       "other": "Otros"
     }
+  },
+  "movements": {
+    "title": "Movimientos"
   }
 }

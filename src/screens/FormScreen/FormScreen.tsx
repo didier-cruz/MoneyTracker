@@ -262,7 +262,7 @@ export const FormScreen = ({navigation, route}: FormScreenProps) => {
               categories={filteredCategories}
               selectedCategory={selectedCategory}
               onSelectCategory={selectCategory}
-            onPressManageCategories={() => navigation.navigate('Categories')}
+            onPressManageCategories={() => navigation.navigate('CreateCategory')}
             />
           )}
 
