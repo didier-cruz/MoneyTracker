@@ -55,12 +55,20 @@ export const CreateCategory = ({navigation, route}: CreateCategoryProps) => {
     dismissNotice,
   } = useCategoryForm(categoryId);
 
-  // Al crear, la pantalla se queda abierta para anadir otra categoria.
-  // Al editar no tiene sentido: ya no hay nada mas que editar aqui, asi
-  // que al cerrar el aviso se vuelve al listado.
+  /**
+   * Al cerrar el aviso de guardado se vuelve atras, tanto al crear como
+   * al editar.
+   *
+   * Antes, al CREAR, la pantalla se quedaba abierta con la idea de
+   * "anadir otra categoria": el resultado era que el usuario cerraba el
+   * aviso y se quedaba mirando un formulario con los campos ya vacios,
+   * sin saber si se habia guardado, y tenia que pulsar atras a mano. El
+   * sitio donde se comprueba que la categoria existe es el listado, asi
+   * que ahi es donde hay que dejarle.
+   */
   const onDismissNotice = () => {
     dismissNotice();
-    if (isEditMode) {
+    if (navigation.canGoBack()) {
       navigation.goBack();
     }
   };

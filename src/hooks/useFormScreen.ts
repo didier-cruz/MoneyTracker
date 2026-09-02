@@ -1,4 +1,5 @@
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
 import {
@@ -92,9 +93,19 @@ export const useFormScreen = (financeId?: number) => {
     }
   }, [t]);
 
-  useEffect(() => {
-    loadCategories();
-  }, [loadCategories]);
+  // Al RECUPERAR EL FOCO, no solo al montar: desde este formulario se
+  // puede ir a crear una categoria ("Mas categorias") y al volver la
+  // nueva tiene que estar en la grilla. Con un `useEffect` normal la
+  // pantalla sigue montada mientras el usuario esta en el formulario de
+  // categorias, asi que no se recargaba nada y la categoria recien
+  // creada no aparecia. Es el mismo `useFocusEffect` que ya usan
+  // Balance, Cuentas, Categorias y Analisis; este hook era el unico que
+  // se habia quedado con `useEffect`.
+  useFocusEffect(
+    useCallback(() => {
+      loadCategories();
+    }, [loadCategories]),
+  );
 
   const loadAccounts = useCallback(async () => {
     setAccountsStatus('loading');
@@ -123,9 +134,13 @@ export const useFormScreen = (financeId?: number) => {
     }
   }, [t]);
 
-  useEffect(() => {
-    loadAccounts();
-  }, [loadAccounts]);
+  // Idem con las cuentas: crear una cuenta desde otra pantalla y volver
+  // aqui tiene que ofrecerla como origen del movimiento.
+  useFocusEffect(
+    useCallback(() => {
+      loadAccounts();
+    }, [loadAccounts]),
+  );
 
   const selectAccount = (account: IAccountWithBalance) => {
     setSelectedAccount(account);
@@ -160,11 +175,24 @@ export const useFormScreen = (financeId?: number) => {
    * cuenta del movimiento contra las listas ya cargadas para que la
    * grilla y los chips los marquen.
    */
+  /**
+   * Ids de movimiento ya precargados. Sin esto, la recarga de
+   * categorias al recuperar el foco volvia a disparar `loadFinance`
+   * —depende de `categoriesStatus`— y sobreescribia lo que el usuario
+   * estuviera editando: ir a crear una categoria a mitad de una
+   * edicion y volver le borraba el importe que acababa de teclear.
+   * Precargar es una operacion de UNA vez por movimiento.
+   */
+  const loadedFinanceIdRef = useRef<number | undefined>(undefined);
+
   const loadFinance = useCallback(async () => {
     if (financeId === undefined) {
       return;
     }
     if (categoriesStatus !== 'success' || accountsStatus !== 'success') {
+      return;
+    }
+    if (loadedFinanceIdRef.current === financeId) {
       return;
     }
     setFinanceStatus('loading');
@@ -198,6 +226,7 @@ export const useFormScreen = (financeId?: number) => {
       if (account) {
         setSelectedAccount(account);
       }
+      loadedFinanceIdRef.current = financeId;
       setFinanceStatus('success');
     } catch (e: any) {
       setFinanceErrorMessage(
@@ -266,7 +295,10 @@ export const useFormScreen = (financeId?: number) => {
     mode,
     financeStatus,
     financeErrorMessage,
-    reloadFinance: loadFinance,
+    reloadFinance: () => {
+      loadedFinanceIdRef.current = undefined;
+      return loadFinance();
+    },
     inputText,
     onChangeInputText,
     selectedType,
