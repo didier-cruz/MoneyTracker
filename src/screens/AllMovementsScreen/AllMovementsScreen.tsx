@@ -77,11 +77,9 @@ export const AllMovementsScreen = ({navigation, route}: AllMovementsScreenProps)
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const transactionActions = useTransactionActions({
-    onEdit: financeId =>
-      (navigation as any).navigate('Outcomes', {
-        screen: 'EditTransaction',
-        params: {financeId},
-      }),
+    // `EditTransaction` esta en ESTE stack, no en la pestana: ver el
+    // comentario de la ruta en `HomeNavigator/types`.
+    onEdit: financeId => navigation.navigate('EditTransaction', {financeId}),
     onChanged: refresh,
   });
 

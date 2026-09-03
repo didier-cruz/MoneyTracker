@@ -2,6 +2,7 @@ import {HomeBottomTabs} from '@navigation/[home]/HomeBottomTabs';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {AllMovementsScreen} from '@screens/AllMovementsScreen';
+import {FormScreen} from '@screens/FormScreen';
 import {HomeNavParams} from './types';
 
 const Stack = createNativeStackNavigator<HomeNavParams>();
@@ -21,6 +22,9 @@ export const HomeNavigator = () => {
     <Stack.Navigator screenOptions={{headerShown: false}}>
       <Stack.Screen name="RootNav" component={HomeBottomTabs} />
       <Stack.Screen name="AllMovements" component={AllMovementsScreen} />
+      {/* Ver el comentario de `EditTransaction` en `./types`: la copia
+          de la pestana no es alcanzable desde aqui. */}
+      <Stack.Screen name="EditTransaction" component={FormScreen} />
     </Stack.Navigator>
   );
 };
