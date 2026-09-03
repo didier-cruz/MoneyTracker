@@ -126,6 +126,21 @@ const getTransferLabel = (row: IFinanceRow): string => {
  * (`insertFinance` derives one from the other), so this is a strict
  * simplification, not a behavior change for non-transfer rows.
  */
+/**
+ * Etiqueta de un movimiento SIN categoria. Hay dos motivos distintos
+ * para que no la tenga y no se leen igual:
+ *
+ * - Es una transferencia (`transferGroupId`): su etiqueta describe la
+ *   contraparte, ver `getTransferLabel`.
+ * - Su categoria fue BORRADA (`deleteCategory` pone `idCategory` a NULL
+ *   en vez de borrar el movimiento, para no destruir historial): el
+ *   movimiento sigue siendo un gasto o un ingreso normal, solo que ya
+ *   sin etiqueta. Antes caia en `getTransferLabel` y se anunciaba como
+ *   "Transferencia a cuenta desconocida", que es simplemente falso.
+ */
+const describeUncategorized = (row: IFinanceRow): string =>
+  row.transferGroupId ? getTransferLabel(row) : i18n.t('common.noCategory');
+
 export const groupFinancesByDate = (rows: IFinanceRow[]): SectionTransactItem[] => {
   const sections: SectionTransactItem[] = [];
   const sectionIndexByDateKey = new Map<string, number>();
@@ -135,7 +150,7 @@ export const groupFinancesByDate = (rows: IFinanceRow[]): SectionTransactItem[] 
     const transactItem: TransactItem = {
       id: row.id,
       icon: row.category?.icon ?? 'exchange',
-      category: row.category?.name ?? getTransferLabel(row),
+      category: row.category?.name ?? describeUncategorized(row),
       amount: row.amount,
       date: formatDisplayTime(row.dateCreated),
       color: row.amount > 0 ? colors.success[0] : colors.error[0],

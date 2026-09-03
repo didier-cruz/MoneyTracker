@@ -2,6 +2,10 @@ import {ActivityIndicator, RefreshControl, StyleSheet, TouchableOpacity, View} f
 import {Text} from '@components/atoms/text/Text';
 import {NavigationProp, useNavigation} from '@react-navigation/native';
 import {ScreenTemplate} from '@components/templates/ScreenTemplate';
+import {
+  TransactionActionsDialogs,
+  useTransactionActions,
+} from '@components/organisms/feedback';
 import {BalanceCard} from '@components/molecules/Cards/BalanceCard';
 import {TransactCard} from '@components/molecules/Cards/TransactCard';
 import {CashFlowChart} from '@components/organisms/Charts/CashFlowChart';
@@ -22,8 +26,12 @@ import {useTranslation} from 'react-i18next';
  * past the type system entirely.
  */
 type SiblingTabParamList = {
-  Outcomes: undefined;
-  Accounts: undefined;
+  /** Sin parametros lleva al formulario de nuevo movimiento (la ruta
+   * inicial de ese stack); con ellos, a la edicion de uno existente. */
+  Outcomes:
+    | undefined
+    | {screen: 'EditTransaction'; params: {financeId: number}};
+  Movements: undefined;
 };
 
 /**
@@ -72,6 +80,15 @@ const ResumenScreen = () => {
     refresh,
   } = useResumenScreen();
 
+  const transactionActions = useTransactionActions({
+    onEdit: financeId =>
+      navigation.navigate('Outcomes', {
+        screen: 'EditTransaction',
+        params: {financeId},
+      }),
+    onChanged: refresh,
+  });
+
   const currentMonth = getCurrentMonthCashFlow(cashFlowMonths);
   const hasAnyActivity = cashFlowMonths.length > 0 || recentFinances.length > 0;
 
@@ -97,8 +114,13 @@ const ResumenScreen = () => {
 
     return (
       <TransactCard
+        onLongPressItem={transactionActions.open}
         transactions={mapFinancesToTransactItems(recentFinances)}
-        onPressSeeAll={() => navigation.navigate('Accounts')}
+        // Abre la pantalla completa SIN filtros: desde Balance la
+        // pregunta es "todos mis movimientos", no los de una cuenta.
+        // Antes solo cambiaba a la pestana Movimientos, que muestra los
+        // de la cuenta seleccionada — no todos.
+        onPressSeeAll={() => (navigation as any).navigate('AllMovements')}
       />
     );
   };
@@ -180,6 +202,7 @@ const ResumenScreen = () => {
           )}
         </>
       )}
+      <TransactionActionsDialogs {...transactionActions.dialogProps} />
     </ScreenTemplate>
   );
 };

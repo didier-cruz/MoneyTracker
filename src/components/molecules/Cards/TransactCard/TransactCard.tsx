@@ -21,6 +21,8 @@ const CONTENT_PADDING = 16;
 
 type TransactCardProps = {
   transactions: TransactItem[];
+  /** Pulsacion larga sobre una fila: administrar el movimiento. */
+  onLongPressItem?: (financeId: number) => void;
   /** "See all" (lime, top-right) — omit to hide the link entirely. No
    * approved destination exists for it yet on `ResumenScreen` (see that
    * screen's HANDOFF note); left optional so this component itself
@@ -28,7 +30,11 @@ type TransactCardProps = {
   onPressSeeAll?: () => void;
 };
 
-const TransactCard: FC<TransactCardProps> = ({transactions, onPressSeeAll}) => {
+const TransactCard: FC<TransactCardProps> = ({
+  transactions,
+  onPressSeeAll,
+  onLongPressItem,
+}) => {
   const {t} = useTranslation();
   return (
     <View style={styles.container}>
@@ -53,7 +59,15 @@ const TransactCard: FC<TransactCardProps> = ({transactions, onPressSeeAll}) => {
           {transactions.map((transaction, index) => (
             <Fragment key={transaction.id ?? index}>
               {index > 0 && <View style={styles.divider} />}
-              <TransactItem {...transaction} containerStyle={styles.row} />
+              <TransactItem
+                {...transaction}
+                containerStyle={styles.row}
+                onLongPress={
+                  onLongPressItem && transaction.id !== undefined
+                    ? () => onLongPressItem(transaction.id as number)
+                    : undefined
+                }
+              />
             </Fragment>
           ))}
         </Card.Body>

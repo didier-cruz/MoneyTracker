@@ -17,17 +17,35 @@ interface CategoryLimitsSectionProps {
   daysRemainingInMonth: number;
   onRetry: () => void;
   onPressBudget: (budget: ICategoryBudgetWithSpent) => void;
+  onDeleteBudget: (budget: ICategoryBudgetWithSpent) => void;
   onPressAddLimit: () => void;
+  /**
+   * Cuantas categorias de gasto quedan SIN limite este mes
+   * (`useBudgetsScreen.categoriesWithoutBudget`). Cuando es 0 no hay
+   * nada que anadir, asi que el boton se oculta en lugar de abrir una
+   * hoja vacia.
+   */
+  categoriesWithoutLimitCount: number;
 }
 
 /**
  * "Límites del mes" — one card holding every category with a spending
  * limit set for the current period, per the approved design (icon,
  * name, `spent / limit`, 8px progress bar, red over-limit message).
- * "Set a limit" always appears at the bottom, even with rows already
- * present — adding a SECOND (third, ...) category's limit is just as
- * common a next action as looking at the first one, not a one-time
+ * "Set a limit" sits at the bottom even with rows already present —
+ * adding a SECOND (third, ...) category's limit is just as common a
+ * next action as looking at the first one, not a one-time
  * empty-state-only affordance.
+ *
+ * It disappears only when there is genuinely nothing left to add:
+ * every expense category already has a limit this month. Before, it
+ * stayed and opened a sheet whose only content was "todas las
+ * categorías ya tienen límite" — a button whose sole outcome was
+ * telling the user it should not have been there.
+ *
+ * The same count of 0 also happens when there are NO expense
+ * categories at all, which is a different problem with a different way
+ * out, so the empty state says so instead of leaving a dead end.
  */
 export const CategoryLimitsSection: FC<CategoryLimitsSectionProps> = ({
   budgets,
@@ -36,9 +54,15 @@ export const CategoryLimitsSection: FC<CategoryLimitsSectionProps> = ({
   daysRemainingInMonth,
   onRetry,
   onPressBudget,
+  onDeleteBudget,
   onPressAddLimit,
+  categoriesWithoutLimitCount,
 }) => {
   const {t} = useTranslation();
+  const canAddLimit = categoriesWithoutLimitCount > 0;
+  // Sin limites Y sin categorias que puedan tenerlos: no es que falte
+  // configurar uno, es que antes hay que crear una categoria de gasto.
+  const hasNoCategoriesAtAll = budgets.length === 0 && !canAddLimit;
   return (
     <View style={styles.section}>
       <View style={styles.headingRow}>
@@ -76,31 +100,37 @@ export const CategoryLimitsSection: FC<CategoryLimitsSectionProps> = ({
       )}
 
       {status === 'success' && (
-        <View style={styles.card}>
+        <View style={[styles.card, !canAddLimit && styles.cardWithoutAction]}>
           {budgets.length === 0 ? (
             <Text color={colors[gray][0]} style={styles.emptyMessage}>
-              {t('budgets.limitsEmptyState')}
+              {hasNoCategoriesAtAll
+                ? t('budgets.noExpenseCategories')
+                : t('budgets.limitsEmptyState')}
             </Text>
           ) : (
-            budgets.map(budget => (
+            budgets.map((budget, index) => (
               <CategoryLimitRow
                 key={budget.id}
                 budget={budget}
                 onPress={() => onPressBudget(budget)}
+                onDelete={() => onDeleteBudget(budget)}
+                showSeparator={canAddLimit || index < budgets.length - 1}
               />
             ))
           )}
 
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={t('budgets.setNewLimit')}
-            onPress={onPressAddLimit}
-            style={styles.addLimitButton}>
-            <VectorIcon name="plus" color={colors[primary][0]} size={14} />
-            <Text color={colors[primary][0]} size={13} style={styles.addLimitLabel}>
-              {t('budgets.setLimit')}
-            </Text>
-          </TouchableOpacity>
+          {canAddLimit && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('budgets.setNewLimit')}
+              onPress={onPressAddLimit}
+              style={styles.addLimitButton}>
+              <VectorIcon name="plus" color={colors[primary][0]} size={14} />
+              <Text color={colors[primary][0]} size={13} style={styles.addLimitLabel}>
+                {t('budgets.setLimit')}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </View>
@@ -145,7 +175,15 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     borderRadius: 20,
     backgroundColor: colors[white][0],
-    elevation: 4,
+    // `boxShadow` y no `elevation`: en Android la sombra de `elevation`
+    // sigue el contorno RECTANGULAR de la vista y asomaba por las
+    // esquinas de las tarjetas redondeadas como un cuadrado gris.
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.10)',
+  },
+  // Sin el boton, la tarjeta necesita su propio aire abajo: el
+  // `paddingBottom: 4` de arriba contaba con los 14 del boton.
+  cardWithoutAction: {
+    paddingBottom: 14,
   },
   emptyMessage: {
     paddingVertical: 16,

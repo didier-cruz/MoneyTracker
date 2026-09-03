@@ -3,7 +3,9 @@ import {useFocusEffect} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
 import {
+  deleteCategory,
   getCategoriesByType,
+  getCategoryUsage,
   getFinances,
   getSpendingByCategory,
   getIncomeByCategory,
@@ -56,6 +58,7 @@ export const useCategoriesScreen = (financeType: FinanceType) => {
   const [nextCursor, setNextCursor] = useState<IFinancesCursor | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
   const hasLoadedFinancesRef = useRef(false);
 
   const loadCategories = useCallback(async () => {
@@ -198,6 +201,47 @@ export const useCategoriesScreen = (financeType: FinanceType) => {
     return total;
   }, [categoryTotals]);
 
+  /**
+   * Cuantos movimientos y limites cuelgan de una categoria. La pantalla
+   * lo pide ANTES de abrir la confirmacion de borrado, para avisar con
+   * numeros reales en vez de con un "puede que afecte a algo".
+   */
+  const fetchCategoryUsage = useCallback(
+    async (id: number): Promise<{movements: number; budgets: number}> => {
+      try {
+        const db = await getDbConnection();
+        return await getCategoryUsage(db, id);
+      } catch (e: any) {
+        console.warn('[useCategoriesScreen] fetchCategoryUsage failed:', e?.message ?? e);
+        // Ante la duda, cero: el dialogo mostrara el mensaje neutro en
+        // vez de inventar cifras.
+        return {movements: 0, budgets: 0};
+      }
+    },
+    [],
+  );
+
+  /** Borra una categoria y recarga el listado. Ver `deleteCategory` para
+   * que le pasa a sus movimientos (se quedan sin categoria, no se
+   * borran). */
+  const deleteCategoryById = useCallback(
+    async (id: number): Promise<boolean> => {
+      setIsDeletingCategory(true);
+      try {
+        const db = await getDbConnection();
+        await deleteCategory(db, id);
+        await loadCategories();
+        return true;
+      } catch (e: any) {
+        console.warn('[useCategoriesScreen] deleteCategoryById failed:', e?.message ?? e);
+        return false;
+      } finally {
+        setIsDeletingCategory(false);
+      }
+    },
+    [loadCategories],
+  );
+
   return {
     categories,
     categoryTotals,
@@ -220,5 +264,9 @@ export const useCategoriesScreen = (financeType: FinanceType) => {
 
     isRefreshing,
     refresh,
+
+    fetchCategoryUsage,
+    deleteCategoryById,
+    isDeletingCategory,
   };
 };

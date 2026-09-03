@@ -3,12 +3,24 @@ import {Card} from '@components/atoms/Card';
 import {Text} from '@components/atoms/text/Text';
 import {Title} from '@components/atoms/text/Title';
 import React, {FC} from 'react';
-import {ActivityIndicator, SectionList, StyleSheet, View} from 'react-native';
+import {
+  ActivityIndicator,
+  SectionList,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {colors, accent, gray} from '@constants/colors/colors';
 import {useTranslation} from 'react-i18next';
 
 type TransactList = {
   sectionData: SectionTransactItem[];
+  /** Pulsacion larga sobre una fila: abre administrar el movimiento.
+   * Opcional — sin el las filas no son pulsables. */
+  onLongPressItem?: (financeId: number) => void;
+  /** "Ver todos": abre la pantalla de todos los movimientos, ya
+   * filtrada por lo que esta lista muestra. */
+  onPressSeeAll?: () => void;
   /**
    * The list's header title — the SELECTED account's name (e.g.
    * "Efectivo"), per the approved prototype, which pairs it with
@@ -34,6 +46,8 @@ type TransactList = {
 
 const TransactList: FC<TransactList> = ({
   sectionData,
+  onLongPressItem,
+  onPressSeeAll,
   headerTitle,
   headerSubtitle,
   onEndReached,
@@ -48,9 +62,23 @@ const TransactList: FC<TransactList> = ({
         <Title level={2} numberOfLines={1} style={styles.headerTitle}>
           {headerTitle}
         </Title>
-        <Text color={colors[gray][0]} size={12}>
-          {headerSubtitle}
-        </Text>
+        <View style={styles.headerRight}>
+          <Text color={colors[gray][0]} size={12}>
+            {headerSubtitle}
+          </Text>
+          {onPressSeeAll && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('allMovements.seeAll')}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+              onPress={onPressSeeAll}
+              style={styles.seeAll}>
+              <Text color={colors[accent][2]} size={12}>
+                {t('allMovements.seeAll')}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       <Card style={styles.card}>
         <Card.Body>
@@ -61,7 +89,15 @@ const TransactList: FC<TransactList> = ({
             }
             style={styles.section}
             renderItem={({item}) => (
-              <TransactItem {...item} containerStyle={styles.row} />
+              <TransactItem
+                {...item}
+                containerStyle={styles.row}
+                onLongPress={
+                  onLongPressItem && item.id !== undefined
+                    ? () => onLongPressItem(item.id as number)
+                    : undefined
+                }
+              />
             )}
             ItemSeparatorComponent={() => <View style={styles.divider} />}
             onEndReached={onEndReached}
@@ -115,11 +151,17 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F5F5FA',
     alignSelf: 'center',
   },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
+  seeAll: {
+    marginTop: 2,
+  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: 8,
   },
   headerTitle: {
     flexShrink: 1,

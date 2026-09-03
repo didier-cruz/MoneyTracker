@@ -261,3 +261,35 @@ export const getCategoryBudget = async (
   }
   return mapRowToBudgetWithSpent(resultSet.rows.item(0));
 };
+
+/**
+ * Borra un limite mensual. Es un DELETE de verdad, no un archivado como
+ * el de cuentas o sobres, y la diferencia es deliberada: un limite no
+ * tiene historial propio que preservar —el gasto vive en `finances` y
+ * se sigue contando igual sin el— asi que conservar la fila solo dejaria
+ * basura que ninguna consulta vuelve a mirar. Quitar el limite de una
+ * categoria NO toca ninguno de sus movimientos.
+ *
+ * Se borra por `id` de la fila y no por `(idCategory, period)` porque es
+ * la fila concreta que el usuario esta viendo; el par tambien es unico
+ * (indice `UNIQUE` de la migracion 5), pero el id no depende de que la
+ * pantalla resuelva bien el periodo.
+ *
+ * Devuelve `true` si habia una fila que borrar y `false` si no. No lanza
+ * en ese caso: que el limite ya no exista es justamente el estado que se
+ * queria alcanzar, y dos toques seguidos sobre el mismo boton —o dos
+ * pantallas abiertas a la vez— no son un error que mostrar al usuario.
+ */
+export const deleteCategoryBudget = async (
+  db: SQLiteDatabase,
+  id: number,
+): Promise<boolean> => {
+  if (!isFiniteInteger(id) || id <= 0) {
+    throw new Error('id must be a positive integer');
+  }
+  const [result] = await db.executeSql(
+    'DELETE FROM category_budgets WHERE id = ?',
+    [id],
+  );
+  return result.rowsAffected > 0;
+};

@@ -127,11 +127,9 @@ const styles = StyleSheet.create({
   },
   pillActive: {
     backgroundColor: colors[white][0],
-    shadowColor: 'black',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.07,
-    shadowRadius: 5,
-    elevation: 2,
+    // Idem: una sola sombra para las dos plataformas, y que respete
+    // el radio de la pastilla.
+    boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.07)',
   },
   pillText: {
     fontSize: 14,

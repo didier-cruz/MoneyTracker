@@ -3,6 +3,7 @@ import {RouteProp} from '@react-navigation/native';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from '@components/atoms/text/Text';
 import {ScreenContainer, KeyboardContainer, Spacer} from '@components/atoms';
+import {ChipSelect} from '@components/atoms/ChipSelect';
 import {ConfirmDialog} from '@components/organisms/feedback';
 import {useAccountForm} from '@hooks/useAccountForm';
 import {ScrollView} from 'react-native-gesture-handler';
@@ -11,8 +12,13 @@ import InputField from '@screens/[categories]/CreateCategory/partials/InputField
 import SymbolList from '@screens/[categories]/CreateCategory/partials/SymbolList/SymbolList';
 import SaveAction from '@screens/[categories]/CreateCategory/partials/SaveAction/SaveAction';
 import KindField from './partials/KindField/KindField';
-import {AccountsNavParams} from '@navigation/[accounts]/AccountsNavigator/types';
-import {accent, colors, secondary, white} from '@constants/colors/colors';
+// Se tipa contra el stack de ADMINISTRACION, que declara todas las
+// rutas que esta pantalla usa (`CreateAccount` y `EditAccount`). El
+// stack de Movimientos solo registra el alta, asi que no sirve de
+// referencia para el modo edicion. Tipado por forma, no por identidad
+// del navegador — igual que en categorias.
+import {AccountsAdminNavParams as AccountsNavParams} from '@navigation/[accounts]/AccountsAdminNavigator';
+import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
 import {useTranslation} from 'react-i18next';
 
 /**
@@ -67,7 +73,12 @@ export const CreateAccount = ({navigation, route}: CreateAccountProps) => {
     onChangeSelectedKind,
     initialBalanceText,
     onChangeInitialBalanceText,
-    error,
+    balanceSign,
+    onChangeBalanceSign,
+    allowsNegativeBalance,
+    nameError,
+    amountError,
+    formError,
     canSave,
     saveAccount,
     loadStatus,
@@ -150,21 +161,51 @@ export const CreateAccount = ({navigation, route}: CreateAccountProps) => {
               onChangeInputText={onChangeInputText}
               placeholder={t('accounts.accountNamePlaceholder')}
               accessibilityLabel={t('accounts.accountNamePlaceholder')}
-              error={error}
+              error={nameError}
             />
             <Spacer space={20} />
             <KindField value={selectedKind} onChange={onChangeSelectedKind} />
             <Spacer space={20} />
+            {/* Solo en tarjeta y prestamo: el signo del saldo se elige
+                aqui en vez de teclearse, porque el `decimal-pad` de
+                Android no tiene tecla `-`. Ver `useAccountForm`. */}
+            {allowsNegativeBalance && (
+              <>
+                <ChipSelect
+                  label={t('accounts.balanceSignLabel')}
+                  value={balanceSign}
+                  onChange={onChangeBalanceSign}
+                  options={[
+                    {value: 'negative', label: t('accounts.balanceSignOwed')},
+                    {value: 'positive', label: t('accounts.balanceSignPositive')},
+                  ]}
+                />
+                <Text
+                  size={12}
+                  color={colors[gray][0]}
+                  style={stateStyles.hint}>
+                  {t('accounts.debtBalanceHint')}
+                </Text>
+              </>
+            )}
             <InputField
               inputText={initialBalanceText}
               onChangeInputText={onChangeInitialBalanceText}
               placeholder={t('accounts.initialBalancePlaceholder')}
               accessibilityLabel={t('accounts.initialBalanceAccessibilityLabel')}
               keyboardType="decimal-pad"
-              error=""
+              error={amountError}
             />
             <SymbolList selectedIcon={selectedIcon} onPressItem={handlePressItem} />
             <Spacer space={20} />
+            {formError !== '' && (
+              <Text
+                color={colors[secondary][0]}
+                style={stateStyles.formError}
+                accessibilityLiveRegion="polite">
+                {formError}
+              </Text>
+            )}
             <SaveAction onSave={handleSave} disabled={!canSave} />
             <Spacer space={30} />
           </ScreenContainer>
@@ -195,6 +236,16 @@ const stateStyles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 8,
     textAlign: 'center',
+  },
+  // Los errores que no cuelgan de ningun input —falta el icono, fallo
+  // al guardar— se pintan aqui, junto al boton que los provoca.
+  formError: {
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  hint: {
+    marginTop: 8,
+    marginBottom: 12,
   },
   retryButton: {
     marginTop: 15,

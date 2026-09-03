@@ -2,6 +2,7 @@ import {accent, colors, gray, secondary, white} from '@constants/colors/colors';
 import {Headings} from '@components/atoms/text/Headings/Headings';
 import {StackNavParams} from '@navigation/StackNav/types';
 import {StackScreenProps} from '@react-navigation/stack';
+import {RouteProp} from '@react-navigation/native';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -24,7 +25,20 @@ import AmountCard from './partials/AmountCard';
 import CategoryGrid from './partials/CategoryGrid';
 import TypeSegment from './partials/TypeSegment';
 
-interface FormScreenProps extends StackScreenProps<StackNavParams, 'Form'> {}
+/**
+ * Misma union de `RouteProp` que `CreateAccount`/`CreateCategory` —
+ * esta pantalla sirve la ruta `Form` (crear) y `EditTransaction`
+ * (editar).
+ */
+type FormScreenProps = {
+  navigation: StackScreenProps<
+    StackNavParams,
+    'Form' | 'EditTransaction'
+  >['navigation'];
+  route:
+    | RouteProp<StackNavParams, 'Form'>
+    | RouteProp<StackNavParams, 'EditTransaction'>;
+};
 
 // Same one-off ink hex as `TypeSegment`/`CategoryGrid` — the
 // prototype's default text color for the screen's own title, not in
@@ -48,9 +62,14 @@ const INK = '#373737';
  * is gone from this screen — it isn't in the prototype and
  * `DashboardScreen` still uses it independently (out of scope here).
  */
-export const FormScreen = ({navigation}: FormScreenProps) => {
+export const FormScreen = ({navigation, route}: FormScreenProps) => {
+  const financeId =
+    route.name === 'EditTransaction' ? route.params.financeId : undefined;
+  const isEditMode = financeId !== undefined;
   const {t} = useTranslation();
   const {
+    financeStatus,
+    financeErrorMessage,
     inputText,
     onChangeInputText,
     selectedType,
@@ -70,7 +89,7 @@ export const FormScreen = ({navigation}: FormScreenProps) => {
     amountError,
     isSaving,
     saveTransaction,
-  } = useFormScreen();
+  } = useFormScreen(financeId);
 
   /**
    * Tras guardar, lleva al usuario a Balance en vez de mostrar un dialogo:
@@ -80,9 +99,17 @@ export const FormScreen = ({navigation}: FormScreenProps) => {
    */
   const handleSave = async () => {
     const saved = await saveTransaction();
-    if (saved) {
-      navigation.getParent()?.navigate('Resumen' as never);
+    if (!saved) {
+      return;
     }
+    // Al EDITAR se vuelve de donde se vino: el usuario abrio la edicion
+    // desde una lista concreta (Balance, Cuentas o Categorias) y
+    // mandarlo a Balance lo sacaria del sitio donde estaba trabajando.
+    if (isEditMode) {
+      navigation.goBack();
+      return;
+    }
+    navigation.getParent()?.navigate('Resumen' as never);
   };
 
   const handleBack = () => {
@@ -90,6 +117,43 @@ export const FormScreen = ({navigation}: FormScreenProps) => {
       navigation.goBack();
     }
   };
+
+  if (isEditMode && financeStatus === 'loading') {
+    return (
+      <KeyboardContainer>
+        <ScreenContainer>
+          <View style={stateStyles.centered}>
+            <ActivityIndicator
+              size="large"
+              color={colors[accent][2]}
+              accessibilityLabel={t('form.loadingTransaction')}
+            />
+          </View>
+        </ScreenContainer>
+      </KeyboardContainer>
+    );
+  }
+
+  if (isEditMode && financeStatus === 'error') {
+    return (
+      <KeyboardContainer>
+        <ScreenContainer>
+          <View style={stateStyles.centered}>
+            <Text style={[stateStyles.message, stateStyles.messageText]}>
+              {financeErrorMessage}
+            </Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('form.back')}
+              onPress={handleBack}
+              style={stateStyles.backAction}>
+              <Text style={stateStyles.backActionLabel}>{t('common.back')}</Text>
+            </TouchableOpacity>
+          </View>
+        </ScreenContainer>
+      </KeyboardContainer>
+    );
+  }
 
   const categoryCountLabel =
     selectedType === 'expense'
@@ -109,7 +173,9 @@ export const FormScreen = ({navigation}: FormScreenProps) => {
               style={styles.backButton}>
               <Icon name="chevron-left" size={24} color={colors[gray][0]} />
             </TouchableOpacity>
-            <Text style={styles.title}>{t('form.title')}</Text>
+            <Text style={styles.title}>
+              {isEditMode ? t('form.editTitle') : t('form.title')}
+            </Text>
           </View>
 
           <Spacer space={18} />
@@ -196,7 +262,7 @@ export const FormScreen = ({navigation}: FormScreenProps) => {
               categories={filteredCategories}
               selectedCategory={selectedCategory}
               onSelectCategory={selectCategory}
-            onPressManageCategories={() => navigation.navigate('Categories')}
+            onPressManageCategories={() => navigation.navigate('CreateCategory')}
             />
           )}
 
@@ -261,7 +327,10 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 8},
     shadowOpacity: 0.32,
     shadowRadius: 16,
-    elevation: 6,
+    // `boxShadow` y no `elevation`: en Android la sombra de `elevation`
+    // sigue el contorno RECTANGULAR de la vista y asomaba por las
+    // esquinas de las tarjetas redondeadas como un cuadrado gris.
+    boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.12)',
   },
   saveButtonDisabled: {
     opacity: 0.5,
@@ -292,5 +361,22 @@ const stateStyles = StyleSheet.create({
     backgroundColor: colors[secondary][0],
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  backAction: {
+    marginTop: 16,
+    height: 44,
+    minWidth: 140,
+    borderRadius: 10,
+    backgroundColor: colors[secondary][0],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backActionLabel: {
+    color: colors[white][0],
+    fontWeight: '600',
+  },
+  messageText: {
+    color: colors[secondary][0],
+    textAlign: 'center',
   },
 });

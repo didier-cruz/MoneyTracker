@@ -78,10 +78,12 @@ export const migration002Statements: string[] = [
   `ALTER TABLE categories ADD COLUMN type TEXT NOT NULL DEFAULT 'expense';`,
   `CREATE INDEX IF NOT EXISTS idx_categories_type ON categories(type);`,
 
-  // 2. drop finances.idType + the types table (table-recreate pattern;
-  //    PRAGMA foreign_keys is toggled locally to this migration so it
-  //    is safe regardless of what the connection-level default is).
-  `PRAGMA foreign_keys = OFF;`,
+  // 2. drop finances.idType + the types table (table-recreate pattern).
+  //    Foreign keys have to be OFF for the drop-and-rename below; the
+  //    toggle used to live here as two statements, but the pragma is a
+  //    no-op inside a transaction and this list now runs inside one, so
+  //    `createTables` performs it around the transaction instead — see
+  //    `requiresForeignKeysOff` in `src/db/db.ts`.
   `CREATE TABLE finances_v2 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     finance INTEGER NOT NULL,
@@ -94,7 +96,6 @@ export const migration002Statements: string[] = [
   `DROP TABLE finances;`,
   `ALTER TABLE finances_v2 RENAME TO finances;`,
   `DROP TABLE IF EXISTS types;`,
-  `PRAGMA foreign_keys = ON;`,
 
   // 3. finances indexes for the query patterns financesQueries.ts exposes
   `CREATE INDEX IF NOT EXISTS idx_finances_date_id ON finances(dateCreated DESC, id DESC);`,

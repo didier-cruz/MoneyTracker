@@ -11,6 +11,11 @@ interface CategoryMovementsListProps {
   /** Selected category's display name, for the empty-state message. */
   categoryName?: string;
   sections: SectionTransactItem[];
+  /** Pulsacion larga sobre una fila: administrar el movimiento. */
+  onLongPressItem?: (financeId: number) => void;
+  /** "Ver todos": abre la pantalla de todos los movimientos, ya
+   * filtrada por esta categoria. */
+  onPressSeeAll?: () => void;
   /** Rows currently loaded (grows as `onEndReached` pages in more) — not
    * a total row count from the DB (`@db/queries` exposes no such
    * count), so this reads as "N movements loaded so far", not
@@ -42,6 +47,8 @@ interface CategoryMovementsListProps {
  */
 export const CategoryMovementsList: FC<CategoryMovementsListProps> = ({
   categoryName,
+  onLongPressItem,
+  onPressSeeAll,
   sections,
   count,
   status,
@@ -60,9 +67,23 @@ export const CategoryMovementsList: FC<CategoryMovementsListProps> = ({
           {t('categories.movementsHeading')}
         </Title>
         {status === 'success' && (
-          <Text color={colors[gray][0]} size={12}>
-            {t('categories.movementsCount', {count})}
-          </Text>
+          <View style={styles.headerRight}>
+            <Text color={colors[gray][0]} size={12}>
+              {t('categories.movementsCount', {count})}
+            </Text>
+            {onPressSeeAll && (
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={t('allMovements.seeAll')}
+                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                onPress={onPressSeeAll}
+                style={styles.seeAll}>
+                <Text color={colors[accent][2]} size={12}>
+                  {t('allMovements.seeAll')}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </View>
 
@@ -107,7 +128,16 @@ export const CategoryMovementsList: FC<CategoryMovementsListProps> = ({
           keyExtractor={(item, index) =>
             item.id !== undefined ? String(item.id) : `${item.category}-${index}`
           }
-          renderItem={({item}) => <TransactItem {...item} />}
+          renderItem={({item}) => (
+            <TransactItem
+              {...item}
+              onLongPress={
+                onLongPressItem && item.id !== undefined
+                  ? () => onLongPressItem(item.id as number)
+                  : undefined
+              }
+            />
+          )}
           renderSectionHeader={({section: {date}}) => (
             <Title level={3} style={styles.sectionTitle}>
               {date}
@@ -137,7 +167,13 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     paddingHorizontal: 20,
-    marginTop: 20,
+    marginTop: 8,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
+  seeAll: {
+    marginTop: 2,
   },
   headerRow: {
     flexDirection: 'row',

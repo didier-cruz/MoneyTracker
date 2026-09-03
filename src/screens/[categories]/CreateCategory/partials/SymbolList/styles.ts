@@ -51,14 +51,23 @@ export const listStyles = StyleSheet.create({
   },
 });
 
-export const selectedIconColor = (id: number, selectedIconId: number) =>
-  selectedIconId === id ? colors[accent][0] : colors[gray][1];
+// Se compara por NOMBRE de icono, no por id. El id de `IIcon` solo vive en
+// memoria y ahora hay dos fuentes que lo asignan —los 16 fijos de
+// `@data/icons` y el catalogo completo, que numera por posicion en el juego
+// de FontAwesome—, asi que el mismo icono podia llegar con dos ids
+// distintos y no marcarse como elegido. El nombre es lo unico que se
+// guarda en la base y lo unico que identifica un icono de verdad.
+export const selectedIconColor = (name: string, selectedIconName?: string) =>
+  selectedIconName === name ? colors[accent][0] : colors[gray][1];
 
-export const activeItemContainerStyle = (id: number, selectedIconId: number) =>
+export const activeItemContainerStyle = (
+  name: string,
+  selectedIconName?: string,
+) =>
   StyleSheet.flatten([
     listStyles.activeItemContainer,
     {
       backgroundColor:
-        selectedIconId === id ? colors[accent][1] : 'transparent',
+        selectedIconName === name ? colors[accent][1] : 'transparent',
     },
   ]);

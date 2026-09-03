@@ -131,14 +131,23 @@ const styles = StyleSheet.create({
   // El margen izquierdo se elimino: la separacion entre tarjetas la da
   // ahora el `gap` del contenedor de la lista, para que la PRIMERA quede
   // alineada con el resto de la pantalla en vez de 20 mas adentro.
+  // Sin margen vertical propio: el aire de arriba y abajo lo da el
+  // `paddingVertical` del contenido de `CatalogList`, que existe para
+  // que quepa la sombra de `elevation: 10`. Tener los dos sumaba 32 por
+  // lado y era lo que empujaba la lista de movimientos hacia abajo. Lo
+  // mismo con el margen derecho de la variante ancha: la separacion
+  // entre tarjetas la da el `gap` de la lista, y declararla dos veces
+  // dejaba la tarjeta ancha con el doble de hueco a su derecha.
   card: {
     borderRadius: 20,
-    elevation: 10,
-    marginVertical: 20,
+    // `boxShadow` y NO `elevation`: en Android la sombra de `elevation`
+    // se dibuja segun el contorno RECTANGULAR de la vista, asi que
+    // asomaba por las cuatro esquinas de la tarjeta redondeada como un
+    // cuadrado gris. `boxShadow` (RN 0.76+, nueva arquitectura) sigue el
+    // `borderRadius`.
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.14)',
   },
-  cardWide: {
-    marginRight: 20,
-  },
+  cardWide: {},
   cardBody: {position: 'relative'},
   cardBodyContnr: {
     width: 150,

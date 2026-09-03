@@ -164,7 +164,10 @@ const styles = StyleSheet.create({
   touchable: {},
   card: {
     borderRadius: 20,
-    elevation: 10,
+    // `boxShadow` y no `elevation`: en Android la sombra de `elevation`
+    // sigue el contorno RECTANGULAR de la vista y asomaba por las
+    // esquinas de las tarjetas redondeadas como un cuadrado gris.
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.14)',
   },
   body: {
     paddingVertical: 16,

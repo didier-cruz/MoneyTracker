@@ -12,6 +12,7 @@ import {
   ICategoryBudgetWithSpent,
   IEnvelopeWithBalance,
   setCategoryBudget,
+  deleteCategoryBudget,
   withdrawFromEnvelope,
 } from '@db/queries';
 import {getCurrentPeriod} from '@screens/BudgetsScreen/mappers';
@@ -243,6 +244,32 @@ export const useBudgetsScreen = () => {
     [period, loadBudgets],
   );
 
+  const [isDeletingLimit, setIsDeletingLimit] = useState(false);
+
+  /**
+   * Borra un limite y recarga la lista para que la fila desaparezca al
+   * momento. Misma forma que `archiveEnvelopeById`, salvo que aqui el
+   * borrado es real: ver `deleteCategoryBudget` para por que un limite
+   * no se archiva.
+   */
+  const deleteCategoryLimitById = useCallback(
+    async (id: number): Promise<boolean> => {
+      setIsDeletingLimit(true);
+      try {
+        const db = await getDbConnection();
+        await deleteCategoryBudget(db, id);
+        await loadBudgets();
+        return true;
+      } catch (e: any) {
+        console.warn('[useBudgetsScreen] deleteCategoryLimitById failed:', e?.message ?? e);
+        return false;
+      } finally {
+        setIsDeletingLimit(false);
+      }
+    },
+    [loadBudgets],
+  );
+
   return {
     period,
 
@@ -268,5 +295,7 @@ export const useBudgetsScreen = () => {
 
     setCategoryLimit,
     isSavingLimit,
+    deleteCategoryLimitById,
+    isDeletingLimit,
   };
 };

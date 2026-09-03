@@ -26,6 +26,18 @@ const CatalogList: FC<CatalogList> = ({
       data={data}
       horizontal
       showsHorizontalScrollIndicator={false}
+      /**
+       * `removeClippedSubviews={false}`: en Android va activado por
+       * defecto y RECORTA cada celda a sus propios limites. Como la
+       * sombra de `CatalogCard` (`elevation: 10`) se dibuja FUERA de la
+       * tarjeta, quedaba cortada a los lados en un rectangulo de bordes
+       * duros, visible como una costura alrededor de cada tarjeta.
+       *
+       * El coste de desactivarlo es que las celdas fuera de pantalla
+       * siguen montadas: con tres o cuatro cuentas —el caso real de
+       * esta lista— no se nota, y a cambio la sombra se ve entera.
+       */
+      removeClippedSubviews={false}
       style={styles.list}
       contentContainerStyle={styles.content}
       renderItem={({item}) => (
@@ -56,6 +68,11 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: SCREEN_HORIZONTAL_PADDING,
+    // Aire vertical para que quepa la sombra de las tarjetas
+    // (`CatalogCard` usa `elevation: 10`). Sin el, el contenido mide
+    // exactamente lo que miden las tarjetas y la sombra se recorta
+    // arriba y abajo. Mismo caso que `EnvelopesSection`.
+    paddingVertical: 12,
     // La separacion entre tarjetas vive aqui, no en el margen de cada
     // una: asi la primera queda alineada con el borde del contenido.
     gap: 20,

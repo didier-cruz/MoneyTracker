@@ -3,7 +3,8 @@ import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
 import {AccountKind, getAccountById, insertAccount, updateAccount} from '@db/queries';
 import {formatCentsToCurrency, parseInitialBalanceToCents} from '@utils/currency';
-import {icons} from '@data/icons';
+import {isDebtAccountKind} from '@db/queries';
+import {toIcon} from '@data/iconCatalog';
 import {useNoticeDialog} from '@hooks/useNoticeDialog';
 
 const DEFAULT_ACCOUNT_KIND: AccountKind = 'cash';
@@ -12,18 +13,26 @@ export type AccountFormMode = 'create' | 'edit';
 export type AccountFormLoadStatus = 'idle' | 'loading' | 'success' | 'error';
 
 /**
+ * A que campo pertenece el error que se esta mostrando. `form` es para
+ * los que no cuelgan de ningun input —falta de icono, fallo al
+ * guardar— y la pantalla los pinta junto al boton de guardar.
+ */
+export type AccountFormErrorField = 'name' | 'amount' | 'form';
+type AccountFormError = {field: AccountFormErrorField; message: string};
+
+/**
  * Strips `formatCentsToCurrency`'s display decoration ("$", thousands
  * commas) so its output can seed the same editable `decimal-pad` text
  * field that `parseInitialBalanceToCents` later re-parses on save —
  * reuses both existing money utilities instead of writing a new
  * cents<->string conversion.
  *
- * `Math.abs` is defensive, not expected to ever fire: this field's
- * keyboard has no `-` key (see `parseInitialBalanceToCents`), so every
- * `initialBalance` this form has ever produced is >= 0. Only a value
- * written outside this UI could be negative; showing its magnitude here
- * is a safer fallback than mis-parsing (or crashing on) a leading `-`
- * this field has never had to handle.
+ * Devuelve la MAGNITUD, sin signo: el signo no vive en este campo sino
+ * en `balanceSign`, un control aparte que solo aparece en las cuentas
+ * de tipo deuda. El teclado `decimal-pad` de Android no tiene tecla
+ * `-`, asi que pedirlo escrito no era viable; y separarlo obliga a
+ * declarar la intencion ("debo" / "a favor") en vez de depender de que
+ * el usuario se acuerde de un guion.
  */
 const centsToEditableAmountText = (cents: number): string =>
   formatCentsToCurrency(Math.abs(cents)).replace(/[$,]/g, '');
@@ -61,8 +70,17 @@ export const useAccountForm = (accountId?: number) => {
     useState<AccountKind>(DEFAULT_ACCOUNT_KIND);
 
   const [initialBalanceText, setInitialBalanceText] = useState<string>('');
+  /** Signo del saldo inicial. Solo se puede elegir en cuentas de tipo
+   * deuda; en las demas se fuerza a positivo. */
+  const [balanceSign, setBalanceSign] = useState<'positive' | 'negative'>(
+    'positive',
+  );
 
-  const [error, setError] = useState<string>('');
+  // Un solo error a la vez, ETIQUETADO con el campo al que pertenece.
+  // Antes era un `string` suelto que la pantalla pintaba siempre bajo el
+  // input del nombre, asi que "Saldo inicial no valido" aparecia debajo
+  // de un nombre correcto. Mismo arreglo que `useEnvelopeForm`.
+  const [formError, setFormError] = useState<AccountFormError | null>(null);
 
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
@@ -90,16 +108,13 @@ export const useAccountForm = (accountId?: number) => {
         return;
       }
       setInputText(account.name);
-      // `icons` (the static picker list `SymbolList` renders) may not
-      // contain this exact icon string in the unlikely case it was
-      // written by something other than this same form — falling back
-      // to a synthetic `{id: -1, icon}` still lets the field display
-      // and save the account unchanged, just without a highlighted
-      // match in the picker.
-      const matchedIcon = icons.find(i => i.icon === account.icon);
-      onChangeSelectedIcon(matchedIcon ?? {id: -1, icon: account.icon});
+      // `toIcon` resuelve el id contra el catalogo COMPLETO. Antes se
+      // buscaba solo entre los 16 fijos y cualquier otro icono entraba
+      // con id -1, asi que al editar no aparecia marcado en la rejilla.
+      onChangeSelectedIcon(toIcon(account.icon));
       setSelectedKind(account.kind);
       setInitialBalanceText(centsToEditableAmountText(account.initialBalance));
+      setBalanceSign(account.initialBalance < 0 ? 'negative' : 'positive');
       setLoadStatus('success');
     } catch (e: any) {
       setLoadErrorMessage(
@@ -113,19 +128,42 @@ export const useAccountForm = (accountId?: number) => {
     loadAccount();
   }, [loadAccount]);
 
+  // Cada error se borra en cuanto el usuario toca el campo del que
+  // hablaba: dejarlo puesto mientras se corrige el valor hace que la
+  // pantalla contradiga lo que se esta escribiendo.
+  const clearErrorFor = (field: AccountFormErrorField) =>
+    setFormError(current => (current?.field === field ? null : current));
+
   const onChangeInputText = (text: string) => {
+    clearErrorFor('name');
     setInputText(text);
   };
 
   const onChangeSelectedKind = (kind: AccountKind) => {
     setSelectedKind(kind);
+    // Al pasar a un tipo que no admite deuda, el signo vuelve a
+    // positivo: dejarlo en negativo guardaria un saldo negativo en una
+    // cuenta de efectivo por un control que ya no esta a la vista.
+    if (!isDebtAccountKind(kind)) {
+      setBalanceSign('positive');
+    }
   };
 
+  const onChangeBalanceSign = (sign: 'positive' | 'negative') => {
+    clearErrorFor('amount');
+    setBalanceSign(sign);
+  };
+
+  /** Si este tipo de cuenta ofrece elegir el signo del saldo. */
+  const allowsNegativeBalance = isDebtAccountKind(selectedKind);
+
   const onChangeInitialBalanceText = (text: string) => {
+    clearErrorFor('amount');
     setInitialBalanceText(text);
   };
 
   const handlePressItem = (id: number, icon: string) => {
+    clearErrorFor('form');
     onChangeSelectedIcon({id, icon});
   };
 
@@ -140,16 +178,27 @@ export const useAccountForm = (accountId?: number) => {
    * without this hook reaching into navigation itself. */
   const saveAccount = async (): Promise<boolean> => {
     if (inputText.trim() === '') {
-      setError(t('accounts.form.nameRequired'));
+      setFormError({field: 'name', message: t('accounts.form.nameRequired')});
       return false;
     }
     if (!selectedIcon) {
-      setError(t('accounts.form.iconRequired'));
+      setFormError({field: 'form', message: t('accounts.form.iconRequired')});
       return false;
     }
-    const initialBalance = parseInitialBalanceToCents(initialBalanceText);
+    const magnitude = parseInitialBalanceToCents(initialBalanceText, {
+      // Se acepta tambien un `-` escrito a mano, no solo el control de
+      // signo: un valor pegado desde fuera o escrito con un teclado
+      // fisico no deberia rechazarse por la forma en que llego.
+      allowNegative: allowsNegativeBalance,
+    });
+    const initialBalance =
+      magnitude === null
+        ? null
+        : allowsNegativeBalance && balanceSign === 'negative'
+          ? -Math.abs(magnitude)
+          : magnitude;
     if (initialBalance === null) {
-      setError(t('accounts.form.invalidInitialBalance'));
+      setFormError({field: 'amount', message: t('accounts.form.invalidInitialBalance')});
       return false;
     }
     setIsSaving(true);
@@ -162,7 +211,7 @@ export const useAccountForm = (accountId?: number) => {
           kind: selectedKind,
           initialBalance,
         });
-        setError('');
+        setFormError(null);
         showNotice('info', t('common.success'), t('accounts.form.updated'));
         return true;
       }
@@ -172,15 +221,16 @@ export const useAccountForm = (accountId?: number) => {
         kind: selectedKind,
         initialBalance,
       });
-      setError('');
+      setFormError(null);
       setInputText('');
       onChangeSelectedIcon(undefined);
       setSelectedKind(DEFAULT_ACCOUNT_KIND);
       setInitialBalanceText('');
+      setBalanceSign('positive');
       showNotice('info', t('common.success'), t('accounts.form.created'));
       return true;
     } catch (e: any) {
-      setError(t('accounts.form.saveError', {message: e.message}));
+      setFormError({field: 'form', message: t('accounts.form.saveError', {message: e.message})});
       return false;
     } finally {
       setIsSaving(false);
@@ -196,8 +246,13 @@ export const useAccountForm = (accountId?: number) => {
     selectedKind,
     onChangeSelectedKind,
     initialBalanceText,
+    balanceSign,
+    onChangeBalanceSign,
+    allowsNegativeBalance,
     onChangeInitialBalanceText,
-    error,
+    nameError: formError?.field === 'name' ? formError.message : '',
+    amountError: formError?.field === 'amount' ? formError.message : '',
+    formError: formError?.field === 'form' ? formError.message : '',
     isSaving,
     canSave,
     saveAccount,

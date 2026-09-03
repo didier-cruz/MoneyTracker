@@ -23,11 +23,15 @@
       "to": "Transferencia a {{name}}",
       "from": "Transferencia de {{name}}",
       "paymentFrom": "Pago de {{name}}",
-      "unknownAccount": "cuenta desconocida"
-    }
+      "unknownAccount": "cuenta desconocida",
+      "label": "Transferencia"
+    },
+    "noCategory": "Sin categoría",
+    "back": "Volver"
   },
   "drawer": {
     "home": "Inicio",
+    "accounts": "Cuentas",
     "categories": "Categorías",
     "signOut": "Cerrar sesión",
     "language": "Idioma"
@@ -76,12 +80,14 @@
       "cash": "Efectivo",
       "bank": "Banco",
       "credit_card": "Tarjeta de crédito",
+      "loan": "Préstamo",
       "receivable": "Por cobrar"
     },
     "editAccountTitle": "Editar cuenta",
     "createAccountTitle": "Crear cuenta",
-    "createAccountMessage": "Registra efectivo guardado, una cuenta bancaria/tarjeta de crédito, o dinero que alguien te debe",
+    "createAccountMessage": "Registra efectivo, una cuenta bancaria o tarjeta, un financiamiento que debes, o dinero que alguien te debe",
     "accountNamePlaceholder": "Nombre de la cuenta",
+    "accountTypeLabel": "Tipo de cuenta",
     "initialBalancePlaceholder": "Saldo inicial (opcional, ej. 0.00)",
     "initialBalanceAccessibilityLabel": "Saldo inicial",
     "loadingAccount": "Cargando cuenta",
@@ -96,7 +102,18 @@
       "created": "Cuenta creada",
       "saveError": "Ocurrió un error al guardar la cuenta: {{message}}"
     },
-    "titlePrefix": "Mis"
+    "titlePrefix": "Mis",
+    "balanceSignLabel": "¿Este saldo es deuda o saldo a favor?",
+    "balanceSignOwed": "Lo debo",
+    "balanceSignPositive": "A favor",
+    "debtBalanceHint": "En una tarjeta o un préstamo, lo que debes se guarda como saldo negativo: así resta de tu patrimonio neto.",
+    "tabLabel": "Cuentas",
+    "adminTitle": "Administrar cuentas",
+    "adminMessage": "Crea, edita o archiva tus cuentas. Para ver los movimientos de una, entra en Movimientos › Cuentas.",
+    "adminEmptyState": "Aún no tienes cuentas. Crea la primera con el botón de abajo.",
+    "adminAddAccount": "Nueva cuenta",
+    "editAccountAccessibilityLabel": "Editar {{name}}",
+    "archiveAccountAccessibilityLabel": "Archivar {{name}}"
   },
   "budgets": {
     "title": "Presupuestos",
@@ -114,6 +131,7 @@
     "retryLoadingLimits": "Reintentar carga de límites mensuales",
     "loadLimitsError": "No se pudieron cargar los límites de este mes: {{message}}",
     "limitsEmptyState": "Aún no hay límites establecidos este mes. Configura uno para empezar a controlar cuánto gastas por categoría.",
+    "noExpenseCategories": "Aún no tienes categorías de gasto. Crea una para poder ponerle un límite mensual.",
     "setNewLimit": "Establecer un nuevo límite mensual",
     "setLimit": "Establecer un límite",
     "limitRowAccessibilityHint": "Abre el límite de esta categoría para editarlo",
@@ -181,7 +199,12 @@
     },
     "envelopesSubtitle": "Dinero apartado",
     "daysRemaining_one": "Queda {{count}} día",
-    "daysRemaining_other": "Quedan {{count}} días"
+    "daysRemaining_other": "Quedan {{count}} días",
+    "deleteLimit": "Eliminar",
+    "deleteLimitTitle": "¿Eliminar el límite?",
+    "deleteLimitMessage": "Se quitará el límite mensual de «{{name}}». Sus movimientos no se tocan: solo dejas de tener un tope para esta categoría.",
+    "deleteLimitErrorMessage": "No se pudo eliminar el límite. Inténtalo de nuevo.",
+    "deleteLimitAccessibilityLabel": "Eliminar el límite de {{name}}"
   },
   "categories": {
     "expenses": "Gastos",
@@ -197,12 +220,12 @@
     "tabCopy": {
       "expenses": {
         "title": "Categorías de gastos",
-        "help": "Toca una categoría para ver sus transacciones.",
+        "help": "Toca una categoría para ver sus transacciones. Mantén pulsada una para editarla o eliminarla.",
         "totalLabel": "Gastado este mes"
       },
       "incomes": {
         "title": "Categorías de ingresos",
-        "help": "Toca una categoría para ver sus transacciones.",
+        "help": "Toca una categoría para ver sus transacciones. Mantén pulsada una para editarla o eliminarla.",
         "totalLabel": "Ganado este mes"
       }
     },
@@ -226,8 +249,33 @@
       "nameRequired": "El nombre de la categoría es obligatorio",
       "iconRequired": "Elige un ícono antes de continuar",
       "created": "Categoría creada",
-      "saveError": "Ocurrió un error al guardar la categoría: {{message}}"
-    }
+      "saveError": "Ocurrió un error al guardar la categoría: {{message}}",
+      "notFound": "No se encontró la categoría",
+      "loadError": "No se pudo cargar la categoría: {{message}}",
+      "updated": "Categoría actualizada",
+      "typeLockedByMovements": "No puedes cambiar el tipo de una categoría que ya tiene movimientos: el signo de cada movimiento está guardado y cambiaría de significado. Crea otra categoría con el tipo que necesitas."
+    },
+    "editCategoryTitle": "Editar categoría",
+    "loadingCategory": "Cargando categoría",
+    "retryLoadingCategory": "Reintentar carga de categoría",
+    "manageCategory": "Administrar «{{name}}»",
+    "manageCategoryHint": "Mantén pulsada una categoría para editarla o eliminarla",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteCategoryTitle": "¿Eliminar la categoría?",
+    "deleteCategoryPlain": "Se eliminará «{{name}}». No tiene movimientos ni límites asociados.",
+    "deleteCategoryError": "No se pudo eliminar la categoría. Inténtalo de nuevo.",
+    "deleteCategoryWithMovements_one": "Se eliminará «{{name}}». Su movimiento NO se borra: se queda sin categoría, con su importe y su fecha intactos.",
+    "deleteCategoryWithMovements_other": "Se eliminará «{{name}}». Sus {{count}} movimientos NO se borran: se quedan sin categoría, con su importe y su fecha intactos.",
+    "deleteCategoryWithBudgets_one": "Se eliminará «{{name}}» y su límite mensual. Su movimiento NO se borra: se queda sin categoría.",
+    "deleteCategoryWithBudgets_other": "Se eliminará «{{name}}» y su límite mensual. Sus {{count}} movimientos NO se borran: se quedan sin categoría.",
+    "tabLabel": "Categorías",
+    "adminTitle": "Administrar categorías",
+    "adminMessage": "Crea, edita o elimina tus categorías. Para ver los movimientos de una, entra en Movimientos › Categorías.",
+    "adminEmptyState": "Aún no tienes categorías. Crea la primera con el botón de abajo.",
+    "adminAddCategory": "Nueva categoría",
+    "editCategoryAccessibilityLabel": "Editar {{name}}",
+    "deleteCategoryAccessibilityLabel": "Eliminar {{name}}"
   },
   "transfer": {
     "title": "Transferir",
@@ -350,6 +398,75 @@
     "categoryHeading": "Categoría",
     "categoryCountExpense": "{{count}} de gasto",
     "categoryCountIncome": "{{count}} de ingreso",
-    "manageCategories": "Más categorías"
+    "manageCategories": "Más categorías",
+    "editTitle": "Editar movimiento",
+    "loadingTransaction": "Cargando movimiento",
+    "transactionNotFound": "No se encontró el movimiento",
+    "loadTransactionError": "No se pudo cargar el movimiento: {{message}}",
+    "loadTransactionFailed": "No se pudo cargar el movimiento.",
+    "editTransaction": "Editar",
+    "deleteTransaction": "Eliminar",
+    "manageTransactionHint": "Mantén pulsado un movimiento para editarlo o eliminarlo",
+    "deleteTransactionTitle": "¿Eliminar el movimiento?",
+    "deleteTransactionMessage": "Se eliminará {{description}}. El saldo de la cuenta se recalcula al instante.",
+    "deleteTransferMessage": "Se eliminará la transferencia completa de {{amount}} entre {{from}} y {{to}}. Se borran LAS DOS partes: media transferencia dejaría dinero descontado que nadie recibió.",
+    "deleteTransactionError": "No se pudo eliminar el movimiento. Inténtalo de nuevo.",
+    "transferNotEditableTitle": "Las transferencias no se editan",
+    "transferNotEditable": "Una transferencia son dos movimientos espejo, y cambiar solo uno inventaría dinero. Elimínala y vuelve a crearla desde Transferir."
+  },
+  "icons": {
+    "pickerTitle": "Elige un ícono",
+    "searchPlaceholder": "Buscar: casa, coche, comida...",
+    "searching": "Buscando…",
+    "noResults": "Ningún ícono coincide con «{{query}}»",
+    "seeAllIcons": "Ver todos los íconos",
+    "groups": {
+      "money": "Dinero",
+      "home": "Hogar",
+      "shopping": "Compras",
+      "food": "Comida",
+      "transport": "Transporte",
+      "health": "Salud",
+      "leisure": "Ocio",
+      "work": "Trabajo y estudio",
+      "tech": "Tecnología",
+      "people": "Personas",
+      "travel": "Viajes",
+      "other": "Otros"
+    }
+  },
+  "movements": {
+    "title": "Movimientos"
+  },
+  "allMovements": {
+    "title": "Todos los movimientos",
+    "periodLabel": "Periodo",
+    "accountLabel": "Cuenta",
+    "categoryLabel": "Categoría",
+    "allAccounts": "Todas",
+    "allCategories": "Todas",
+    "clearFilters": "Quitar filtros",
+    "loading": "Cargando movimientos",
+    "loadingMore": "Cargando más movimientos",
+    "loadError": "No se pudieron cargar los movimientos: {{message}}",
+    "empty": "Aún no hay movimientos registrados.",
+    "emptyFiltered": "Ningún movimiento coincide con estos filtros.",
+    "seeAll": "Ver todos",
+    "count_one": "{{count}} movimiento",
+    "count_other": "{{count}} movimientos",
+    "range": {
+      "all": "Todo",
+      "month": "Este mes",
+      "quarter": "Últimos 3 meses",
+      "year": "Este año"
+    },
+    "filtersButton": "Filtros",
+    "filtersTitle": "Filtrar movimientos",
+    "applyFilters": "Aplicar",
+    "noFilters": "Sin filtros",
+    "removeFilter": "Quitar el filtro {{name}}",
+    "selectPlaceholder": "Elegir…",
+    "searchPlaceholder": "Buscar…",
+    "noOptions": "Nada coincide con tu búsqueda."
   }
 }

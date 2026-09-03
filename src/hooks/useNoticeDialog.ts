@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {ConfirmDialogTone} from '@components/organisms/feedback/ConfirmDialog/ConfirmDialog';
 
-interface NoticeDialogState {
+export interface NoticeDialogState {
   visible: boolean;
   tone: ConfirmDialogTone;
   title: string;

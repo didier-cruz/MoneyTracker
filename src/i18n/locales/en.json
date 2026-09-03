@@ -23,11 +23,15 @@
       "to": "Transfer to {{name}}",
       "from": "Transfer from {{name}}",
       "paymentFrom": "Payment from {{name}}",
-      "unknownAccount": "unknown account"
-    }
+      "unknownAccount": "unknown account",
+      "label": "Transfer"
+    },
+    "noCategory": "No category",
+    "back": "Back"
   },
   "drawer": {
     "home": "Home",
+    "accounts": "Accounts",
     "categories": "Categories",
     "signOut": "Sign Out",
     "language": "Language"
@@ -76,12 +80,14 @@
       "cash": "Cash",
       "bank": "Bank",
       "credit_card": "Credit Card",
+      "loan": "Loan",
       "receivable": "Receivable"
     },
     "editAccountTitle": "Edit Account",
     "createAccountTitle": "Create Account",
-    "createAccountMessage": "Track a cash stash, a bank/credit card, or money someone owes you",
+    "createAccountMessage": "Track cash, a bank account or card, financing you owe, or money someone owes you",
     "accountNamePlaceholder": "Account name",
+    "accountTypeLabel": "Account type",
     "initialBalancePlaceholder": "Initial balance (optional, e.g. 0.00)",
     "initialBalanceAccessibilityLabel": "Initial balance",
     "loadingAccount": "Loading account",
@@ -96,7 +102,18 @@
       "created": "Account created",
       "saveError": "An error occurred saving the account: {{message}}"
     },
-    "titlePrefix": "My"
+    "titlePrefix": "My",
+    "balanceSignLabel": "Is this balance debt or credit?",
+    "balanceSignOwed": "I owe it",
+    "balanceSignPositive": "In my favor",
+    "debtBalanceHint": "On a card or a loan, what you owe is stored as a negative balance so it subtracts from your net worth.",
+    "tabLabel": "Accounts",
+    "adminTitle": "Manage accounts",
+    "adminMessage": "Create, edit or archive your accounts. To see an account’s transactions, go to Movements › Accounts.",
+    "adminEmptyState": "You have no accounts yet. Create the first one with the button below.",
+    "adminAddAccount": "New account",
+    "editAccountAccessibilityLabel": "Edit {{name}}",
+    "archiveAccountAccessibilityLabel": "Archive {{name}}"
   },
   "budgets": {
     "title": "Budgets",
@@ -114,6 +131,7 @@
     "retryLoadingLimits": "Retry loading monthly limits",
     "loadLimitsError": "Could not load this month's limits: {{message}}",
     "limitsEmptyState": "No limits set for this month yet. Set one to start tracking how much you spend per category.",
+    "noExpenseCategories": "You have no expense categories yet. Create one to set a monthly limit for it.",
     "setNewLimit": "Set a new monthly limit",
     "setLimit": "Set a limit",
     "limitRowAccessibilityHint": "Opens this category's limit to edit it",
@@ -181,7 +199,12 @@
     },
     "envelopesSubtitle": "Money set aside",
     "daysRemaining_one": "{{count}} day left",
-    "daysRemaining_other": "{{count}} days left"
+    "daysRemaining_other": "{{count}} days left",
+    "deleteLimit": "Delete",
+    "deleteLimitTitle": "Delete this limit?",
+    "deleteLimitMessage": "The monthly limit for “{{name}}” will be removed. Its transactions are left untouched — you just stop having a cap for this category.",
+    "deleteLimitErrorMessage": "The limit could not be deleted. Please try again.",
+    "deleteLimitAccessibilityLabel": "Delete the limit for {{name}}"
   },
   "categories": {
     "expenses": "Expenses",
@@ -197,12 +220,12 @@
     "tabCopy": {
       "expenses": {
         "title": "Expense categories",
-        "help": "Tap a category to see its transactions.",
+        "help": "Tap a category to see its transactions. Long-press one to edit or delete it.",
         "totalLabel": "Spent this month"
       },
       "incomes": {
         "title": "Income categories",
-        "help": "Tap a category to see its transactions.",
+        "help": "Tap a category to see its transactions. Long-press one to edit or delete it.",
         "totalLabel": "Earned this month"
       }
     },
@@ -226,8 +249,33 @@
       "nameRequired": "A category name is required before submitting",
       "iconRequired": "Choose an icon before submitting",
       "created": "Category created",
-      "saveError": "An error occurred saving the category: {{message}}"
-    }
+      "saveError": "An error occurred saving the category: {{message}}",
+      "notFound": "Category not found",
+      "loadError": "The category could not be loaded: {{message}}",
+      "updated": "Category updated",
+      "typeLockedByMovements": "You cannot change the type of a category that already has transactions: each transaction stores its own sign and would change meaning. Create another category with the type you need instead."
+    },
+    "editCategoryTitle": "Edit category",
+    "loadingCategory": "Loading category",
+    "retryLoadingCategory": "Retry loading category",
+    "manageCategory": "Manage “{{name}}”",
+    "manageCategoryHint": "Long-press a category to edit or delete it",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteCategoryTitle": "Delete this category?",
+    "deleteCategoryPlain": "“{{name}}” will be deleted. It has no transactions or limits attached.",
+    "deleteCategoryError": "The category could not be deleted. Please try again.",
+    "deleteCategoryWithMovements_one": "“{{name}}” will be deleted. Its transaction is NOT removed: it stays without a category, with its amount and date intact.",
+    "deleteCategoryWithMovements_other": "“{{name}}” will be deleted. Its {{count}} transactions are NOT removed: they stay without a category, with their amount and date intact.",
+    "deleteCategoryWithBudgets_one": "“{{name}}” and its monthly limit will be deleted. Its transaction is NOT removed: it stays without a category.",
+    "deleteCategoryWithBudgets_other": "“{{name}}” and its monthly limit will be deleted. Its {{count}} transactions are NOT removed: they stay without a category.",
+    "tabLabel": "Categories",
+    "adminTitle": "Manage categories",
+    "adminMessage": "Create, edit or delete your categories. To see a category’s transactions, go to Movements › Categories.",
+    "adminEmptyState": "You have no categories yet. Create the first one with the button below.",
+    "adminAddCategory": "New category",
+    "editCategoryAccessibilityLabel": "Edit {{name}}",
+    "deleteCategoryAccessibilityLabel": "Delete {{name}}"
   },
   "transfer": {
     "title": "Transfer",
@@ -350,6 +398,75 @@
     "categoryHeading": "Category",
     "categoryCountExpense": "{{count}} expense categories",
     "categoryCountIncome": "{{count}} income categories",
-    "manageCategories": "More categories"
+    "manageCategories": "More categories",
+    "editTitle": "Edit transaction",
+    "loadingTransaction": "Loading transaction",
+    "transactionNotFound": "Transaction not found",
+    "loadTransactionError": "The transaction could not be loaded: {{message}}",
+    "loadTransactionFailed": "The transaction could not be loaded.",
+    "editTransaction": "Edit",
+    "deleteTransaction": "Delete",
+    "manageTransactionHint": "Long-press a transaction to edit or delete it",
+    "deleteTransactionTitle": "Delete this transaction?",
+    "deleteTransactionMessage": "{{description}} will be deleted. The account balance is recalculated immediately.",
+    "deleteTransferMessage": "The whole {{amount}} transfer between {{from}} and {{to}} will be deleted. BOTH halves go: half a transfer would leave money debited that nobody received.",
+    "deleteTransactionError": "The transaction could not be deleted. Please try again.",
+    "transferNotEditableTitle": "Transfers cannot be edited",
+    "transferNotEditable": "A transfer is two mirrored movements, and changing only one would invent money. Delete it and create it again from Transfer."
+  },
+  "icons": {
+    "pickerTitle": "Choose an icon",
+    "searchPlaceholder": "Search: home, car, food...",
+    "searching": "Searching…",
+    "noResults": "No icon matches “{{query}}”",
+    "seeAllIcons": "See all icons",
+    "groups": {
+      "money": "Money",
+      "home": "Home",
+      "shopping": "Shopping",
+      "food": "Food",
+      "transport": "Transport",
+      "health": "Health",
+      "leisure": "Leisure",
+      "work": "Work & study",
+      "tech": "Technology",
+      "people": "People",
+      "travel": "Travel",
+      "other": "Other"
+    }
+  },
+  "movements": {
+    "title": "Movements"
+  },
+  "allMovements": {
+    "title": "All transactions",
+    "periodLabel": "Period",
+    "accountLabel": "Account",
+    "categoryLabel": "Category",
+    "allAccounts": "All",
+    "allCategories": "All",
+    "clearFilters": "Clear filters",
+    "loading": "Loading transactions",
+    "loadingMore": "Loading more transactions",
+    "loadError": "Transactions could not be loaded: {{message}}",
+    "empty": "No transactions recorded yet.",
+    "emptyFiltered": "No transaction matches these filters.",
+    "seeAll": "See all",
+    "count_one": "{{count}} transaction",
+    "count_other": "{{count}} transactions",
+    "range": {
+      "all": "All",
+      "month": "This month",
+      "quarter": "Last 3 months",
+      "year": "This year"
+    },
+    "filtersButton": "Filters",
+    "filtersTitle": "Filter transactions",
+    "applyFilters": "Apply",
+    "noFilters": "No filters",
+    "removeFilter": "Remove the {{name}} filter",
+    "selectPlaceholder": "Choose…",
+    "searchPlaceholder": "Search…",
+    "noOptions": "Nothing matches your search."
   }
 }

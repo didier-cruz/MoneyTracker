@@ -12,6 +12,15 @@ import {useTranslation} from 'react-i18next';
 interface CategoryLimitRowProps {
   budget: ICategoryBudgetWithSpent;
   onPress: () => void;
+  /**
+   * Linea inferior de separacion. Se apaga en la ultima fila cuando
+   * debajo no queda nada —es decir, cuando el boton de anadir limite
+   * esta oculto porque todas las categorias ya tienen uno—, para que no
+   * quede una raya suelta contra el borde de la tarjeta.
+   */
+  showSeparator?: boolean;
+  /** Borra el limite de esta fila. */
+  onDelete: () => void;
 }
 
 /**
@@ -27,7 +36,12 @@ interface CategoryLimitRowProps {
  * for the same reason: there is no separate "detail" view for a budget
  * row to open into first.
  */
-export const CategoryLimitRow: FC<CategoryLimitRowProps> = ({budget, onPress}) => {
+export const CategoryLimitRow: FC<CategoryLimitRowProps> = ({
+  budget,
+  onPress,
+  showSeparator = true,
+  onDelete,
+}) => {
   const {t} = useTranslation();
   const {ratio, color, overMessage} = getCategoryBudgetProgress(budget);
   const spentOverLimit = `${formatCentsToCurrency(budget.spent)} / ${formatCentsToCurrency(
@@ -35,15 +49,18 @@ export const CategoryLimitRow: FC<CategoryLimitRowProps> = ({budget, onPress}) =
   )}`;
 
   return (
-    <TouchableOpacity
-      accessibilityRole="button"
-      accessibilityLabel={`${budget.category.name}, ${spentOverLimit}${
-        overMessage ? `, ${overMessage}` : ''
-      }`}
-      accessibilityHint={t('budgets.limitRowAccessibilityHint')}
-      onPress={onPress}
-      activeOpacity={0.8}
-      style={styles.row}>
+    <View style={[styles.row, !showSeparator && styles.rowWithoutSeparator]}>
+      {/* El boton de borrar va FUERA de este tactil, no dentro: si
+          estuviera anidado, tocarlo dispararia tambien la edicion. */}
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={`${budget.category.name}, ${spentOverLimit}${
+          overMessage ? `, ${overMessage}` : ''
+        }`}
+        accessibilityHint={t('budgets.limitRowAccessibilityHint')}
+        onPress={onPress}
+        activeOpacity={0.8}
+        style={styles.main}>
       <View style={styles.topLine}>
         <View style={styles.nameGroup}>
           <View style={styles.icon}>
@@ -71,15 +88,49 @@ export const CategoryLimitRow: FC<CategoryLimitRowProps> = ({budget, onPress}) =
           {overMessage}
         </Text>
       )}
-    </TouchableOpacity>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={t('budgets.deleteLimitAccessibilityLabel', {
+          name: budget.category.name,
+        })}
+        onPress={onDelete}
+        activeOpacity={0.6}
+        // Area tactil generosa alrededor de un icono pequeno, para que
+        // no haya que apuntar al glifo.
+        hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+        style={styles.deleteButton}>
+        <VectorIcon name="trash-o" color={colors.gray[0]} size={18} />
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.inactive[0],
+  },
+  // `flexShrink: 1` ademas de `flex: 1`: sin el, un nombre de categoria
+  // largo empuja el boton de borrar fuera de la tarjeta en vez de
+  // truncarse.
+  main: {
+    flex: 1,
+    flexShrink: 1,
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rowWithoutSeparator: {
+    borderBottomWidth: 0,
   },
   topLine: {
     flexDirection: 'row',

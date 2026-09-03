@@ -8,13 +8,21 @@ import {
   updateEnvelope,
 } from '@db/queries';
 import {formatCentsToCurrency, parseAmountToCents} from '@utils/currency';
-import {icons} from '@data/icons';
+import {toIcon} from '@data/iconCatalog';
 import {useNoticeDialog} from '@hooks/useNoticeDialog';
 
 const DEFAULT_ENVELOPE_KIND: EnvelopeKind = 'fund';
 
 export type EnvelopeFormMode = 'create' | 'edit';
 export type EnvelopeFormLoadStatus = 'idle' | 'loading' | 'success' | 'error';
+
+/**
+ * A que campo pertenece el error que se esta mostrando. `form` es para
+ * los que no cuelgan de ningun input —falta de icono, fallo al
+ * guardar— y la pantalla los pinta junto al boton de guardar.
+ */
+export type EnvelopeFormErrorField = 'name' | 'amount' | 'form';
+type EnvelopeFormError = {field: EnvelopeFormErrorField; message: string};
 
 /** Same trick `useAccountForm`'s own (unexported) helper uses: strip
  * `formatCentsToCurrency`'s "$"/commas so its output can seed the same
@@ -54,7 +62,12 @@ export const useEnvelopeForm = (envelopeId?: number) => {
   const [selectedIcon, onChangeSelectedIcon] = useState<IIcon>();
   const [selectedKind, setSelectedKind] = useState<EnvelopeKind>(DEFAULT_ENVELOPE_KIND);
   const [targetAmountText, setTargetAmountText] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  // Un solo error a la vez, ETIQUETADO con el campo al que pertenece.
+  // Antes era un `string` suelto que la pantalla pintaba siempre bajo el
+  // input del nombre, asi que "Ingresa una meta de ahorro valida" salia
+  // debajo de un nombre perfectamente valido y el usuario no tenia forma
+  // de saber que le hablaban del otro campo.
+  const [formError, setFormError] = useState<EnvelopeFormError | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Same reasoning as `useAccountForm.loadStatus`: edit mode needs a
@@ -79,8 +92,10 @@ export const useEnvelopeForm = (envelopeId?: number) => {
         return;
       }
       setInputText(envelope.name);
-      const matchedIcon = icons.find(i => i.icon === envelope.icon);
-      onChangeSelectedIcon(matchedIcon ?? {id: -1, icon: envelope.icon});
+      // `toIcon` resuelve el id contra el catalogo COMPLETO. Antes se
+      // buscaba solo entre los 16 fijos y cualquier otro icono entraba
+      // con id -1, asi que al editar no aparecia marcado en la rejilla.
+      onChangeSelectedIcon(toIcon(envelope.icon));
       setSelectedKind(envelope.kind);
       setTargetAmountText(
         envelope.targetAmount !== null
@@ -100,10 +115,30 @@ export const useEnvelopeForm = (envelopeId?: number) => {
     loadEnvelope();
   }, [loadEnvelope]);
 
-  const onChangeInputText = (text: string) => setInputText(text);
-  const onChangeSelectedKind = (kind: EnvelopeKind) => setSelectedKind(kind);
-  const onChangeTargetAmountText = (text: string) => setTargetAmountText(text);
-  const handlePressItem = (id: number, icon: string) => onChangeSelectedIcon({id, icon});
+  // Cada error se borra en cuanto el usuario toca el campo del que
+  // hablaba: dejarlo puesto mientras se corrige el valor hace que la
+  // pantalla contradiga lo que se esta escribiendo.
+  const clearErrorFor = (field: EnvelopeFormErrorField) =>
+    setFormError(current => (current?.field === field ? null : current));
+
+  const onChangeInputText = (text: string) => {
+    clearErrorFor('name');
+    setInputText(text);
+  };
+  const onChangeSelectedKind = (kind: EnvelopeKind) => {
+    // El texto de error del importe depende del tipo (meta de ahorro
+    // frente a deuda), asi que al cambiar de tipo deja de aplicar.
+    clearErrorFor('amount');
+    setSelectedKind(kind);
+  };
+  const onChangeTargetAmountText = (text: string) => {
+    clearErrorFor('amount');
+    setTargetAmountText(text);
+  };
+  const handlePressItem = (id: number, icon: string) => {
+    clearErrorFor('form');
+    onChangeSelectedIcon({id, icon});
+  };
 
   // Drives `SaveAction`'s `disabled` state — same shape as
   // `useAccountForm.canSave`. Amount validity itself is only checked at
@@ -117,11 +152,11 @@ export const useEnvelopeForm = (envelopeId?: number) => {
    * into navigation itself. */
   const saveEnvelope = async (): Promise<boolean> => {
     if (inputText.trim() === '') {
-      setError(t('budgets.envelopeForm.nameRequired'));
+      setFormError({field: 'name', message: t('budgets.envelopeForm.nameRequired')});
       return false;
     }
     if (!selectedIcon) {
-      setError(t('budgets.envelopeForm.iconRequired'));
+      setFormError({field: 'form', message: t('budgets.envelopeForm.iconRequired')});
       return false;
     }
 
@@ -129,7 +164,7 @@ export const useEnvelopeForm = (envelopeId?: number) => {
     let targetAmount: number | null | undefined;
     if (trimmedAmount === '') {
       if (selectedKind === 'debt') {
-        setError(t('budgets.envelopeForm.debtAmountRequired'));
+        setFormError({field: 'amount', message: t('budgets.envelopeForm.debtAmountRequired')});
         return false;
       }
       // `fund`: no goal set (create) / goal cleared (edit).
@@ -137,11 +172,13 @@ export const useEnvelopeForm = (envelopeId?: number) => {
     } else {
       const parsed = parseAmountToCents(trimmedAmount);
       if (parsed === null) {
-        setError(
-          selectedKind === 'debt'
-            ? t('budgets.envelopeForm.invalidDebtAmount')
-            : t('budgets.envelopeForm.invalidGoalAmount'),
-        );
+        setFormError({
+          field: 'amount',
+          message:
+            selectedKind === 'debt'
+              ? t('budgets.envelopeForm.invalidDebtAmount')
+              : t('budgets.envelopeForm.invalidGoalAmount'),
+        });
         return false;
       }
       targetAmount = parsed;
@@ -156,7 +193,7 @@ export const useEnvelopeForm = (envelopeId?: number) => {
           icon: selectedIcon.icon,
           targetAmount,
         });
-        setError('');
+        setFormError(null);
         showNotice('info', t('common.success'), t('budgets.envelopeForm.updated'));
         return true;
       }
@@ -166,7 +203,7 @@ export const useEnvelopeForm = (envelopeId?: number) => {
         kind: selectedKind,
         targetAmount: targetAmount ?? undefined,
       });
-      setError('');
+      setFormError(null);
       setInputText('');
       onChangeSelectedIcon(undefined);
       setSelectedKind(DEFAULT_ENVELOPE_KIND);
@@ -174,7 +211,7 @@ export const useEnvelopeForm = (envelopeId?: number) => {
       showNotice('info', t('common.success'), t('budgets.envelopeForm.created'));
       return true;
     } catch (e: any) {
-      setError(t('budgets.envelopeForm.saveError', {message: e.message}));
+      setFormError({field: 'form', message: t('budgets.envelopeForm.saveError', {message: e.message})});
       return false;
     } finally {
       setIsSaving(false);
@@ -191,7 +228,9 @@ export const useEnvelopeForm = (envelopeId?: number) => {
     onChangeSelectedKind,
     targetAmountText,
     onChangeTargetAmountText,
-    error,
+    nameError: formError?.field === 'name' ? formError.message : '',
+    amountError: formError?.field === 'amount' ? formError.message : '',
+    formError: formError?.field === 'form' ? formError.message : '',
     isSaving,
     canSave,
     saveEnvelope,

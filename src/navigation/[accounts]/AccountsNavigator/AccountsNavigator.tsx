@@ -1,13 +1,33 @@
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import AccountsScreen from '@screens/AccountsScreen';
+import {MovementsTopTabs} from '@navigation/[movements]/MovementsTopTabs';
+import {CreateCategory} from '@screens/[categories]';
 import {CreateAccount} from '@screens/AccountsScreen/CreateAccount';
-import {ArchivedAccounts} from '@screens/AccountsScreen/ArchivedAccounts';
 import {Transfer} from '@screens/AccountsScreen/Transfer';
 import {AccountsNavParams} from './types';
 
 const Stack = createNativeStackNavigator<AccountsNavParams>();
 
 /**
+ * El stack de la pestana MOVIMIENTOS.
+ *
+ * Su raiz ya no es `AccountsScreen` sino `MovementsTopTabs`, las dos
+ * pestanas Cuentas|Categorias: son dos formas de recorrer los mismos
+ * movimientos —por cuenta o por categoria— y antes la segunda solo se
+ * alcanzaba desde el formulario de nuevo movimiento, es decir habia que
+ * empezar a registrar un gasto para poder navegar los gastos.
+ *
+ * Las pestanas viven en la RAIZ y no envolviendo este stack a
+ * proposito: asi todo lo que se empuja desde ellas —Transferir, Crear
+ * cuenta, Crear categoria— cubre la pantalla completa en vez de
+ * pintarse dentro del area de una pestana con la fila de pestanas
+ * encima. Ver el comentario de `MovementsTopTabs`.
+ *
+ * `CreateCategory`/`EditCategory` se registran aqui, ademas de en el
+ * stack del formulario y en el del menu lateral: cada stack necesita su
+ * propia copia para poder empujarla sobre si mismo. Es el mismo
+ * componente en los tres sitios.
+ *
+ * Original:
  * Wraps `AccountsScreen` in its own native stack so it can push
  * `CreateAccount` — `AccountsScreen` used to be registered directly as
  * a bottom-tab screen component (no stack of its own); see
@@ -34,11 +54,16 @@ const Stack = createNativeStackNavigator<AccountsNavParams>();
 export const AccountsNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{headerShown: false}}>
-      <Stack.Screen name="AccountsHome" component={AccountsScreen} />
+      <Stack.Screen name="MovementsHome" component={MovementsTopTabs} />
+      {/* Solo el ALTA: editar y ver archivadas se administran desde el
+          menu lateral (`AccountsAdminNavigator`), asi que sus rutas ya
+          no se alcanzan desde aqui y tenerlas registradas seria dejar
+          dos rutas muertas. El alta se queda porque la tarjeta
+          "Agregar cuenta" de la lista horizontal la sigue empujando. */}
       <Stack.Screen name="CreateAccount" component={CreateAccount} />
-      <Stack.Screen name="EditAccount" component={CreateAccount} />
-      <Stack.Screen name="ArchivedAccounts" component={ArchivedAccounts} />
       <Stack.Screen name="Transfer" component={Transfer} />
+      <Stack.Screen name="CreateCategory" component={CreateCategory} />
+      <Stack.Screen name="EditCategory" component={CreateCategory} />
     </Stack.Navigator>
   );
 };

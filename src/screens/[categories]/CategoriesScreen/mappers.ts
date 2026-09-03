@@ -29,58 +29,6 @@ export const financeTypeToCategoryType = (financeType: FinanceType): ICategory['
  */
 export const getCurrentPeriod = (): string => new Date().toISOString().slice(0, 7);
 
-/**
- * Sentinel id for the dashed "New" tile appended to the grid by
- * `mapCategoriesToTiles` — NOT a real category id (`categories.id` is
- * an `AUTOINCREMENT` primary key, always >= 1), so it can never
- * collide with one. `CategoriesScreen`'s grid press handler checks for
- * this id to navigate to `CreateCategory` instead of selecting it.
- */
-export const ADD_CATEGORY_TILE_ID = -1;
-
-export interface ICategoryTile {
-  id: number;
-  icon: string;
-  name: string;
-  /** Cents, `>= 0` — this category's total for the current period (see
-   * `getCurrentPeriod`). `0` for a category with no qualifying activity
-   * yet, never `undefined`. Meaningless for the trailing "New" tile. */
-  amount: number;
-  isAdd?: boolean;
-}
-
-/**
- * Maps `getCategoriesByType`'s rows + this period's per-category totals
- * (see `useCategoriesScreen`) into the grid's tile shape, plus one
- * trailing synthetic "New" tile (see `ADD_CATEGORY_TILE_ID`) — same
- * "real rows + one synthetic affordance at the end" idiom
- * `AccountsScreen/mappers.ts`'s `mapAccountsToCatalogCards` uses for
- * "Add account". Not from an approved prototype for the EMPTY case
- * specifically: even when `categories` is empty, this still returns a
- * one-tile array (just the "New" tile) so the grid — and the only way
- * to create a category from this screen — never disappears.
- */
-export const mapCategoriesToTiles = (
-  categories: ICategory[],
-  totals: Map<number, number>,
-): ICategoryTile[] => {
-  const categoryTiles: ICategoryTile[] = categories.map(category => ({
-    id: category.id,
-    icon: category.icon,
-    name: category.name,
-    amount: totals.get(category.id) ?? 0,
-  }));
-
-  const addTile: ICategoryTile = {
-    id: ADD_CATEGORY_TILE_ID,
-    icon: 'plus',
-    name: i18n.t('categories.newTile'),
-    amount: 0,
-    isAdd: true,
-  };
-
-  return [...categoryTiles, addTile];
-};
 
 /**
  * Groups the selected category's `getFinances({idCategory})` rows into
@@ -130,4 +78,55 @@ export const groupCategoryFinancesByDate = (rows: IFinanceRow[]): SectionTransac
   }
 
   return sections;
+};
+
+/**
+ * Id sintetico de la tarjeta "crear categoria". Negativo para que no
+ * pueda chocar con un id real de la base — mismo truco que
+ * `ADD_ACCOUNT_CARD_ID` en cuentas.
+ */
+export const ADD_CATEGORY_CARD_ID = -1;
+
+/**
+ * Adapta las categorias a la forma `CatalogCard` de la lista horizontal
+ * de cuentas, mas una tarjeta final para crear una nueva.
+ *
+ * Reutiliza `CatalogList`/`CatalogCard` en vez de mantener una rejilla
+ * propia: las dos mitades de Movimientos hacen exactamente lo mismo
+ * —elegir un elemento para ver sus movimientos— y con la rejilla de tres
+ * columnas los movimientos quedaban por debajo del pliegue, solo
+ * alcanzables haciendo scroll. Con una fila horizontal la lista de
+ * movimientos entra en pantalla al abrir, que era el objetivo del
+ * rediseno.
+ *
+ * `balance` lleva el total del PERIODO de cada categoria, no un saldo:
+ * la tarjeta solo lo formatea como dinero, y para una categoria el
+ * numero que importa es cuanto llevas gastado o ganado este mes.
+ */
+export const mapCategoriesToCatalogCards = (
+  categories: ICategory[],
+  totals: Map<number, number>,
+): CatalogCard[] => {
+  const cards: CatalogCard[] = categories.map(category => ({
+    id: category.id,
+    icon: category.icon,
+    iconColor: colors.white[0],
+    iconBackground: colors.primary[0],
+    field: category.name,
+    balance: totals.get(category.id) ?? 0,
+    variant: 'square',
+  }));
+
+  return [
+    ...cards,
+    {
+      id: ADD_CATEGORY_CARD_ID,
+      icon: 'plus',
+      iconColor: colors.primary[0],
+      iconBackground: colors.inactive[0],
+      field: i18n.t('categories.newTile'),
+      balance: 0,
+      variant: 'add',
+    },
+  ];
 };

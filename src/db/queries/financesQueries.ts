@@ -133,6 +133,16 @@ export interface IGetFinancesOptions {
   /** Filter to a single account (e.g. per-account transaction history —
    * backed by `idx_finances_idAccount_date_id` for the keyset predicate). */
   idAccount?: number;
+  /**
+   * Rango de fechas, ambos ISO. `from` INCLUSIVE, `to` EXCLUSIVO — la
+   * misma convencion `[inicio, fin)` que usa `periodToRange`, para que
+   * el ultimo instante de un mes no caiga en dos rangos a la vez.
+   *
+   * Se combinan con `idAccount`/`idCategory` con AND, asi que la
+   * pantalla de todos los movimientos puede mezclar los tres filtros.
+   */
+  from?: string;
+  to?: string;
 }
 
 export interface IGetFinancesResult {
@@ -272,6 +282,16 @@ export const getFinances = async (
     params.push(opts.idCategory);
   }
 
+  if (opts.from !== undefined) {
+    conditions.push('finances.dateCreated >= ?');
+    params.push(opts.from);
+  }
+
+  if (opts.to !== undefined) {
+    conditions.push('finances.dateCreated < ?');
+    params.push(opts.to);
+  }
+
   if (opts.idAccount !== undefined) {
     conditions.push('finances.idAccount = ?');
     params.push(opts.idAccount);
@@ -359,4 +379,196 @@ export const getFinances = async (
     hasNextPage && last ? {dateCreated: last.dateCreated, id: last.id} : null;
 
   return {items, nextCursor};
+};
+
+/**
+ * Un movimiento por id, con su cuenta, su categoria y su contraparte de
+ * transferencia resueltas — misma forma que devuelve `getFinances`.
+ *
+ * Lo necesita el modo edicion: las listas trabajan con `TransactItem`,
+ * una forma ya aplanada para pintar (icono, etiqueta, importe), que no
+ * lleva `idCategory` ni `idAccount`. Al pulsar largo solo se conoce el
+ * id, asi que la fila real se relee de aqui en vez de arrastrar el
+ * `IFinanceRow` completo por toda la UI.
+ */
+export const getFinanceById = async (
+  db: SQLiteDatabase,
+  id: number,
+): Promise<IFinanceRow | null> => {
+  const [resultSet] = await db.executeSql(
+    `SELECT
+        finances.id AS id,
+        finances.amount AS amount,
+        finances.dateCreated AS dateCreated,
+        finances.idCategory AS idCategory,
+        finances.transferGroupId AS transferGroupId,
+        accounts.id AS accountId,
+        accounts.name AS accountName,
+        accounts.icon AS accountIcon,
+        accounts.kind AS accountKind,
+        categories.id AS categoryId,
+        categories.category AS categoryName,
+        categories.icon AS categoryIcon,
+        categories.type AS categoryType,
+        counterpartAccount.id AS counterpartAccountId,
+        counterpartAccount.name AS counterpartAccountName,
+        counterpartAccount.icon AS counterpartAccountIcon,
+        counterpartAccount.kind AS counterpartAccountKind
+      FROM finances
+      JOIN accounts ON accounts.id = finances.idAccount
+      LEFT JOIN categories ON categories.id = finances.idCategory
+      LEFT JOIN finances counterpart
+        ON counterpart.transferGroupId = finances.transferGroupId
+        AND counterpart.id <> finances.id
+      LEFT JOIN accounts counterpartAccount ON counterpartAccount.id = counterpart.idAccount
+      WHERE finances.id = ?;`,
+    [id],
+  );
+  if (resultSet.rows.length === 0) {
+    return null;
+  }
+  const row = resultSet.rows.item(0);
+  return {
+    id: row.id,
+    amount: row.amount,
+    dateCreated: row.dateCreated,
+    transferGroupId: row.transferGroupId ?? null,
+    account: {
+      id: row.accountId,
+      name: row.accountName,
+      icon: row.accountIcon,
+      kind: row.accountKind,
+    },
+    category:
+      row.categoryId === null
+        ? null
+        : {
+            id: row.categoryId,
+            name: row.categoryName,
+            icon: row.categoryIcon,
+            type: row.categoryType,
+          },
+    transferCounterpartAccount:
+      row.counterpartAccountId === null
+        ? null
+        : {
+            id: row.counterpartAccountId,
+            name: row.counterpartAccountName,
+            icon: row.counterpartAccountIcon,
+            kind: row.counterpartAccountKind,
+          },
+  };
+};
+
+export interface IUpdateFinanceInput {
+  /** MAGNITUD en centavos, positiva. El signo se deriva del tipo de la
+   * categoria, igual que en `insertFinance`. */
+  amount: number;
+  idCategory: number;
+  idAccount: number;
+}
+
+/**
+ * Edita un movimiento: importe, categoria y cuenta.
+ *
+ * El signo se RECALCULA a partir del tipo de la categoria, igual que al
+ * insertar. Asi mover un movimiento de una categoria de gasto a una de
+ * ingreso invierte su signo, que es lo que el usuario espera al
+ * corregir "esto no era un gasto, era un ingreso"; y guardar la
+ * magnitud en positivo desde la UI evita que el signo dependa de como
+ * venga escrito el campo.
+ *
+ * RECHAZA las patas de una transferencia. Una transferencia son DOS
+ * filas hermanas con el mismo `transferGroupId` y importes espejo;
+ * editar una sola dejaria dinero apareciendo o desapareciendo de la
+ * nada, y editar las dos desde aqui seria reimplementar
+ * `insertTransfer` con otro nombre. Para cambiar una transferencia se
+ * borra (que borra las dos patas) y se vuelve a crear.
+ *
+ * Lanza:
+ * - `Error('Finance <id> does not exist')`.
+ * - `Error('Cannot edit a transfer leg')`.
+ * - `Error('amount must be a positive integer number of cents')`.
+ * - `Error('Category <id> does not exist')`.
+ */
+export const updateFinance = async (
+  db: SQLiteDatabase,
+  id: number,
+  {amount, idCategory, idAccount}: IUpdateFinanceInput,
+): Promise<void> => {
+  if (!isFiniteInteger(amount) || amount <= 0) {
+    throw new Error('amount must be a positive integer number of cents');
+  }
+
+  const [existing] = await db.executeSql(
+    'SELECT transferGroupId FROM finances WHERE id = ?',
+    [id],
+  );
+  if (existing.rows.length === 0) {
+    throw new Error(`Finance ${id} does not exist`);
+  }
+  if (existing.rows.item(0).transferGroupId !== null) {
+    throw new Error('Cannot edit a transfer leg');
+  }
+
+  const [categoryResult] = await db.executeSql(
+    'SELECT type FROM categories WHERE id = ?',
+    [idCategory],
+  );
+  if (categoryResult.rows.length === 0) {
+    throw new Error(`Category ${idCategory} does not exist`);
+  }
+  const categoryType = categoryResult.rows.item(0).type as ICategory['type'];
+  const signedAmount = categoryType === 'income' ? amount : -amount;
+
+  await db.executeSql(
+    'UPDATE finances SET amount = ?, idCategory = ?, idAccount = ? WHERE id = ?',
+    [signedAmount, idCategory, idAccount, id],
+  );
+};
+
+/**
+ * Borra un movimiento. Si es una pata de transferencia, borra AMBAS.
+ *
+ * Media transferencia no es un dato incompleto, es dinero inventado: la
+ * cuenta de origen se quedaria descontada sin que nadie hubiera
+ * recibido nada. Y como el saldo de una cuenta es derivado
+ * (`initialBalance + SUM(amount)`, sin columna que corregir), esa
+ * corrupcion no se detectaria nunca despues. Las dos patas se borran en
+ * UNA transaccion por lo mismo: si la segunda fallara, la primera ya
+ * confirmada dejaria exactamente el agujero que esto evita.
+ *
+ * `deleted` dice cuantas filas se fueron (2 en una transferencia, 1 en
+ * un movimiento normal) para que la pantalla pueda avisar de que se
+ * borro la transferencia completa y no solo lo que se pulso.
+ */
+export const deleteFinance = async (
+  db: SQLiteDatabase,
+  id: number,
+): Promise<{deleted: number; wasTransfer: boolean}> => {
+  const [existing] = await db.executeSql(
+    'SELECT transferGroupId FROM finances WHERE id = ?',
+    [id],
+  );
+  if (existing.rows.length === 0) {
+    return {deleted: 0, wasTransfer: false};
+  }
+
+  const transferGroupId: string | null = existing.rows.item(0).transferGroupId;
+  if (transferGroupId === null) {
+    const [result] = await db.executeSql('DELETE FROM finances WHERE id = ?', [id]);
+    return {deleted: result.rowsAffected, wasTransfer: false};
+  }
+
+  const [legs] = await db.executeSql(
+    'SELECT COUNT(*) AS total FROM finances WHERE transferGroupId = ?',
+    [transferGroupId],
+  );
+  const total = legs.rows.item(0).total as number;
+
+  // El callback es SINCRONO a proposito — ver `insertTransfer`.
+  await db.transaction(tx => {
+    tx.executeSql('DELETE FROM finances WHERE transferGroupId = ?', [transferGroupId]);
+  });
+  return {deleted: total, wasTransfer: true};
 };
