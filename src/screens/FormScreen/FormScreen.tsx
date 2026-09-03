@@ -327,7 +327,10 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 8},
     shadowOpacity: 0.32,
     shadowRadius: 16,
-    elevation: 6,
+    // `boxShadow` y no `elevation`: en Android la sombra de `elevation`
+    // sigue el contorno RECTANGULAR de la vista y asomaba por las
+    // esquinas de las tarjetas redondeadas como un cuadrado gris.
+    boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.12)',
   },
   saveButtonDisabled: {
     opacity: 0.5,

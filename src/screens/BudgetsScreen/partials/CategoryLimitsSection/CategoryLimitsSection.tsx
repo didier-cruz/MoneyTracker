@@ -175,7 +175,10 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     borderRadius: 20,
     backgroundColor: colors[white][0],
-    elevation: 4,
+    // `boxShadow` y no `elevation`: en Android la sombra de `elevation`
+    // sigue el contorno RECTANGULAR de la vista y asomaba por las
+    // esquinas de las tarjetas redondeadas como un cuadrado gris.
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.10)',
   },
   // Sin el boton, la tarjeta necesita su propio aire abajo: el
   // `paddingBottom: 4` de arriba contaba con los 14 del boton.

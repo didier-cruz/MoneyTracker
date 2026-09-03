@@ -173,7 +173,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     marginTop: 20,
-    elevation: 4,
+    // `boxShadow` y no `elevation`: en Android la sombra de `elevation`
+    // sigue el contorno RECTANGULAR de la vista y asomaba por las
+    // esquinas de las tarjetas redondeadas como un cuadrado gris.
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.10)',
   },
   title: {
     marginBottom: 16,

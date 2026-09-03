@@ -140,7 +140,12 @@ const styles = StyleSheet.create({
   // dejaba la tarjeta ancha con el doble de hueco a su derecha.
   card: {
     borderRadius: 20,
-    elevation: 10,
+    // `boxShadow` y NO `elevation`: en Android la sombra de `elevation`
+    // se dibuja segun el contorno RECTANGULAR de la vista, asi que
+    // asomaba por las cuatro esquinas de la tarjeta redondeada como un
+    // cuadrado gris. `boxShadow` (RN 0.76+, nueva arquitectura) sigue el
+    // `borderRadius`.
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.14)',
   },
   cardWide: {},
   cardBody: {position: 'relative'},

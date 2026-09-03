@@ -87,11 +87,11 @@ const styles = StyleSheet.create({
     paddingTop: 22,
     paddingBottom: 20,
     gap: 12,
-    shadowColor: colors.primary[0],
-    shadowOffset: {width: 0, height: 10},
-    shadowOpacity: 0.22,
-    shadowRadius: 22,
-    elevation: 8,
+    // Una sola declaracion para las dos plataformas: `shadow*` solo
+    // servia en iOS y `elevation` solo en Android, y ademas esta
+    // ultima dibujaba la sombra como un rectangulo bajo una tarjeta
+    // redondeada.
+    boxShadow: '0px 10px 22px rgba(1, 0, 98, 0.22)',
   },
   label: {
     fontSize: 12,

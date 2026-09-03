@@ -76,7 +76,10 @@ const styles = StyleSheet.create({
     // codebase's other custom-shadow card) already uses — see this
     // screen's HANDOFF for why iOS gets no matching `shadow*` (an
     // existing gap in this codebase, not introduced here).
-    elevation: 8,
+    // `boxShadow` y no `elevation`: en Android la sombra de `elevation`
+    // sigue el contorno RECTANGULAR de la vista y asomaba por las
+    // esquinas de las tarjetas redondeadas como un cuadrado gris.
+    boxShadow: '0px 3px 10px rgba(0, 0, 0, 0.13)',
   },
   label: {
     textTransform: 'uppercase',

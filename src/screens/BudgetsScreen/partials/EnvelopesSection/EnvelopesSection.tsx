@@ -226,7 +226,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 20,
     backgroundColor: colors[white][0],
-    elevation: 4,
+    // `boxShadow` y no `elevation`: en Android la sombra de `elevation`
+    // sigue el contorno RECTANGULAR de la vista y asomaba por las
+    // esquinas de las tarjetas redondeadas como un cuadrado gris.
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.10)',
     alignItems: 'center',
   },
   createButton: {
