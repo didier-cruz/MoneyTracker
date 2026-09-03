@@ -48,6 +48,19 @@ export const MovementsTopTabs = () => {
       <MainHeader title={t('movements.title')} />
       <Tab.Navigator
       screenOptions={{
+        /**
+         * Sin deslizamiento entre pestanas: se confundia con el scroll
+         * horizontal de las listas de tarjetas que hay dentro de cada
+         * una. Al llegar la lista a su extremo el gesto se propagaba al
+         * navegador y cambiaba de pestana sin querer, justo cuando el
+         * usuario solo intentaba ver la ultima tarjeta.
+         *
+         * Las pestanas se cambian tocandolas, que ademas es como se
+         * cambian las de abajo. Mismo criterio que con el gesto de
+         * borde del menu lateral, que tambien se desactivo por chocar
+         * con estas listas.
+         */
+        swipeEnabled: false,
         tabBarActiveTintColor: colors[accent][2],
         tabBarInactiveTintColor: colors[gray][0],
         tabBarLabelStyle: styles.label,
