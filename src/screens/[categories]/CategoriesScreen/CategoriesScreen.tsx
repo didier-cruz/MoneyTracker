@@ -125,9 +125,18 @@ export const CategoriesScreen = () => {
   const selectedCategory = categories.find(category => category.id === selectedCategoryId);
 
   return (
-    <ScreenContainer>
+    // El scroll va POR FUERA del contenedor de pantalla, no al reves.
+    // `ScreenContainer` aporta los 15 de padding horizontal, y la lista
+    // de tarjetas los anula con un margen negativo para poder
+    // desplazarse hasta el borde. Con el scroll dentro, sus propios
+    // limites ya venian encogidos por ese padding y RECORTABAN las
+    // tarjetas a 15 del borde en vez de dejarlas llegar: se veian
+    // cortadas al desplazar. Es el mismo orden que usa `ScreenTemplate`
+    // y por eso la pestana de cuentas no tenia el problema.
+    <>
       <ScrollContainer style={styles.scroll}>
-        <View style={styles.content}>
+        <ScreenContainer>
+          <View style={styles.content}>
           {/* Filtro de tipo, en CHIPS y no en un control segmentado.
               Con la anatomia del segmentado —carril claro y pastilla
               blanca a todo el ancho— quedaba identico a las pestanas
@@ -245,12 +254,12 @@ export const CategoriesScreen = () => {
               )}
             </>
           )}
-        </View>
+          </View>
+        </ScreenContainer>
       </ScrollContainer>
 
       <TransactionActionsDialogs {...transactionActions.dialogProps} />
-
-    </ScreenContainer>
+    </>
   );
 };
 
