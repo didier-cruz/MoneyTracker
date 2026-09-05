@@ -7,9 +7,12 @@ import {
   getEnvelopeMovements,
   getEnvelopes,
   getEnvelopesTotal,
+  getSpendingByCategory,
   getTotalRemainingDebt,
   IEnvelopeWithBalance,
+  ISpendingByCategory,
 } from '@db/queries';
+import {usePeriod} from '@context/PeriodContext';
 import {ILastFundWithdrawal} from '@screens/AnalysisScreen/mappers';
 
 export type LoadStatus = 'loading' | 'success' | 'error';
@@ -115,7 +118,49 @@ export const useAnalysisScreen = () => {
   const [fundsErrorMessage, setFundsErrorMessage] = useState('');
   const hasLoadedFundsRef = useRef(false);
 
+  /**
+   * El UNICO dato de esta pantalla que depende del periodo. Los sobres
+   * —deudas y fondos— son acumulados y ninguna de sus consultas mira
+   * la fecha; ver `AnalysisPieCardPeriodChip` para por que eso obliga a
+   * que el selector viva dentro de la tarjeta de gastos y no en la
+   * cabecera.
+   */
+  const {resolved} = usePeriod();
+  const [spendingByCategory, setSpendingByCategory] = useState<ISpendingByCategory[]>([]);
+  const [expensesStatus, setExpensesStatus] = useState<LoadStatus>('loading');
+  const [expensesErrorMessage, setExpensesErrorMessage] = useState('');
+  const hasLoadedExpensesRef = useRef(false);
+
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadExpenses = useCallback(async () => {
+    const silent = hasLoadedExpensesRef.current;
+    if (!silent) {
+      setExpensesStatus('loading');
+    }
+    setExpensesErrorMessage('');
+    try {
+      const db = await getDbConnection();
+      // `from`/`to` van indefinidos en "Todo el historico" y la
+      // consulta los trata como "sin cota" — ver
+      // `resolveCategoryDateRange`.
+      const rows = await getSpendingByCategory(db, {
+        startDate: resolved.from,
+        endDate: resolved.to,
+      });
+      setSpendingByCategory(rows);
+      setExpensesStatus('success');
+      hasLoadedExpensesRef.current = true;
+    } catch (e: any) {
+      console.warn('[useAnalysisScreen] loadExpenses failed:', e?.message ?? e);
+      if (!silent) {
+        setExpensesErrorMessage(
+          t('analysis.loadExpensesError', {message: e?.message ?? t('common.unknownError')}),
+        );
+        setExpensesStatus('error');
+      }
+    }
+  }, [t, resolved.from, resolved.to]);
 
   const loadDebts = useCallback(async () => {
     const silent = hasLoadedDebtsRef.current;
@@ -176,14 +221,34 @@ export const useAnalysisScreen = () => {
     }, [loadDebts, loadFunds]),
   );
 
+  /**
+   * Los gastos van en su PROPIO efecto de foco, no en el de arriba.
+   * `useFocusEffect` vuelve a ejecutar su callback cuando la identidad
+   * del callback cambia estando la pantalla enfocada, que es justo lo
+   * que pasa al tocar el chip de periodo — asi que este efecto cubre
+   * las dos cosas, volver a la pantalla y cambiar de tramo, sin un
+   * `useEffect` aparte.
+   *
+   * Separarlo importa: metido en el efecto de arriba, cambiar de
+   * periodo recargaria tambien deudas y fondos, y `loadFunds` dispara
+   * una consulta POR sobre de fondo (ver la advertencia al respecto en
+   * este mismo archivo). Ninguno de los dos depende de la fecha, asi
+   * que no hay nada que recargar en ellos.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      loadExpenses();
+    }, [loadExpenses]),
+  );
+
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([loadDebts(), loadFunds()]);
+      await Promise.all([loadDebts(), loadFunds(), loadExpenses()]);
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadDebts, loadFunds]);
+  }, [loadDebts, loadFunds, loadExpenses]);
 
   return {
     debtEnvelopes,
@@ -198,6 +263,11 @@ export const useAnalysisScreen = () => {
     fundsStatus,
     fundsErrorMessage,
     reloadFunds: loadFunds,
+
+    spendingByCategory,
+    expensesStatus,
+    expensesErrorMessage,
+    reloadExpenses: loadExpenses,
 
     isRefreshing,
     refresh,

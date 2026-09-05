@@ -1,5 +1,5 @@
 import {SQLiteDatabase} from 'react-native-sqlite-storage';
-import {isValidPeriod, periodToRange} from './period';
+import {getLocalTimeModifier, isValidPeriod, periodToRange} from './period';
 
 /**
  * Dashboard / Analítica aggregations. Every function here does its
@@ -123,11 +123,20 @@ export const getCashFlowByMonth = async (
     movementsParams.push(end);
   }
 
+  // El mes se calcula sobre la hora LOCAL, no sobre el prefijo de la
+  // cadena. `substr(dateCreated, 1, 7)` leia el mes en UTC, asi que un
+  // movimiento de las ultimas seis horas del dia (en UTC-6) se sumaba a
+  // la barra del mes siguiente mientras la lista de movimientos lo
+  // mostraba en el mes anterior. Ver `periodToRange` para la medicion
+  // completa y `getLocalTimeModifier` para el limite con el horario de
+  // verano.
+  const localModifier = getLocalTimeModifier();
+
   const [resultSet] = await db.executeSql(
     `SELECT month, SUM(income) AS income, SUM(expense) AS expense, SUM(savings) AS savings
       FROM (
         SELECT
-          substr(f.dateCreated, 1, 7) AS month,
+          strftime('%Y-%m', datetime(f.dateCreated, ?)) AS month,
           CASE WHEN f.amount > 0 THEN f.amount ELSE 0 END AS income,
           CASE WHEN f.amount < 0 THEN -f.amount ELSE 0 END AS expense,
           0 AS savings
@@ -135,7 +144,7 @@ export const getCashFlowByMonth = async (
         WHERE ${financesConditions.join(' AND ')}
         UNION ALL
         SELECT
-          substr(m.dateCreated, 1, 7) AS month,
+          strftime('%Y-%m', datetime(m.dateCreated, ?)) AS month,
           0 AS income,
           0 AS expense,
           m.amount AS savings
@@ -145,7 +154,12 @@ export const getCashFlowByMonth = async (
       ) combined
       GROUP BY month
       ORDER BY month ASC;`,
-    [...financesParams, ...movementsParams],
+    // El orden importa y ahora tiene cuatro tramos, no dos: `executeSql`
+    // liga un unico array posicional a toda la sentencia, y el `?` del
+    // modificador aparece en el SELECT de cada mitad, ANTES de los `?`
+    // de su propio WHERE. Cualquier otro orden liga el desfase a una
+    // fecha y la fecha al desfase, en silencio.
+    [localModifier, ...financesParams, localModifier, ...movementsParams],
   );
 
   const months: ICashFlowMonth[] = [];
@@ -178,37 +192,66 @@ export interface IGetSpendingByCategoryOptions {
   /** `'YYYY-MM'` — convenience for "this calendar month". If provided,
    * `startDate`/`endDate` are ignored. */
   period?: string;
-  /** ISO-8601, inclusive lower bound. Required (with `endDate`) if
-   * `period` is omitted. */
+  /** ISO-8601, cota inferior INCLUSIVA. Omitirla significa "sin cota
+   * inferior", no es un error — ver `resolveCategoryDateRange`. */
   startDate?: string;
-  /** ISO-8601, exclusive upper bound. Required (with `startDate`) if
-   * `period` is omitted. */
+  /** ISO-8601, cota superior EXCLUSIVA. Omitirla significa "hasta
+   * ahora". */
   endDate?: string;
 }
 
 /**
- * Resolves `{period}` or `{startDate, endDate}` into a concrete
- * half-open `[start, end)` ISO-8601 range — the validation/branching
- * `getSpendingByCategory` and `getIncomeByCategory` both need,
- * extracted once so it can't drift between the two.
+ * Resuelve `{period}` o `{startDate, endDate}` en un tramo semiabierto
+ * `[start, end)` — la validacion que `getSpendingByCategory` y
+ * `getIncomeByCategory` necesitan por igual, extraida una sola vez para
+ * que no se separen entre si.
  *
- * Throws `Error('period, or both startDate and endDate, are required')`
- * if neither `period` nor both `startDate`/`endDate` are given, and
- * `Error('Invalid period: ...')` if `period` is malformed.
+ * **Cada cota es independiente y opcional.** Antes esta funcion lanzaba
+ * `'period, or both startDate and endDate, are required'` cuando no le
+ * daban ninguna: la guarda existia para atrapar a un llamador que se
+ * olvidara de pasar el tramo. Dejo de ser correcta cuando llego el
+ * selector de periodo global: `resolvePeriod` devuelve `from`/`to`
+ * indefinidos a proposito para "Todo el historico" (ver
+ * `@utils/periodSelection`), que es una peticion legitima, no un
+ * descuido. `getFinances` ya trataba sus cotas como opcionales por esta
+ * misma razon; esto lo alinea en lugar de obligar a cada llamador a
+ * inventarse un `'0000-01-01'`, que es la clase de centinela que luego
+ * se cuela en una comparacion de fechas.
+ *
+ * Sigue lanzando `Error('Invalid period: ...')` con un `period` mal
+ * formado — eso si es siempre un error del llamador.
  */
 const resolveCategoryDateRange = (
   opts: IGetSpendingByCategoryOptions,
-): {start: string; end: string} => {
+): {start?: string; end?: string} => {
   if (opts.period !== undefined) {
     if (!isValidPeriod(opts.period)) {
       throw new Error(`Invalid period: ${opts.period}`);
     }
     return periodToRange(opts.period);
   }
-  if (opts.startDate !== undefined && opts.endDate !== undefined) {
-    return {start: opts.startDate, end: opts.endDate};
+  return {start: opts.startDate, end: opts.endDate};
+};
+
+/**
+ * Las clausulas de fecha y sus parametros, saltandose la cota que no
+ * venga. Se construye aqui y no en linea porque las DOS consultas de
+ * este archivo la necesitan identica: interpolar una condicion SQL es
+ * la unica interpolacion permitida en este proyecto y conviene que
+ * ocurra en un solo sitio.
+ */
+const buildDateRangeSql = (range: {start?: string; end?: string}) => {
+  const clauses: string[] = [];
+  const params: string[] = [];
+  if (range.start !== undefined) {
+    clauses.push('AND f.dateCreated >= ?');
+    params.push(range.start);
   }
-  throw new Error('period, or both startDate and endDate, are required');
+  if (range.end !== undefined) {
+    clauses.push('AND f.dateCreated < ?');
+    params.push(range.end);
+  }
+  return {sql: clauses.join('\n        '), params};
 };
 
 /**
@@ -232,15 +275,15 @@ const resolveCategoryDateRange = (
  * every category in the range), so the date-range index is what actually
  * drives it.
  *
- * Throws `Error('period, or both startDate and endDate, are required')`
- * if neither `period` nor both `startDate`/`endDate` are given, and
- * `Error('Invalid period: ...')` if `period` is malformed.
+ * Omitir una cota (o las dos) NO es un error: significa "sin limite por
+ * ese lado" — ver `resolveCategoryDateRange`. Solo lanza
+ * `Error('Invalid period: ...')` con un `period` mal formado.
  */
 export const getSpendingByCategory = async (
   db: SQLiteDatabase,
   opts: IGetSpendingByCategoryOptions,
 ): Promise<ISpendingByCategory[]> => {
-  const {start, end} = resolveCategoryDateRange(opts);
+  const {sql: dateSql, params: dateParams} = buildDateRangeSql(resolveCategoryDateRange(opts));
 
   const [resultSet] = await db.executeSql(
     `SELECT
@@ -252,10 +295,10 @@ export const getSpendingByCategory = async (
       FROM finances f
       JOIN categories c ON c.id = f.idCategory
       WHERE f.idCategory IS NOT NULL AND f.amount < 0
-        AND f.dateCreated >= ? AND f.dateCreated < ?
+        ${dateSql}
       GROUP BY c.id
       ORDER BY spent DESC;`,
-    [start, end],
+    dateParams,
   );
 
   const items: ISpendingByCategory[] = [];
@@ -323,15 +366,15 @@ export interface IIncomeByCategory {
  * `getCategoryBudgets`'s single-category point lookup) does not apply
  * here either. No new index was added for this function.
  *
- * Throws `Error('period, or both startDate and endDate, are required')`
- * if neither `period` nor both `startDate`/`endDate` are given, and
- * `Error('Invalid period: ...')` if `period` is malformed.
+ * Omitir una cota (o las dos) NO es un error: significa "sin limite por
+ * ese lado" — ver `resolveCategoryDateRange`. Solo lanza
+ * `Error('Invalid period: ...')` con un `period` mal formado.
  */
 export const getIncomeByCategory = async (
   db: SQLiteDatabase,
   opts: IGetSpendingByCategoryOptions,
 ): Promise<IIncomeByCategory[]> => {
-  const {start, end} = resolveCategoryDateRange(opts);
+  const {sql: dateSql, params: dateParams} = buildDateRangeSql(resolveCategoryDateRange(opts));
 
   const [resultSet] = await db.executeSql(
     `SELECT
@@ -343,10 +386,10 @@ export const getIncomeByCategory = async (
       FROM finances f
       JOIN categories c ON c.id = f.idCategory
       WHERE f.idCategory IS NOT NULL AND f.amount > 0
-        AND f.dateCreated >= ? AND f.dateCreated < ?
+        ${dateSql}
       GROUP BY c.id
       ORDER BY income DESC;`,
-    [start, end],
+    dateParams,
   );
 
   const items: IIncomeByCategory[] = [];
@@ -358,4 +401,67 @@ export const getIncomeByCategory = async (
     });
   }
   return items;
+};
+
+export interface IMonthlyCategorySpending {
+  /** `'YYYY-MM'` en huso LOCAL. */
+  period: string;
+  category: ICategory;
+  /** Cents `> 0`. */
+  spent: number;
+}
+
+/**
+ * Gasto por categoria y por mes, TODO el historial, en una sola
+ * consulta — la base del logro "gastaste menos que tu promedio", que a
+ * diferencia de los limites no necesita que el usuario haya
+ * configurado nada.
+ *
+ * Devuelve una fila por (mes, categoria) con gasto; los meses en que
+ * una categoria no se uso simplemente no aparecen, y quien consume esto
+ * debe tratar esa ausencia como "sin datos", NO como cero: una
+ * categoria que no usaste no es una categoria en la que gastaste menos.
+ *
+ * Mismo `strftime` sobre la fecha desplazada al huso local que
+ * `getCashFlowByMonth` — ver alli el motivo.
+ *
+ * Sin cota de fechas a proposito: la comparacion es contra el historial,
+ * y recortarlo por el periodo global seleccionado daria un "promedio"
+ * distinto en cada pantalla.
+ */
+export const getMonthlySpendingByCategory = async (
+  db: SQLiteDatabase,
+): Promise<IMonthlyCategorySpending[]> => {
+  const [resultSet] = await db.executeSql(
+    `SELECT
+        strftime('%Y-%m', datetime(f.dateCreated, ?)) AS period,
+        c.id AS categoryId,
+        c.category AS categoryName,
+        c.icon AS categoryIcon,
+        c.type AS categoryType,
+        -SUM(f.amount) AS spent
+      FROM finances f
+      JOIN categories c ON c.id = f.idCategory
+      WHERE f.idCategory IS NOT NULL AND f.amount < 0
+      GROUP BY period, c.id
+      HAVING spent > 0
+      ORDER BY period DESC, spent DESC;`,
+    [getLocalTimeModifier()],
+  );
+
+  const rows: IMonthlyCategorySpending[] = [];
+  for (let index = 0; index < resultSet.rows.length; index++) {
+    const row = resultSet.rows.item(index);
+    rows.push({
+      period: row.period,
+      category: {
+        id: row.categoryId,
+        name: row.categoryName,
+        icon: row.categoryIcon,
+        type: row.categoryType,
+      },
+      spent: row.spent,
+    });
+  }
+  return rows;
 };

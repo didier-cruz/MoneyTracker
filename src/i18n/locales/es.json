@@ -352,12 +352,27 @@
     },
     "debtsInsight": {
       "oneOpenDebt": "Tienes una deuda abierta: {{name}}, {{amount}} por pagar.",
-      "biggestDebt": "Tu deuda más grande es {{name}}, {{pct}}% de los {{total}} que debes."
+      "biggestDebt": "Tu deuda más grande es {{name}}, {{pct}}% de los {{total}} que debes.",
+      "stillNeeded": "Ya tienes {{setAside}} apartados; te faltan {{stillNeeded}}."
     },
     "fundsInsight": {
       "untouched": "Aún no hay retiros de tus fondos — intactos.",
       "lastUsed": "Usado por última vez {{when}}: {{amount}} retirado de {{name}}."
-    }
+    },
+    "changeExpensesPeriod": "Periodo de los gastos: {{period}}. Toca para cambiarlo.",
+    "chartSectorWithCoverageAccessibilityLabel": "{{label}}, {{amount}}, {{percentage}} por ciento, con {{setAside}} apartado, {{covered}} por ciento cubierto",
+    "chooseAnotherPeriod": "Ver otro periodo",
+    "expensesInsight": {
+      "dominant": "{{category}} se llevó el {{pct}}% de tus gastos.",
+      "spread": "Tu gasto está repartido: ninguna categoría pasa del {{pct}}%."
+    },
+    "expensesTitle": "En qué gastas",
+    "loadExpensesError": "No se pudieron cargar los gastos: {{message}}",
+    "noExpensesInPeriod": "No registraste gastos en {{period}}.",
+    "othersLabel": "Otros ({{count}})",
+    "setAsideShort": "{{amount}} apartado",
+    "setAsideWithPct": "{{amount}} apartado · {{pct}}%",
+    "totalSpent": "Gasto"
   },
   "resumen": {
     "title": "Balance",

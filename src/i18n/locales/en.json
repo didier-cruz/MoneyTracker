@@ -352,12 +352,27 @@
     },
     "debtsInsight": {
       "oneOpenDebt": "You have one open debt: {{name}}, {{amount}} left to pay.",
-      "biggestDebt": "Your biggest debt is {{name}}, {{pct}}% of the {{total}} you owe."
+      "biggestDebt": "Your biggest debt is {{name}}, {{pct}}% of the {{total}} you owe.",
+      "stillNeeded": "You already have {{setAside}} set aside; {{stillNeeded}} to go."
     },
     "fundsInsight": {
       "untouched": "No withdrawals from your funds yet — nice and untouched.",
       "lastUsed": "Last used {{when}}: {{amount}} withdrawn from {{name}}."
-    }
+    },
+    "changeExpensesPeriod": "Expenses period: {{period}}. Tap to change it.",
+    "chartSectorWithCoverageAccessibilityLabel": "{{label}}, {{amount}}, {{percentage}} percent, with {{setAside}} set aside, {{covered}} percent covered",
+    "chooseAnotherPeriod": "Pick another period",
+    "expensesInsight": {
+      "dominant": "{{category}} took {{pct}}% of what you spent.",
+      "spread": "Your spending is spread out: no category is above {{pct}}%."
+    },
+    "expensesTitle": "Where it goes",
+    "loadExpensesError": "Could not load expenses: {{message}}",
+    "noExpensesInPeriod": "You recorded no expenses in {{period}}.",
+    "othersLabel": "Others ({{count}})",
+    "setAsideShort": "{{amount}} set aside",
+    "setAsideWithPct": "{{amount}} set aside · {{pct}}%",
+    "totalSpent": "Spent"
   },
   "resumen": {
     "title": "Balance",
