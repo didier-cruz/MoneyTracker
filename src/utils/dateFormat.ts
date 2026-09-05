@@ -42,6 +42,22 @@ export const formatDisplayDate = (iso: string): string => {
 };
 
 /**
+ * `"2026-08-01T10:00:00.000Z"` -> `"01"`, el dia del mes en la fecha
+ * LOCAL del dispositivo.
+ *
+ * Para listas agrupadas POR MES, donde la cabecera de seccion ya dice
+ * "Agosto" y repetir "01 ago 2026" en cada fila gasta ancho sin aportar
+ * nada (ver `AllMovementsScreen`). Es el equivalente por dia de lo que
+ * `formatDisplayTime` hace en las listas agrupadas por dia.
+ *
+ * Local y no la porcion de la cadena ISO, por la misma razon que
+ * `toLocalDateKey`: `dateCreated` se guarda en UTC y un movimiento de
+ * las 22:00 en un huso negativo mostraria el dia siguiente.
+ */
+export const formatDisplayDayOfMonth = (iso: string): string =>
+  String(new Date(iso).getDate()).padStart(2, '0');
+
+/**
  * `"2026-08-29T12:00:00.000Z"` -> `"12:00 PM"`, in the device's local
  * time and the app's active language. Used INSIDE a day-grouped list
  * (see `groupFinancesByDate`) where the date itself is already the
@@ -86,6 +102,21 @@ export const formatMonthAbbreviation = (period: string): string => {
   return new Intl.DateTimeFormat(getIntlLocale(), {month: 'short'}).format(date);
 };
 
+/** `'2026-08'` -> `'septiembre'` (es) / `'September'` (en) — el nombre
+ * del mes con la CAPITALIZACION PROPIA del idioma, no la forzada por
+ * `formatMonthNameCapitalized`. Es la que se usa cuando el mes va
+ * EMBEBIDO en una frase ("Limites de septiembre"): en espanol los
+ * nombres de mes van en minuscula a mitad de oracion, y en ingles
+ * `Intl` ya devuelve "September" en mayuscula por si solo. Forzar la
+ * mayuscula ahi produjo "Limites de Septiembre", que se ve como un
+ * error de ortografia. Para un subtitulo suelto de una sola palabra
+ * usa `formatMonthNameCapitalized`. */
+export const formatMonthName = (period: string): string => {
+  const monthStr = period.split('-')[1];
+  const date = new Date(2000, Number(monthStr) - 1, 1);
+  return new Intl.DateTimeFormat(getIntlLocale(), {month: 'long'}).format(date);
+};
+
 /** `'2026-08'` -> `'Agosto'` (es) / `'August'` (en) — a `'YYYY-MM'`
  * period's full month name, CAPITALIZED, no year — for a screen's
  * two-line header subtitle (e.g. `AnalysisScreen`'s "Analítica" /
@@ -100,8 +131,6 @@ export const formatMonthAbbreviation = (period: string): string => {
  * "de"/"of" if `formatMonthYearLong`'s longer string were ever reused
  * here instead — not a risk this narrower, month-only helper has). */
 export const formatMonthNameCapitalized = (period: string): string => {
-  const monthStr = period.split('-')[1];
-  const date = new Date(2000, Number(monthStr) - 1, 1);
-  const monthName = new Intl.DateTimeFormat(getIntlLocale(), {month: 'long'}).format(date);
+  const monthName = formatMonthName(period);
   return monthName.charAt(0).toUpperCase() + monthName.slice(1);
 };

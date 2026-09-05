@@ -1,4 +1,5 @@
 import {FC} from 'react';
+import {Money} from '@components/atoms/text/Money';
 import {StyleSheet, View} from 'react-native';
 import {Text} from '@components/atoms/text/Text';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
@@ -57,7 +58,7 @@ const MiniStat: FC<MiniStatProps> = ({label, amountCents, color, direction}) => 
           {label}
         </Text>
         <Text color={colors.white[0]} size={14} fontWeight="600">
-          {formatCentsToCurrency(amountCents)}
+          {<Money cents={amountCents} fontSize={14} />}
         </Text>
       </View>
     </View>

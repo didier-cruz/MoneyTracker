@@ -1,4 +1,4 @@
-import {FC} from 'react';
+import {FC, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -9,11 +9,19 @@ import {
 } from 'react-native';
 import {Text} from '@components/atoms/text/Text';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
-import {IEnvelopeWithBalance} from '@db/queries';
+import {EnvelopeKind, IEnvelopeWithBalance} from '@db/queries';
+import {SegmentedControl, SegmentedControlOption} from '@components/atoms/SegmentedControl';
 import {accent, colors, gray, inactive, primary, secondary, white} from '@constants/colors/colors';
 import {EnvelopeCard} from '../EnvelopeCard/EnvelopeCard';
 import {LoadStatus} from '@hooks/useBudgetsScreen';
 import {useTranslation} from 'react-i18next';
+
+/**
+ * El filtro de la seccion. `'all'` no es un `EnvelopeKind` —la base
+ * solo conoce `'fund'` y `'debt'`— asi que el tipo se amplia aqui, en
+ * la capa de presentacion, que es donde "todos" significa algo.
+ */
+type EnvelopeFilter = EnvelopeKind | 'all';
 
 interface EnvelopesSectionProps {
   envelopes: IEnvelopeWithBalance[];
@@ -22,6 +30,11 @@ interface EnvelopesSectionProps {
   onRetry: () => void;
   onPressEnvelope: (envelope: IEnvelopeWithBalance) => void;
   onPressAdd: () => void;
+  onPressComplete: (envelope: IEnvelopeWithBalance) => void;
+  /** Cuantos logros hay ya. `0` esconde el enlace: un acceso a una
+   * pantalla vacia solo sirve para decepcionar. */
+  achievementsCount: number;
+  onPressAchievements: () => void;
 }
 
 // Mirrors `ScreenContainer`'s own `paddingHorizontal` and `EnvelopeCard`'s
@@ -54,6 +67,9 @@ const MAX_CARD_WIDTH = 190;
  * nothing else this section needs to coordinate besides its own
  * loading/error/empty states.
  *
+ * Lleva su propio filtro Todos/Fondos/Deudas — ver el comentario de
+ * `filter` en el cuerpo para por que se resuelve en memoria.
+ *
  * The empty state is a full-width card with its own "Create envelope"
  * button rather than just the trailing add-card from the (in that
  * case, otherwise-empty) horizontal list — a totally empty horizontal
@@ -67,8 +83,36 @@ export const EnvelopesSection: FC<EnvelopesSectionProps> = ({
   onRetry,
   onPressEnvelope,
   onPressAdd,
+  onPressComplete,
+  achievementsCount,
+  onPressAchievements,
 }) => {
   const {t} = useTranslation();
+
+  /**
+   * El filtro se resuelve EN MEMORIA, no volviendo a consultar con
+   * `getEnvelopes(db, {kind})`.
+   *
+   * Dos razones. La tabla de sobres es pequena por diseno (lo dice
+   * `envelopesQueries.ts` en su propio comentario), asi que la lista
+   * completa ya esta cargada y volver a SQL solo anadiria un parpadeo
+   * de spinner por cada toque. Y con las dos listas en la mano se puede
+   * distinguir "no tienes ningun sobre" de "no tienes sobres de este
+   * tipo", que son vacios distintos y quieren mensajes distintos; con
+   * una consulta filtrada los dos casos llegan como un array vacio
+   * indistinguible.
+   */
+  const [filter, setFilter] = useState<EnvelopeFilter>('all');
+  const visibleEnvelopes = useMemo(
+    () => (filter === 'all' ? envelopes : envelopes.filter(envelope => envelope.kind === filter)),
+    [envelopes, filter],
+  );
+
+  const filterOptions: SegmentedControlOption<EnvelopeFilter>[] = [
+    {value: 'all', label: t('budgets.envelopeFilter.all')},
+    {value: 'fund', label: t('budgets.envelopeFilter.funds')},
+    {value: 'debt', label: t('budgets.envelopeFilter.debts')},
+  ];
 
   // Sized so exactly two envelope cards sit fully side by side, never
   // clipped by the screen's right edge — the approved prototype lays
@@ -90,10 +134,50 @@ export const EnvelopesSection: FC<EnvelopesSectionProps> = ({
         <Text size={18} bold>
           {t('budgets.envelopesHeading')}
         </Text>
-        <Text color={colors[gray][0]} size={12}>
-          {t('budgets.envelopesSubtitle')}
-        </Text>
+        {achievementsCount > 0 ? (
+          // Sustituye a "Dinero apartado" en vez de sumarse: los dos
+          // viven en la esquina derecha del mismo encabezado y caben
+          // mal juntos en una pantalla estrecha. El enlace gana porque
+          // "Dinero apartado" es una etiqueta que no cambia nunca,
+          // mientras que esto es el unico camino desde aqui a Logros.
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={t('budgets.seeAchievementsAccessibilityLabel', {
+              count: achievementsCount,
+            })}
+            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+            onPress={onPressAchievements}
+            style={styles.achievementsLink}>
+            <VectorIcon name="trophy" size={12} color={colors[primary][0]} />
+            <Text color={colors[primary][0]} size={12}>
+              {t('budgets.seeAchievements', {count: achievementsCount})}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <Text color={colors[gray][0]} size={12}>
+            {t('budgets.envelopesSubtitle')}
+          </Text>
+        )}
       </View>
+
+      {/* Solo cuando hay sobres: un filtro sobre una lista vacia no
+          filtra nada y le roba el sitio al vacio, que es lo unico que
+          esa pantalla tiene que decir. Las tres opciones se muestran
+          siempre que aparece, aunque una quede en cero — un control
+          que cambia de forma segun los datos desorienta mas de lo que
+          ahorra. */}
+      {status === 'success' && envelopes.length > 0 && (
+        <SegmentedControl
+          value={filter}
+          onChange={setFilter}
+          options={filterOptions}
+          // Tres etiquetas cortas caben de sobra en una fila; sin esto
+          // la regla automatica las reparte en una rejilla de dos y
+          // deja "Deudas" sola en una segunda fila.
+          layout="even"
+          style={styles.filter}
+        />
+      )}
 
       {status === 'loading' && (
         <View style={styles.centered}>
@@ -135,9 +219,23 @@ export const EnvelopesSection: FC<EnvelopesSectionProps> = ({
         </View>
       )}
 
-      {status === 'success' && envelopes.length > 0 && (
+      {status === 'success' && envelopes.length > 0 && visibleEnvelopes.length === 0 && (
+        <View style={styles.filterEmpty}>
+          <Text color={colors[gray][0]} style={styles.message}>
+            {filter === 'fund'
+              ? t('budgets.noFundEnvelopes')
+              : t('budgets.noDebtEnvelopes')}
+          </Text>
+        </View>
+      )}
+
+      {status === 'success' && visibleEnvelopes.length > 0 && (
         <FlatList
-          data={envelopes}
+          // Remontar al cambiar de filtro descarta el desplazamiento
+          // horizontal anterior, que es lo correcto: la posicion en la
+          // lista de "Todos" no significa nada en la de "Deudas".
+          key={filter}
+          data={visibleEnvelopes}
           keyExtractor={item => item.id.toString()}
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -151,6 +249,7 @@ export const EnvelopesSection: FC<EnvelopesSectionProps> = ({
               envelope={item}
               cardWidth={cardWidth}
               onPress={() => onPressEnvelope(item)}
+              onPressComplete={onPressComplete}
             />
           )}
           ListFooterComponent={
@@ -158,11 +257,11 @@ export const EnvelopesSection: FC<EnvelopesSectionProps> = ({
               accessibilityRole="button"
               accessibilityLabel={t('budgets.createNewEnvelope')}
               onPress={onPressAdd}
-              style={styles.addCard}>
+              style={[styles.addCard, {width: cardWidth}]}>
               <View style={styles.addIcon}>
-                <VectorIcon name="plus" color={colors[primary][0]} size={20} />
+                <VectorIcon name="plus" color={colors[primary][0]} size={25} />
               </View>
-              <Text color={colors[gray][0]} size={12}>
+              <Text color="#373737" size={12} style={styles.addLabel}>
                 {t('budgets.addEnvelope')}
               </Text>
             </TouchableOpacity>
@@ -200,6 +299,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_HORIZONTAL_PADDING,
     paddingVertical: CARD_SHADOW_PADDING,
     gap: CARD_GAP,
+    // `stretch` para que el envoltorio que `FlatList` pone alrededor del
+    // `ListFooterComponent` llegue a la altura de la fila. Sin esto la
+    // tarjeta de agregar se quedaba al alto de su contenido (~65 frente
+    // a los ~196 de una tarjeta de sobre) y colgaba de la parte de
+    // arriba. `alignSelf: 'stretch'` en la tarjeta NO basta: no puede
+    // estirar al envoltorio que la contiene, solo a si misma dentro de
+    // el. Es inocuo para las tarjetas de sobre, que ya miden todas lo
+    // mismo.
+    alignItems: 'stretch',
+  },
+  achievementsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  filter: {
+    marginTop: 12,
+  },
+  filterEmpty: {
+    width: '100%',
+    paddingVertical: 24,
+    alignItems: 'center',
   },
   centered: {
     width: '100%',
@@ -241,24 +362,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Estandarizada con la tarjeta de "Agregar cuenta"/"Agregar categoria"
+  // (`CatalogCard` variante 'add'): tarjeta solida con la MISMA sombra y
+  // el mismo radio que las de datos, no un recuadro punteado mas
+  // estrecho. El ancho lo fija `cardWidth` en el render, el mismo que
+  // usan las tarjetas de sobre, y `alignSelf: 'stretch'` la deja a la
+  // altura de la fila en vez de a un alto fijo que no coincidia con
+  // ninguna.
   addCard: {
-    width: 100,
-    height: 170,
+    // `flex: 1` dentro del envoltorio (que es columna) = ocupa todo su
+    // alto, ya estirado por `alignItems: 'stretch'` de arriba.
+    flex: 1,
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: colors[inactive][0],
-    borderStyle: 'dashed',
+    backgroundColor: colors[white][0],
+    // `boxShadow` y no `elevation`: en Android la sombra de `elevation`
+    // sigue el contorno RECTANGULAR de la vista y asomaba por las
+    // esquinas redondeadas como un cuadrado gris.
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.14)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   addIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    // Circular, como el contenedor del icono de `CatalogCard`, no el
+    // cuadrado redondeado de 34 que usaba antes.
+    borderRadius: 50,
     backgroundColor: colors[inactive][0],
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+  },
+  addLabel: {
+    marginTop: 10,
+    textAlign: 'center',
   },
 });
 

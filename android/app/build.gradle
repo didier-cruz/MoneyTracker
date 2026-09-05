@@ -101,15 +101,44 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // Clave de RELEASE. Ni el fichero ni las contrasenas viven en el
+        // repositorio: salen de `MONEYTRACKER_UPLOAD_*` en el
+        // `~/.gradle/gradle.properties` de cada maquina que firme.
+        //
+        // El `if` no es cosmetico: sin el, cualquiera que clone el repo
+        // sin esas propiedades no podria ni compilar en debug, porque
+        // Gradle evalua este bloque siempre. Con el, quien no las tenga
+        // simplemente no puede firmar release, que es justo lo que se
+        // busca.
+        if (project.hasProperty('MONEYTRACKER_UPLOAD_STORE_FILE')) {
+            release {
+                storeFile file(MONEYTRACKER_UPLOAD_STORE_FILE)
+                storePassword MONEYTRACKER_UPLOAD_STORE_PASSWORD
+                keyAlias MONEYTRACKER_UPLOAD_KEY_ALIAS
+                keyPassword MONEYTRACKER_UPLOAD_KEY_PASSWORD
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // Firmaba con `signingConfigs.debug`, es decir con
+            // `android/app/debug.keystore`: un fichero VERSIONADO en este
+            // mismo repositorio y cuya contrasena es la publica de React
+            // Native ('android'). Cualquiera con acceso al codigo podia
+            // firmar una "actualizacion" que Android instalaba encima de
+            // la del usuario como si fuera legitima, y Play Console
+            // rechaza de plano un APK firmado asi.
+            //
+            // Si la maquina no tiene las propiedades de firma, se cae de
+            // vuelta a debug PERO el APK resultante no es distribuible.
+            // Se prefiere eso a romper el build de quien solo quiera
+            // compilar; `assembleRelease` avisa mas abajo.
+            signingConfig project.hasProperty('MONEYTRACKER_UPLOAD_STORE_FILE')
+                ? signingConfigs.release
+                : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
@@ -130,5 +159,31 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+/**
+ * `react-native-vector-icons/fonts.gradle` (aplicado arriba) crea la
+ * tarea `copyReactNativeVectorIconFonts`, que escribe en
+ * `build/intermediates/ReactNativeVectorIcons/fonts`. Las tareas de
+ * lintVital LEEN ese mismo directorio, pero nadie declara esa relacion.
+ *
+ * Gradle 8.10 dejo de tolerarlo: valida las dependencias implicitas
+ * entre tareas y aborta el build con "uses this output of task ... without
+ * declaring an explicit or implicit dependency". Rompia
+ * `assembleRelease` entero — no es un aviso, es un fallo.
+ *
+ * Se declara el orden con `mustRunAfter`, que es una de las tres
+ * soluciones que propone el propio mensaje de Gradle. La alternativa que
+ * circula por ahi es apagar lintVital con `checkReleaseBuilds false`,
+ * y se descarta: eso no arregla la relacion entre tareas, solo silencia
+ * al unico que la estaba detectando, y de paso renuncia a los avisos de
+ * lint que si importan en un build de release.
+ */
+project.afterEvaluate {
+    def copyFonts = tasks.findByName('copyReactNativeVectorIconFonts')
+    if (copyFonts != null) {
+        tasks.matching { it.name.startsWith('lintVital') || it.name.contains('LintVitalReportModel') }
+             .configureEach { mustRunAfter copyFonts }
     }
 }

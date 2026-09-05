@@ -27,14 +27,15 @@
       "label": "Transfer"
     },
     "noCategory": "No category",
-    "back": "Back"
+    "back": "Back",
+    "clear": "Clear"
   },
   "drawer": {
     "home": "Home",
     "accounts": "Accounts",
     "categories": "Categories",
-    "signOut": "Sign Out",
-    "language": "Language"
+    "language": "Language",
+    "achievements": "Achievements"
   },
   "accounts": {
     "title": "Accounts",
@@ -113,7 +114,15 @@
     "adminEmptyState": "You have no accounts yet. Create the first one with the button below.",
     "adminAddAccount": "New account",
     "editAccountAccessibilityLabel": "Edit {{name}}",
-    "archiveAccountAccessibilityLabel": "Archive {{name}}"
+    "archiveAccountAccessibilityLabel": "Archive {{name}}",
+    "seeAllCards": "See all ({{count}})",
+    "adminHeaderTitle": "Accounts",
+    "adminHeaderSubtitle": "and their movements",
+    "toggleMovementsAccessibilityLabel": "Show or hide {{name}} movements",
+    "archiveAccountTitle": "Archive this account?",
+    "archiveAccountMessage": "“{{name}}” will disappear from your lists and stop counting toward your net worth. Its movements are NOT deleted: they stay in the history with their amount and date. You can restore it any time from “Archived accounts”.",
+    "archiveAccountErrorMessage": "The account could not be archived. Please try again.",
+    "archivedAccountsAccessibilityLabel": "See archived accounts"
   },
   "budgets": {
     "title": "Budgets",
@@ -122,11 +131,12 @@
     "retryLoadingEnvelopes": "Retry loading envelopes",
     "loadEnvelopesError": "Could not load envelopes: {{message}}",
     "envelopesEmptyState": "No envelopes yet. Create a Fund to save toward a goal, or a Debt to track what you owe.",
+    "noFundEnvelopes": "You have no fund envelopes.",
+    "noDebtEnvelopes": "You have no debt envelopes.",
     "createFirstEnvelope": "Create your first envelope",
     "createEnvelope": "Create envelope",
     "createNewEnvelope": "Create a new envelope",
     "addEnvelope": "Add envelope",
-    "monthlyLimitsHeading": "Monthly limits",
     "loadingLimits": "Loading monthly limits",
     "retryLoadingLimits": "Retry loading monthly limits",
     "loadLimitsError": "Could not load this month's limits: {{message}}",
@@ -177,7 +187,7 @@
     "savingsGoalAccessibilityLabel": "Savings goal",
     "loadingEnvelope": "Loading envelope",
     "retryLoadingEnvelope": "Retry loading envelope",
-    "overBy": "You went over by {{amount}} this month.",
+    "overBy": "You went over by {{amount}}",
     "progress": {
       "paidLeft": "{{pct}}% paid · {{amount}} left",
       "paidOff": "Paid off",
@@ -204,12 +214,78 @@
     "deleteLimitTitle": "Delete this limit?",
     "deleteLimitMessage": "The monthly limit for “{{name}}” will be removed. Its transactions are left untouched — you just stop having a cap for this category.",
     "deleteLimitErrorMessage": "The limit could not be deleted. Please try again.",
-    "deleteLimitAccessibilityLabel": "Delete the limit for {{name}}"
+    "deleteLimitAccessibilityLabel": "Delete the limit for {{name}}",
+    "monthlyLimitsHeadingFor": "{{month}} limits",
+    "envelopeFilter": {
+      "all": "All",
+      "funds": "Funds",
+      "debts": "Debts"
+    },
+    "goalReachedBadge": "✓ Goal",
+    "markComplete": "Mark complete",
+    "completeEnvelopeAccessibilityLabel": "Mark {{name}} as complete",
+    "completeEnvelopeTitle": "Mark as complete?",
+    "completeEnvelopeMessage": "\"{{name}}\" moves to your achievements and the {{amount}} it holds is withdrawn, so it stops counting as money set aside. No account is touched. You can undo this from Achievements.",
+    "completeEnvelopeMessageNoBalance": "\"{{name}}\" moves to your achievements and leaves this list. It holds no money, so nothing is withdrawn. You can undo this from Achievements.",
+    "completeEnvelopeDoneTitle": "Goal reached!",
+    "completeEnvelopeDoneMessage": "\"{{name}}\" is now in your achievements.",
+    "completeEnvelopeErrorMessage": "Could not complete the envelope. Please try again.",
+    "completeEnvelopeGoalLostMessage": "This envelope no longer meets its goal; its balance changed. Check it and try again.",
+    "seeAchievements": "Achievements ({{count}})",
+    "seeAchievementsAccessibilityLabel": "See your {{count}} achievements",
+    "completeConfirmAction": "Complete",
+    "leftOverBy": "You had left over",
+    "noActivityThatMonth": "No activity that month",
+    "streak_one": "🔥 {{count}} month in a row under the limit",
+    "streak_other": "🔥 {{count}} months in a row under the limit",
+    "rolloverTitle": "{{month}} starts with no limits",
+    "rolloverIntro": "These are the ones from {{month}}, adjusted to how it went:",
+    "rolloverKept": "✓ you met it",
+    "rolloverRaisedFrom": "↑ from {{amount}}",
+    "rolloverApply": "Use these limits",
+    "rolloverAdjust": "Apply and adjust them",
+    "rolloverDismiss": "Dismiss the limit suggestion",
+    "rolloverErrorMessage": "Could not create the limits. Please try again."
+  },
+  "achievements": {
+    "title": "Achievements",
+    "summary_one": "{{count}} goal reached · {{total}}",
+    "summary_other": "{{count}} goals reached · {{total}}",
+    "savedFor": "You saved for {{name}}",
+    "paidOff": "You paid off your {{name}}",
+    "tookSameDay": "done the same day",
+    "tookDays_one": "took you {{count}} day",
+    "tookDays_other": "took you {{count}} days",
+    "tookMonths_one": "took you {{count}} month",
+    "tookMonths_other": "took you {{count}} months",
+    "reopen": "Undo",
+    "reopenAccessibilityLabel": "Undo the {{name}} achievement and send it back to your envelopes",
+    "reopenTitle": "Undo this achievement?",
+    "reopenMessage": "\"{{name}}\" returns to your envelopes with its {{amount}} set aside again, exactly as it was before you completed it.",
+    "reopenError": "Could not undo: {{message}}",
+    "loading": "Loading your achievements",
+    "loadError": "Could not load achievements: {{message}}",
+    "retry": "Retry loading achievements",
+    "emptyTitle": "No goals reached yet",
+    "emptyMessage": "When an envelope hits 100%, you can mark it complete and it will show up here.",
+    "goToEnvelopes": "See my envelopes",
+    "goalsSection": "Goals reached",
+    "monthsSection": "Months under control",
+    "monthsSummary_one": "{{clean}} of {{count}} month with no overruns",
+    "monthsSummary_other": "{{clean}} of {{count}} months with no overruns",
+    "limitsMet": "{{met}} of {{total}} limits met",
+    "noLimitsThatMonth": "No limits that month",
+    "underBudgetBy": "Under your plan by",
+    "noActivity": "no activity",
+    "spentLessHeading": "You spent less on",
+    "lessThanLastMonth": "less than last month",
+    "lessThanAverage": "less than your average",
+    "monthCardAccessibilityLabel": "See the detail for {{month}}"
   },
   "categories": {
     "expenses": "Expenses",
     "incomes": "Incomes",
-    "newTile": "New",
+    "addCategory": "Add category",
     "listCategoriesTitle": "List Categories",
     "loadingCategories": "Loading categories",
     "retryLoadingCategories": "Retry loading categories",
@@ -221,12 +297,12 @@
       "expenses": {
         "title": "Expense categories",
         "help": "Tap a category to see its transactions. Long-press one to edit or delete it.",
-        "totalLabel": "Spent this month"
+        "totalLabel": "Spent in this period"
       },
       "incomes": {
         "title": "Income categories",
         "help": "Tap a category to see its transactions. Long-press one to edit or delete it.",
-        "totalLabel": "Earned this month"
+        "totalLabel": "Earned in this period"
       }
     },
     "createNewCategory": "Create a new category",
@@ -239,8 +315,8 @@
     "loadingMovements": "Loading movements",
     "retryLoadingMovements": "Retry loading movements",
     "loadingMoreMovements": "Loading more movements",
-    "noMovementsForCategory": "No movements yet for \"{{name}}\".",
-    "noMovementsGeneric": "No movements yet for this category.",
+    "noMovementsForCategory": "No movements for “{{name}}” in this period.",
+    "noMovementsGeneric": "No movements for this category in this period.",
     "createCategoryTitle": "Create Category",
     "createCategoryMessage": "You can register all your categories through this form",
     "addCategoryNamePlaceholder": "Add category name",
@@ -275,7 +351,11 @@
     "adminEmptyState": "You have no categories yet. Create the first one with the button below.",
     "adminAddCategory": "New category",
     "editCategoryAccessibilityLabel": "Edit {{name}}",
-    "deleteCategoryAccessibilityLabel": "Delete {{name}}"
+    "deleteCategoryAccessibilityLabel": "Delete {{name}}",
+    "seeAllCards": "See all ({{count}})",
+    "toggleMovementsAccessibilityLabel": "Show or hide {{name}} movements",
+    "adminHeaderTitle": "Categories",
+    "adminHeaderSubtitle": "and their movements"
   },
   "transfer": {
     "title": "Transfer",
@@ -309,6 +389,13 @@
     "title": "Analysis",
     "debtsTitle": "My debts",
     "fundsTitle": "My funds",
+    "expensesTitle": "Where it goes",
+    "totalSpent": "Spent",
+    "othersLabel": "Others ({{count}})",
+    "loadExpensesError": "Could not load expenses: {{message}}",
+    "noExpensesInPeriod": "You recorded no expenses in {{period}}.",
+    "chooseAnotherPeriod": "Pick another period",
+    "changeExpensesPeriod": "Expenses period: {{period}}. Tap to change it.",
     "totalOwed": "Total owed",
     "totalSaved": "Total saved",
     "loadingCard": "Loading {{title}}",
@@ -324,6 +411,9 @@
     "manageEnvelopes": "Manage envelopes",
     "chartAccessibilityLabel": "{{title}} breakdown: {{breakdown}}",
     "chartSectorAccessibilityLabel": "{{label}}, {{amount}}, {{percentage}} percent",
+    "setAsideShort": "{{amount}} set aside",
+    "setAsideWithPct": "{{amount}} set aside · {{pct}}%",
+    "chartSectorWithCoverageAccessibilityLabel": "{{label}}, {{amount}}, {{percentage}} percent, with {{setAside}} set aside, {{covered}} percent covered",
     "relativeTime": {
       "justNow": "just now",
       "minutesAgo_one": "{{count}} minute ago",
@@ -340,11 +430,16 @@
     },
     "debtsInsight": {
       "oneOpenDebt": "You have one open debt: {{name}}, {{amount}} left to pay.",
-      "biggestDebt": "Your biggest debt is {{name}}, {{pct}}% of the {{total}} you owe."
+      "biggestDebt": "Your biggest debt is {{name}}, {{pct}}% of the {{total}} you owe.",
+      "stillNeeded": "You already have {{setAside}} set aside; {{stillNeeded}} to go."
     },
     "fundsInsight": {
       "untouched": "No withdrawals from your funds yet — nice and untouched.",
       "lastUsed": "Last used {{when}}: {{amount}} withdrawn from {{name}}."
+    },
+    "expensesInsight": {
+      "dominant": "{{category}} took {{pct}}% of what you spent.",
+      "spread": "Your spending is spread out: no category is above {{pct}}%."
     }
   },
   "resumen": {
@@ -420,6 +515,7 @@
     "searching": "Searching…",
     "noResults": "No icon matches “{{query}}”",
     "seeAllIcons": "See all icons",
+    "moreIcons": "More icons",
     "groups": {
       "money": "Money",
       "home": "Home",
@@ -468,5 +564,53 @@
     "selectPlaceholder": "Choose…",
     "searchPlaceholder": "Search…",
     "noOptions": "Nothing matches your search."
+  },
+  "defaultCategories": {
+    "groceries": "Groceries",
+    "diningOut": "Restaurants & cafés",
+    "housing": "Housing",
+    "utilities": "Utilities",
+    "internetPhone": "Internet & phone",
+    "transport": "Transport",
+    "fuel": "Fuel",
+    "health": "Health",
+    "pharmacy": "Pharmacy",
+    "education": "Education",
+    "clothing": "Clothing & shoes",
+    "leisure": "Leisure",
+    "subscriptions": "Subscriptions",
+    "personalCare": "Personal care",
+    "pets": "Pets",
+    "gifts": "Gifts",
+    "feesInterest": "Fees & interest",
+    "salary": "Salary",
+    "freelance": "Freelance",
+    "rentalIncome": "Rental income",
+    "investments": "Interest & investments",
+    "refunds": "Refunds"
+  },
+  "entityPicker": {
+    "categoriesTitle": "Categories and their movements",
+    "accountsTitle": "Accounts and their movements",
+    "searchCategory": "Search category…",
+    "searchAccount": "Search account…",
+    "noResults": "Nothing matches “{{query}}”",
+    "rowAccessibilityLabel": "{{name}}, {{amount}}",
+    "noMovementsYet": "No movements yet.",
+    "seeAllMovements": "See all movements →",
+    "toggleMovements": "Show or hide {{name}} movements"
+  },
+  "period": {
+    "title": "Period",
+    "thisMonth": "This month",
+    "lastMonth": "Last month",
+    "lastMonths": "Last {{count}} months",
+    "thisYear": "This year",
+    "all": "All time",
+    "customRange": "Custom range",
+    "change": "Change the period",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "monthsOnlyHere": "Limits are monthly, so only a single month can be picked here."
   }
 }

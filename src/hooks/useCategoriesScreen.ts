@@ -2,6 +2,7 @@ import {useCallback, useMemo, useRef, useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
+import {usePeriod} from '@context/PeriodContext';
 import {
   deleteCategory,
   getCategoriesByType,
@@ -9,10 +10,14 @@ import {
   getFinances,
   getSpendingByCategory,
   getIncomeByCategory,
+  getLastMovementDates,
   IFinanceRow,
   IFinancesCursor,
 } from '@db/queries';
-import {financeTypeToCategoryType, getCurrentPeriod} from '@screens/[categories]/CategoriesScreen/mappers';
+import {
+  financeTypeToCategoryType,
+  sortCategoriesByRelevance,
+} from '@screens/[categories]/CategoriesScreen/mappers';
 
 export type LoadStatus = 'loading' | 'success' | 'error';
 
@@ -42,10 +47,42 @@ export type LoadStatus = 'loading' | 'success' | 'error';
 export const useCategoriesScreen = (financeType: FinanceType) => {
   const {t} = useTranslation();
   const categoryType = useMemo(() => financeTypeToCategoryType(financeType), [financeType]);
-  const period = useMemo(() => getCurrentPeriod(), []);
+  /**
+   * El periodo lo manda el contexto global, no el reloj de esta
+   * pantalla. `anchorMonth` para los totales por categoria —que se
+   * calculan por mes— y el tramo resuelto para la lista de movimientos.
+   */
+  const {resolved} = usePeriod();
+  /**
+   * La lista de movimientos se acota AL MISMO TRAMO que los totales de
+   * las tarjetas.
+   *
+   * Antes no lo estaba: el total salia de
+   * `getSpendingByCategory({period})` (solo el mes en curso) y la lista
+   * de `getFinances({idCategory})` sin fecha (todo el historial). Con un
+   * movimiento de agosto y el mes en septiembre, la pantalla mostraba
+   * "Gastado este mes $0.00" con un gasto de $250.00 justo debajo, y se
+   * leia como dinero perdido. Ver el historial completo es lo que hace
+   * "Ver todos", que ya trae filtro por rango de tiempo.
+   *
+   * El mismo desajuste volvio a asomar cuando el selector de periodo
+   * gano tramos de varios meses: los totales seguian pidiendo
+   * `{period}`, que es `resolved.anchorMonth` —UN mes—, mientras la
+   * lista de abajo ya traia el tramo entero. Con "Ultimos 3 meses" la
+   * tarjeta decia el gasto de septiembre y debajo aparecian
+   * movimientos de julio. Ahora ambos leen `resolved.from`/`to`, que es
+   * el unico sitio donde el tramo esta definido.
+   */
+  const monthRange = useMemo(
+    () => ({start: resolved.from, end: resolved.to}),
+    [resolved.from, resolved.to],
+  );
 
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [categoryTotals, setCategoryTotals] = useState<Map<number, number>>(new Map());
+  /** Ultimo movimiento por categoria: desempata el orden de las tarjetas
+   * cuando todo el mes esta a cero. */
+  const [lastUsed, setLastUsed] = useState<Map<number, string>>(new Map());
   const [categoriesStatus, setCategoriesStatus] = useState<LoadStatus>('loading');
   const [categoriesErrorMessage, setCategoriesErrorMessage] = useState('');
   const hasLoadedCategoriesRef = useRef(false);
@@ -74,21 +111,40 @@ export const useCategoriesScreen = (financeType: FinanceType) => {
       let totals: Map<number, number>;
       if (categoryType === 'expense') {
         // One SQL round trip, already summed — see `getSpendingByCategory`.
-        const spending = await getSpendingByCategory(db, {period});
+        const spending = await getSpendingByCategory(db, {
+          startDate: resolved.from,
+          endDate: resolved.to,
+        });
         totals = new Map(spending.map(row => [row.category.id, row.spent]));
       } else {
         // Simétrico al gasto: una sola consulta ya agregada en SQL.
-        const income = await getIncomeByCategory(db, {period});
+        const income = await getIncomeByCategory(db, {
+          startDate: resolved.from,
+          endDate: resolved.to,
+        });
         totals = new Map(income.map(row => [row.category.id, row.income]));
       }
 
+      const {byCategory} = await getLastMovementDates(db);
+
       setCategories(categoriesResult);
       setCategoryTotals(totals);
+      setLastUsed(byCategory);
       setSelectedCategoryId(prev => {
+        // La seleccion por defecto sigue el MISMO orden que las
+        // tarjetas, no el de la base. Con la fila cortada en ocho, la
+        // primera por `id` puede no estar entre las visibles y la
+        // pantalla abriria con una seleccion que no se ve por ninguna
+        // parte.
+        const [mostRelevant] = sortCategoriesByRelevance(
+          categoriesResult,
+          totals,
+          byCategory,
+        );
         const nextId =
           prev !== undefined && categoriesResult.some(category => category.id === prev)
             ? prev
-            : categoriesResult[0]?.id;
+            : mostRelevant?.id;
         // No category left to select (the active category was
         // removed, or this type has none at all) — without this, the
         // movements list below would keep showing a stale selection's
@@ -111,7 +167,7 @@ export const useCategoriesScreen = (financeType: FinanceType) => {
         setCategoriesStatus('error');
       }
     }
-  }, [categoryType, period, t]);
+  }, [categoryType, resolved.from, resolved.to, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -127,7 +183,11 @@ export const useCategoriesScreen = (financeType: FinanceType) => {
     setFinancesErrorMessage('');
     try {
       const db = await getDbConnection();
-      const result = await getFinances(db, {idCategory: categoryId});
+      const result = await getFinances(db, {
+        idCategory: categoryId,
+        from: monthRange.start,
+        to: monthRange.end,
+      });
       setFinanceItems(result.items);
       setNextCursor(result.nextCursor);
       setFinancesStatus('success');
@@ -141,7 +201,7 @@ export const useCategoriesScreen = (financeType: FinanceType) => {
         setFinancesStatus('error');
       }
     }
-  }, [t]);
+  }, [t, monthRange]);
 
   useFocusEffect(
     useCallback(() => {
@@ -168,6 +228,10 @@ export const useCategoriesScreen = (financeType: FinanceType) => {
       const result = await getFinances(db, {
         idCategory: selectedCategoryId,
         cursor: nextCursor,
+        // El mismo rango que la primera pagina: sin esto, al paginar
+        // reaparecerian los movimientos de meses anteriores.
+        from: monthRange.start,
+        to: monthRange.end,
       });
       setFinanceItems(prev => [...prev, ...result.items]);
       setNextCursor(result.nextCursor);
@@ -179,7 +243,7 @@ export const useCategoriesScreen = (financeType: FinanceType) => {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [nextCursor, isLoadingMore, selectedCategoryId]);
+  }, [nextCursor, isLoadingMore, selectedCategoryId, monthRange]);
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -245,6 +309,7 @@ export const useCategoriesScreen = (financeType: FinanceType) => {
   return {
     categories,
     categoryTotals,
+    lastUsed,
     categoriesStatus,
     categoriesErrorMessage,
     reloadCategories: loadCategories,

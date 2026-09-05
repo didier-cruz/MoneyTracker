@@ -1,4 +1,4 @@
-import {FC} from 'react';
+import {FC, useEffect, useRef} from 'react';
 import {CatalogCard} from '@components/molecules/Cards/CatalogCard';
 import {FlatList, StyleSheet} from 'react-native';
 
@@ -20,8 +20,39 @@ const CatalogList: FC<CatalogList> = ({
   onPressItem,
   onPressManageItem,
 }) => {
+  const listRef = useRef<FlatList<CatalogCard>>(null);
+
+  /**
+   * Lleva la fila hasta la tarjeta seleccionada cuando la seleccion
+   * cambia desde FUERA de la propia fila — es decir, desde la hoja de
+   * "ver todas".
+   *
+   * Sin esto la fila se queda donde el usuario la habia dejado y la
+   * tarjeta elegida, que el mapper acaba de poner la primera, queda
+   * fuera de pantalla por la izquierda: la seleccion cambia de verdad
+   * (los movimientos de abajo responden) pero no se ve marcada en
+   * ningun sitio. Comprobado en el emulador.
+   *
+   * `scrollToIndex` NO sirve aqui: la lista no tiene `getItemLayout` y
+   * las tarjetas no miden todas lo mismo (la variante `wide` de una
+   * cuenta por cobrar es el doble de ancha), asi que pedir un indice
+   * puede fallar con `scrollToIndex out of range`. Para el unico caso
+   * que importa —la seleccionada esta la primera— basta con volver al
+   * principio.
+   */
+  useEffect(() => {
+    if (selectedId === undefined) {
+      return;
+    }
+    const index = data.findIndex(item => item.id === selectedId);
+    if (index === 0) {
+      listRef.current?.scrollToOffset({offset: 0, animated: true});
+    }
+  }, [selectedId, data]);
+
   return (
     <FlatList
+      ref={listRef}
       keyExtractor={item => item.id.toString()}
       data={data}
       horizontal

@@ -14,7 +14,21 @@ interface CategoryLimitsSectionProps {
   errorMessage: string;
   /** Right-hand subtitle next to the section heading, per the approved
    * prototype ("Quedan 9 días") — see `getDaysRemainingInMonth`. */
-  daysRemainingInMonth: number;
+  /** `undefined` cuando el periodo elegido no es el mes en curso: en un
+   * mes cerrado "quedan N dias" no significa nada, asi que no se pinta
+   * nada en su lugar. */
+  daysRemainingInMonth?: number;
+  /**
+   * El mes cuyos limites se estan mostrando, ya formateado.
+   *
+   * La seccion decia "Limites del mes" y con un periodo de un solo mes
+   * eso bastaba. Ahora el periodo global puede ser un TRAMO —"ultimos 3
+   * meses", "este ano"— y un limite es mensual por esquema
+   * (`UNIQUE (idCategory, period)`), asi que esta seccion sigue
+   * enseñando UN mes aunque el resto de la app mire tres. Nombrarlo es
+   * lo que impide que eso pase por incoherencia.
+   */
+  monthLabel: string;
   onRetry: () => void;
   onPressBudget: (budget: ICategoryBudgetWithSpent) => void;
   onDeleteBudget: (budget: ICategoryBudgetWithSpent) => void;
@@ -26,6 +40,11 @@ interface CategoryLimitsSectionProps {
    * hoja vacia.
    */
   categoriesWithoutLimitCount: number;
+  /** El mes que se esta viendo ya termino: las filas dan veredicto en
+   * lugar de progreso. */
+  isClosedMonth: boolean;
+  /** Meses cerrados seguidos cumpliendo, por `idCategory`. */
+  streaksByCategory: Map<number, number>;
 }
 
 /**
@@ -52,11 +71,14 @@ export const CategoryLimitsSection: FC<CategoryLimitsSectionProps> = ({
   status,
   errorMessage,
   daysRemainingInMonth,
+  monthLabel,
   onRetry,
   onPressBudget,
   onDeleteBudget,
   onPressAddLimit,
   categoriesWithoutLimitCount,
+  isClosedMonth,
+  streaksByCategory,
 }) => {
   const {t} = useTranslation();
   const canAddLimit = categoriesWithoutLimitCount > 0;
@@ -67,10 +89,12 @@ export const CategoryLimitsSection: FC<CategoryLimitsSectionProps> = ({
     <View style={styles.section}>
       <View style={styles.headingRow}>
         <Text size={18} bold>
-          {t('budgets.monthlyLimitsHeading')}
+          {t('budgets.monthlyLimitsHeadingFor', {month: monthLabel})}
         </Text>
         <Text color={colors[gray][0]} size={12}>
-          {t('budgets.daysRemaining', {count: daysRemainingInMonth})}
+          {daysRemainingInMonth === undefined
+            ? ''
+            : t('budgets.daysRemaining', {count: daysRemainingInMonth})}
         </Text>
       </View>
 
@@ -112,6 +136,8 @@ export const CategoryLimitsSection: FC<CategoryLimitsSectionProps> = ({
               <CategoryLimitRow
                 key={budget.id}
                 budget={budget}
+                isClosedMonth={isClosedMonth}
+                streakMonths={streaksByCategory.get(budget.category.id)}
                 onPress={() => onPressBudget(budget)}
                 onDelete={() => onDeleteBudget(budget)}
                 showSeparator={canAddLimit || index < budgets.length - 1}

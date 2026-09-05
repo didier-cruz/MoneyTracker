@@ -17,6 +17,25 @@ interface SegmentedControlProps<T extends string> {
   options: readonly SegmentedControlOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /**
+   * Como se reparten las pastillas.
+   *
+   * - `'auto'` (por defecto) aplica la regla historica descrita en el
+   *   doc de abajo: una fila a partes iguales con 2 opciones o menos,
+   *   rejilla que envuelve con mas.
+   * - `'even'` fuerza la fila a partes iguales sin importar cuantas
+   *   opciones haya.
+   *
+   * Existe porque la regla automatica mira el NUMERO de opciones y no
+   * el largo de las etiquetas, que es lo que de verdad decide si caben.
+   * Con tres etiquetas cortas (el filtro Todos/Fondos/Deudas de
+   * `EnvelopesSection`) el `minWidth: '47%'` de la rejilla mete dos
+   * pastillas por fila y deja la tercera sola debajo, ocupando el doble
+   * de alto para nada. Cambiar el umbral de 2 a 3 no era opcion: los 4
+   * tipos de cuenta de `KindField` SI necesitan envolver, y ese caso es
+   * justo el que la regla vino a arreglar.
+   */
+  layout?: 'auto' | 'even';
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -41,7 +60,8 @@ const SEGMENT_TRACK_BG = '#EDEDF2';
  * `SelectPro` — the OTHER `useTheme()` call site salvaged nothing —
  * was deleted instead of migrated).
  *
- * `options.length <= 2` (`RadioField`, `KindField` for envelopes,
+ * Con `layout="auto"` (por defecto): `options.length <= 2`
+ * (`RadioField`, `KindField` for envelopes,
  * `TypeSegment`) keeps `TypeSegment`'s original even-split `flex: 1`
  * pills, one row, full width. `options.length > 2` — ONLY
  * `KindField` for accounts, 4 kinds — switches each pill to its own
@@ -59,10 +79,11 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  layout = 'auto',
   style,
   testID,
 }: SegmentedControlProps<T>) {
-  const wraps = options.length > 2;
+  const wraps = layout === 'auto' && options.length > 2;
   return (
     <View
       style={[styles.track, wraps && styles.trackWraps, style]}

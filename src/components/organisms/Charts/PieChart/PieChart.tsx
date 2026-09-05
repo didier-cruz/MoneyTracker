@@ -1,7 +1,7 @@
 import React, {FC, useEffect, useState} from 'react';
+import {Money} from '@components/atoms/text/Money';
 import {useTranslation} from 'react-i18next';
 import {colors} from '@constants/colors/colors';
-import {formatCentsToCurrency} from '@utils/currency';
 import {Text, View} from 'react-native';
 import {PieChart as PieChartGifted} from 'react-native-gifted-charts';
 import {RenderLegend} from './partials/RenderLend';
@@ -97,7 +97,7 @@ export const PieChart: FC<PieChartProps> = ({data, radius, items}) => {
           return (
             <View>
               <Text style={{color: colors.text[0], fontSize: 26}}>
-                {formatCentsToCurrency(balanceGnrl)}
+                {<Money cents={balanceGnrl} fontSize={26} />}
               </Text>
               <Text style={{color: colors.text[1], fontSize: 16, textAlign: 'center'}}>
                 {balanceLbl}

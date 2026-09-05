@@ -10,9 +10,21 @@ import {heightDP} from '@utils/responsive';
  */
 export const TAB_BAR_HEIGHT = heightDP(9);
 
-/** Cuánto sobresale el FAB por encima del borde superior de la barra. */
 export const FAB_SIZE = 70;
-export const FAB_OVERHANG = 24;
+/**
+ * Cuánto sobresale el FAB por encima del borde superior de la barra.
+ *
+ * Ajustado a ojo NO, medido: con 24 el círculo asomaba 88px (32dp) por
+ * encima del borde de la barra en el emulador, o sea solo un 54% del
+ * círculo quedaba dentro. El objetivo son 3/4 dentro, es decir sobresalir
+ * 1/4 de los 70dp de diámetro ≈ 18dp.
+ *
+ * Ojo con la aritmética: lo que se mide en pantalla NO es este valor.
+ * `bottom` se cuenta desde el contenedor de la barra, que a su vez está
+ * por encima del área de gestos, así que la parte visible que asoma sale
+ * unos 8dp mayor que este número. De ahí el 10 y no el 18.
+ */
+export const FAB_OVERHANG = 10;
 
 /**
  * Used to read `@redshank/native`'s `useTheme()` (`ThemeProvider`'s

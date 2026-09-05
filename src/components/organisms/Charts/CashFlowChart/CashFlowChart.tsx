@@ -275,6 +275,24 @@ export const CashFlowChart: FC<CashFlowChartProps> = ({months}) => {
       ) : (
         <View accessible accessibilityRole="image" accessibilityLabel={buildChartAccessibilityLabel(months)}>
           <BarChart
+            /**
+             * `key` con la firma de los datos para FORZAR un remontaje
+             * cuando cambian.
+             *
+             * `react-native-gifted-charts` con `isAnimated` no reanima
+             * una barra que pasa de 0 a un valor mientras el componente
+             * sigue montado: se queda dibujada a altura cero. Se veia al
+             * registrar el primer ingreso del mes —la tarjeta de arriba
+             * ya decia $3,000.00 y la etiqueta de accesibilidad de esta
+             * misma grafica tambien, pero la barra verde no aparecia—;
+             * al reiniciar la app se dibujaba bien, que es la firma
+             * tipica de un estado interno que no se reconcilia.
+             *
+             * Remontar es barato: son como mucho seis grupos de tres
+             * barras, y la animacion arranca desde cero con los valores
+             * correctos.
+             */
+            key={months.map(m => `${m.month}:${m.income}:${m.expense}:${m.savings}`).join('|')}
             data={buildBarData(months, barWidth, groupGap)}
             width={chartWidth}
             height={CHART_HEIGHT}

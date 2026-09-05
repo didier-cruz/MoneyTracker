@@ -21,6 +21,9 @@ interface ScreenTemplateProps extends PropsWithChildren {
    * that component's doc comment. Optional/additive: omitted by every
    * existing caller, which keeps their current single-title header. */
   headerSubtitle?: string;
+  /** Se pasa tal cual a `MainHeader`: vuelve el subtitulo tocable
+   * y le pone un chevron. Opcional y aditivo. */
+  onPressHeaderSubtitle?: () => void;
   screenContainerStyle?: ViewStyle;
   /** Passed straight through to `ScrollContainer`'s own
    * `refreshControl` — see that component's doc comment. Optional/
@@ -31,6 +34,7 @@ interface ScreenTemplateProps extends PropsWithChildren {
 const ScreenTemplate: FC<ScreenTemplateProps> = ({
   headerTitle,
   headerSubtitle,
+  onPressHeaderSubtitle,
   screenContainerStyle = {},
   refreshControl,
   children,
@@ -39,7 +43,11 @@ const ScreenTemplate: FC<ScreenTemplateProps> = ({
     <ScrollContainer style={{flex: 1}} refreshControl={refreshControl}>
       <ScreenContainer containerStyle={screenContainerStyle}>
         {(headerTitle !== undefined || headerSubtitle !== undefined) && (
-          <MainHeader title={headerTitle} subtitle={headerSubtitle} />
+          <MainHeader
+            title={headerTitle}
+            subtitle={headerSubtitle}
+            onPressSubtitle={onPressHeaderSubtitle}
+          />
         )}
         {children}
       </ScreenContainer>

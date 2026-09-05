@@ -27,14 +27,15 @@
       "label": "Transferencia"
     },
     "noCategory": "Sin categoría",
-    "back": "Volver"
+    "back": "Volver",
+    "clear": "Limpiar"
   },
   "drawer": {
     "home": "Inicio",
     "accounts": "Cuentas",
     "categories": "Categorías",
-    "signOut": "Cerrar sesión",
-    "language": "Idioma"
+    "language": "Idioma",
+    "achievements": "Logros"
   },
   "accounts": {
     "title": "Cuentas",
@@ -113,7 +114,15 @@
     "adminEmptyState": "Aún no tienes cuentas. Crea la primera con el botón de abajo.",
     "adminAddAccount": "Nueva cuenta",
     "editAccountAccessibilityLabel": "Editar {{name}}",
-    "archiveAccountAccessibilityLabel": "Archivar {{name}}"
+    "archiveAccountAccessibilityLabel": "Archivar {{name}}",
+    "seeAllCards": "Ver todas ({{count}})",
+    "adminHeaderTitle": "Cuentas",
+    "adminHeaderSubtitle": "y sus movimientos",
+    "toggleMovementsAccessibilityLabel": "Mostrar u ocultar los movimientos de {{name}}",
+    "archiveAccountTitle": "¿Archivar la cuenta?",
+    "archiveAccountMessage": "«{{name}}» dejará de aparecer en tus listas y de sumar al patrimonio neto. Sus movimientos NO se borran: siguen en el historial con su importe y su fecha. Puedes recuperarla cuando quieras desde «Cuentas archivadas».",
+    "archiveAccountErrorMessage": "No se pudo archivar la cuenta. Inténtalo de nuevo.",
+    "archivedAccountsAccessibilityLabel": "Ver las cuentas archivadas"
   },
   "budgets": {
     "title": "Presupuestos",
@@ -122,11 +131,12 @@
     "retryLoadingEnvelopes": "Reintentar carga de sobres",
     "loadEnvelopesError": "No se pudieron cargar los sobres: {{message}}",
     "envelopesEmptyState": "Aún no tienes sobres. Crea un Fondo para ahorrar para una meta, o una Deuda para llevar el control de lo que debes.",
+    "noFundEnvelopes": "No tienes sobres de fondo.",
+    "noDebtEnvelopes": "No tienes sobres de deuda.",
     "createFirstEnvelope": "Crea tu primer sobre",
     "createEnvelope": "Crear sobre",
     "createNewEnvelope": "Crear un nuevo sobre",
     "addEnvelope": "Agregar sobre",
-    "monthlyLimitsHeading": "Límites del mes",
     "loadingLimits": "Cargando límites mensuales",
     "retryLoadingLimits": "Reintentar carga de límites mensuales",
     "loadLimitsError": "No se pudieron cargar los límites de este mes: {{message}}",
@@ -177,7 +187,7 @@
     "savingsGoalAccessibilityLabel": "Meta de ahorro",
     "loadingEnvelope": "Cargando sobre",
     "retryLoadingEnvelope": "Reintentar carga del sobre",
-    "overBy": "Te pasaste por {{amount}} este mes.",
+    "overBy": "Te pasaste por {{amount}}",
     "progress": {
       "paidLeft": "{{pct}}% pagado · quedan {{amount}}",
       "paidOff": "Pagado por completo",
@@ -204,12 +214,78 @@
     "deleteLimitTitle": "¿Eliminar el límite?",
     "deleteLimitMessage": "Se quitará el límite mensual de «{{name}}». Sus movimientos no se tocan: solo dejas de tener un tope para esta categoría.",
     "deleteLimitErrorMessage": "No se pudo eliminar el límite. Inténtalo de nuevo.",
-    "deleteLimitAccessibilityLabel": "Eliminar el límite de {{name}}"
+    "deleteLimitAccessibilityLabel": "Eliminar el límite de {{name}}",
+    "monthlyLimitsHeadingFor": "Límites de {{month}}",
+    "envelopeFilter": {
+      "all": "Todos",
+      "funds": "Fondos",
+      "debts": "Deudas"
+    },
+    "goalReachedBadge": "✓ Meta",
+    "markComplete": "Marcar completado",
+    "completeEnvelopeAccessibilityLabel": "Marcar {{name}} como completado",
+    "completeEnvelopeTitle": "¿Marcar como completado?",
+    "completeEnvelopeMessage": "«{{name}}» pasará a tus logros y se retirarán los {{amount}} que tiene apartados, para que dejen de contar como dinero reservado. No se toca ninguna cuenta. Puedes deshacerlo desde Logros.",
+    "completeEnvelopeMessageNoBalance": "«{{name}}» pasará a tus logros y dejará de aparecer en esta lista. No tiene saldo apartado, así que no se retira nada. Puedes deshacerlo desde Logros.",
+    "completeEnvelopeDoneTitle": "¡Meta cumplida!",
+    "completeEnvelopeDoneMessage": "«{{name}}» ya está en tus logros.",
+    "completeEnvelopeErrorMessage": "No se pudo completar el sobre. Inténtalo de nuevo.",
+    "completeEnvelopeGoalLostMessage": "Este sobre ya no llega a su meta; su saldo cambió. Revísalo y vuelve a intentarlo.",
+    "seeAchievements": "Logros ({{count}})",
+    "seeAchievementsAccessibilityLabel": "Ver tus {{count}} logros",
+    "completeConfirmAction": "Completar",
+    "leftOverBy": "Te sobraron",
+    "noActivityThatMonth": "Sin movimientos ese mes",
+    "streak_one": "🔥 {{count}} mes seguido bajo el límite",
+    "streak_other": "🔥 {{count}} meses seguidos bajo el límite",
+    "rolloverTitle": "{{month}} empieza sin límites",
+    "rolloverIntro": "Estos son los de {{month}}, ajustados a cómo te fue:",
+    "rolloverKept": "✓ cumpliste",
+    "rolloverRaisedFrom": "↑ de {{amount}}",
+    "rolloverApply": "Usar estos límites",
+    "rolloverAdjust": "Aplicarlos y ajustarlos",
+    "rolloverDismiss": "Cerrar la sugerencia de límites",
+    "rolloverErrorMessage": "No se pudieron crear los límites. Inténtalo de nuevo."
+  },
+  "achievements": {
+    "title": "Logros",
+    "summary_one": "{{count}} meta cumplida · {{total}}",
+    "summary_other": "{{count}} metas cumplidas · {{total}}",
+    "savedFor": "Ahorraste para {{name}}",
+    "paidOff": "Saldaste tu {{name}}",
+    "tookSameDay": "lo lograste el mismo día",
+    "tookDays_one": "te tomó {{count}} día",
+    "tookDays_other": "te tomó {{count}} días",
+    "tookMonths_one": "te tomó {{count}} mes",
+    "tookMonths_other": "te tomó {{count}} meses",
+    "reopen": "Deshacer",
+    "reopenAccessibilityLabel": "Deshacer el logro de {{name}} y devolverlo a tus sobres",
+    "reopenTitle": "¿Deshacer este logro?",
+    "reopenMessage": "«{{name}}» vuelve a tus sobres con sus {{amount}} apartados otra vez, tal como estaban antes de completarlo.",
+    "reopenError": "No se pudo deshacer: {{message}}",
+    "loading": "Cargando tus logros",
+    "loadError": "No se pudieron cargar los logros: {{message}}",
+    "retry": "Reintentar la carga de logros",
+    "emptyTitle": "Aún no tienes metas cumplidas",
+    "emptyMessage": "Cuando un sobre llegue al 100%, podrás marcarlo como completado y aparecerá aquí.",
+    "goToEnvelopes": "Ver mis sobres",
+    "goalsSection": "Metas cumplidas",
+    "monthsSection": "Meses bajo control",
+    "monthsSummary_one": "{{clean}} de {{count}} mes sin excesos",
+    "monthsSummary_other": "{{clean}} de {{count}} meses sin excesos",
+    "limitsMet": "{{met}} de {{total}} límites cumplidos",
+    "noLimitsThatMonth": "Sin límites ese mes",
+    "underBudgetBy": "Por debajo de tu plan por",
+    "noActivity": "sin movimientos",
+    "spentLessHeading": "Gastaste menos en",
+    "lessThanLastMonth": "menos que el mes pasado",
+    "lessThanAverage": "menos que tu promedio",
+    "monthCardAccessibilityLabel": "Ver el detalle de {{month}}"
   },
   "categories": {
     "expenses": "Gastos",
     "incomes": "Ingresos",
-    "newTile": "Nuevo",
+    "addCategory": "Agregar categoría",
     "listCategoriesTitle": "Lista de categorías",
     "loadingCategories": "Cargando categorías",
     "retryLoadingCategories": "Reintentar carga de categorías",
@@ -221,12 +297,12 @@
       "expenses": {
         "title": "Categorías de gastos",
         "help": "Toca una categoría para ver sus transacciones. Mantén pulsada una para editarla o eliminarla.",
-        "totalLabel": "Gastado este mes"
+        "totalLabel": "Gastado en el periodo"
       },
       "incomes": {
         "title": "Categorías de ingresos",
         "help": "Toca una categoría para ver sus transacciones. Mantén pulsada una para editarla o eliminarla.",
-        "totalLabel": "Ganado este mes"
+        "totalLabel": "Ganado en el periodo"
       }
     },
     "createNewCategory": "Crear una nueva categoría",
@@ -239,8 +315,8 @@
     "loadingMovements": "Cargando movimientos",
     "retryLoadingMovements": "Reintentar carga de movimientos",
     "loadingMoreMovements": "Cargando más movimientos",
-    "noMovementsForCategory": "Aún no hay movimientos para \"{{name}}\".",
-    "noMovementsGeneric": "Aún no hay movimientos para esta categoría.",
+    "noMovementsForCategory": "No hay movimientos de \"{{name}}\" en este periodo.",
+    "noMovementsGeneric": "No hay movimientos de esta categoría en este periodo.",
     "createCategoryTitle": "Crear categoría",
     "createCategoryMessage": "Puedes registrar todas tus categorías desde este formulario",
     "addCategoryNamePlaceholder": "Agregar nombre de categoría",
@@ -275,7 +351,11 @@
     "adminEmptyState": "Aún no tienes categorías. Crea la primera con el botón de abajo.",
     "adminAddCategory": "Nueva categoría",
     "editCategoryAccessibilityLabel": "Editar {{name}}",
-    "deleteCategoryAccessibilityLabel": "Eliminar {{name}}"
+    "deleteCategoryAccessibilityLabel": "Eliminar {{name}}",
+    "seeAllCards": "Ver todas ({{count}})",
+    "toggleMovementsAccessibilityLabel": "Mostrar u ocultar los movimientos de {{name}}",
+    "adminHeaderTitle": "Categorías",
+    "adminHeaderSubtitle": "y sus movimientos"
   },
   "transfer": {
     "title": "Transferir",
@@ -309,6 +389,13 @@
     "title": "Análisis",
     "debtsTitle": "Mis deudas",
     "fundsTitle": "Mis fondos",
+    "expensesTitle": "En qué gastas",
+    "totalSpent": "Gasto",
+    "othersLabel": "Otros ({{count}})",
+    "loadExpensesError": "No se pudieron cargar los gastos: {{message}}",
+    "noExpensesInPeriod": "No registraste gastos en {{period}}.",
+    "chooseAnotherPeriod": "Ver otro periodo",
+    "changeExpensesPeriod": "Periodo de los gastos: {{period}}. Toca para cambiarlo.",
     "totalOwed": "Total adeudado",
     "totalSaved": "Total ahorrado",
     "loadingCard": "Cargando {{title}}",
@@ -324,6 +411,9 @@
     "manageEnvelopes": "Administrar sobres",
     "chartAccessibilityLabel": "Desglose de {{title}}: {{breakdown}}",
     "chartSectorAccessibilityLabel": "{{label}}, {{amount}}, {{percentage}} por ciento",
+    "setAsideShort": "{{amount}} apartado",
+    "setAsideWithPct": "{{amount}} apartado · {{pct}}%",
+    "chartSectorWithCoverageAccessibilityLabel": "{{label}}, {{amount}}, {{percentage}} por ciento, con {{setAside}} apartado, {{covered}} por ciento cubierto",
     "relativeTime": {
       "justNow": "justo ahora",
       "minutesAgo_one": "hace {{count}} minuto",
@@ -340,11 +430,16 @@
     },
     "debtsInsight": {
       "oneOpenDebt": "Tienes una deuda abierta: {{name}}, {{amount}} por pagar.",
-      "biggestDebt": "Tu deuda más grande es {{name}}, {{pct}}% de los {{total}} que debes."
+      "biggestDebt": "Tu deuda más grande es {{name}}, {{pct}}% de los {{total}} que debes.",
+      "stillNeeded": "Ya tienes {{setAside}} apartados; te faltan {{stillNeeded}}."
     },
     "fundsInsight": {
       "untouched": "Aún no hay retiros de tus fondos — intactos.",
       "lastUsed": "Usado por última vez {{when}}: {{amount}} retirado de {{name}}."
+    },
+    "expensesInsight": {
+      "dominant": "{{category}} se llevó el {{pct}}% de tus gastos.",
+      "spread": "Tu gasto está repartido: ninguna categoría pasa del {{pct}}%."
     }
   },
   "resumen": {
@@ -420,6 +515,7 @@
     "searching": "Buscando…",
     "noResults": "Ningún ícono coincide con «{{query}}»",
     "seeAllIcons": "Ver todos los íconos",
+    "moreIcons": "Más íconos",
     "groups": {
       "money": "Dinero",
       "home": "Hogar",
@@ -468,5 +564,53 @@
     "selectPlaceholder": "Elegir…",
     "searchPlaceholder": "Buscar…",
     "noOptions": "Nada coincide con tu búsqueda."
+  },
+  "defaultCategories": {
+    "groceries": "Supermercado",
+    "diningOut": "Restaurantes y cafés",
+    "housing": "Vivienda",
+    "utilities": "Servicios del hogar",
+    "internetPhone": "Internet y teléfono",
+    "transport": "Transporte",
+    "fuel": "Combustible",
+    "health": "Salud",
+    "pharmacy": "Farmacia",
+    "education": "Educación",
+    "clothing": "Ropa y calzado",
+    "leisure": "Ocio",
+    "subscriptions": "Suscripciones",
+    "personalCare": "Cuidado personal",
+    "pets": "Mascotas",
+    "gifts": "Regalos",
+    "feesInterest": "Comisiones e intereses",
+    "salary": "Salario",
+    "freelance": "Trabajo independiente",
+    "rentalIncome": "Alquileres",
+    "investments": "Intereses e inversiones",
+    "refunds": "Reembolsos"
+  },
+  "entityPicker": {
+    "categoriesTitle": "Listado de Categorías y sus Movimientos",
+    "accountsTitle": "Listado de Cuentas y sus Movimientos",
+    "searchCategory": "Buscar categoría…",
+    "searchAccount": "Buscar cuenta…",
+    "noResults": "Nada coincide con «{{query}}»",
+    "rowAccessibilityLabel": "{{name}}, {{amount}}",
+    "noMovementsYet": "Sin movimientos todavía.",
+    "seeAllMovements": "Ver todos los movimientos →",
+    "toggleMovements": "Mostrar u ocultar los movimientos de {{name}}"
+  },
+  "period": {
+    "title": "Periodo",
+    "thisMonth": "Este mes",
+    "lastMonth": "Mes pasado",
+    "lastMonths": "Últimos {{count}} meses",
+    "thisYear": "Este año",
+    "all": "Todo el histórico",
+    "customRange": "Rango personalizado",
+    "change": "Cambiar el periodo",
+    "previousMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
+    "monthsOnlyHere": "Los límites son mensuales, así que aquí solo se puede elegir un mes."
   }
 }

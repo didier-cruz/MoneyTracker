@@ -1,6 +1,7 @@
 import {IFinanceRow} from '@db/queries';
 import {mapFinanceRowToTransactItem} from '@screens/ResumenScreen/mappers';
 import i18n from '@i18n';
+import {formatDisplayDayOfMonth} from '@utils/dateFormat';
 
 export type MonthSection = {
   /** `YYYY-MM` — clave estable para `keyExtractor` y para agrupar. */
@@ -50,7 +51,15 @@ export const groupFinancesByMonth = (rows: IFinanceRow[]): MonthSection[] => {
       byKey.set(key, section);
       sections.push(section);
     }
-    section.data.push(mapFinanceRowToTransactItem(row));
+    // La fila reusa el mapper compartido y solo cambia dos cosas para
+    // ESTA pantalla: la variante compacta, y la fecha reducida al dia
+    // —el mes y el ano ya los dice la cabecera de seccion, repetirlos
+    // en cada fila gastaba ancho sin aportar nada.
+    section.data.push({
+      ...mapFinanceRowToTransactItem(row),
+      date: `${formatDisplayDayOfMonth(row.dateCreated)} · ${row.account.name}`,
+      compact: true,
+    });
   });
 
   return sections;

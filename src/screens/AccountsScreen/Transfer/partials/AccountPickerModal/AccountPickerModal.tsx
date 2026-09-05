@@ -1,4 +1,5 @@
 import {BottomSheet} from '@components/organisms/feedback/BottomSheet';
+import {Money} from '@components/atoms/text/Money';
 import {Text} from '@components/atoms/text/Text';
 import {Title} from '@components/atoms/text/Title';
 import React from 'react';
@@ -76,7 +77,7 @@ const AccountPickerModal = ({visible, title, accounts, onSelect, onClose}: Props
             <View style={styles.rowBody}>
               <Text>{item.name}</Text>
               <Text color={colors[gray][0]} size="xs">
-                {formatCentsToCurrency(item.balance)}
+                {<Money cents={item.balance} fontSize={14} />}
               </Text>
             </View>
           </TouchableOpacity>

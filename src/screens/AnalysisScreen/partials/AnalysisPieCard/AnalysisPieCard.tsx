@@ -1,4 +1,5 @@
 import {FC} from 'react';
+import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from '@components/atoms/text/Text';
 import {Title} from '@components/atoms/text/Title';
@@ -8,7 +9,27 @@ import {formatCentsToCurrency} from '@utils/currency';
 import {LoadStatus} from '@hooks/useAnalysisScreen';
 import {Legend} from '../Legend/Legend';
 import {InsightStrip} from '../InsightStrip/InsightStrip';
+import {ISectorCoverage} from '../../mappers';
 import {useTranslation} from 'react-i18next';
+
+/**
+ * El selector de periodo de UNA tarjeta.
+ *
+ * Vive aqui dentro y no en la cabecera de la pantalla a proposito. En
+ * Analitica conviven datos de dos naturalezas: los sobres —deudas y
+ * fondos— son ACUMULADOS y ninguna de sus consultas filtra por fecha,
+ * mientras que el gasto por categoria solo significa algo dentro de un
+ * tramo. Una etiqueta de periodo en el header aplicaria visualmente a
+ * las tres tarjetas y volveria a mentir sobre dos de ellas, que es
+ * exactamente por lo que se le quito el subtitulo de mes a esta
+ * pantalla (ver `AnalysisScreen`). Con el chip dentro, la unica
+ * tarjeta que respeta el intervalo es la unica que lo anuncia.
+ */
+export interface AnalysisPieCardPeriodChip {
+  label: string;
+  onPress: () => void;
+  accessibilityLabel: string;
+}
 
 export interface AnalysisPieCardEmptyState {
   message: string;
@@ -24,6 +45,10 @@ export interface AnalysisPieCardProps {
   /** Small label above the donut's center amount, e.g. `"Total owed"` /
    * `"Total saved"`. */
   centerLabel: string;
+  /** Opcional: cuando se pasa, la tarjeta muestra bajo su titulo un
+   * chip tocable con el periodo al que corresponden sus cifras. Las
+   * tarjetas de sobres no lo pasan — ver `AnalysisPieCardPeriodChip`. */
+  periodChip?: AnalysisPieCardPeriodChip;
   /** Already filtered to `value > 0` and sorted biggest-first — see
    * `AnalysisScreen/mappers.ts`'s `toDebtSectorInputs`/
    * `toFundSectorInputs`. This card computes `buildDonutData` itself
@@ -31,6 +56,25 @@ export interface AnalysisPieCardProps {
    * shows can never independently drift apart (single source of
    * truth, see `donutMath.ts`). */
   sectorInputs: IChartSectorInput[];
+  /** Per-sector "already covered" annotation, passed straight to
+   * `Legend` — only the Debts card supplies it, see
+   * `mappers.ts`'s `toDebtCoverageById` for what it means and why the
+   * ring is NOT re-sized by it. */
+  coverageById?: Record<number, ISectorCoverage>;
+  /** Iconos para la leyenda, keyed by sector id — ver `Legend`. */
+  iconById?: Record<number, string>;
+  /**
+   * Optional caption UNDER the donut — the Debts card's total "X
+   * apartado".
+   *
+   * Deliberately outside the ring: it was first tried as a third line
+   * inside the donut's center and verified on-device (Android
+   * emulator, 2026-09-03) to overflow — the center box is bounded to
+   * `holeDiameter` (146 - 2*22 = 102px) and `"$1,400.00 apartado"`
+   * rendered straight over the arc on both sides. `adjustsFontSizeToFit`
+   * could only fix it by shrinking the text past legibility.
+   */
+  chartCaption?: string;
   /**
    * `null` when there is genuinely nothing to say (no envelope of this
    * kind exists at all) — in every other case this is shown REGARDLESS
@@ -69,7 +113,11 @@ export const AnalysisPieCard: FC<AnalysisPieCardProps> = ({
   errorMessage,
   onRetry,
   centerLabel,
+  periodChip,
   sectorInputs,
+  coverageById,
+  iconById,
+  chartCaption,
   insightText,
   empty,
 }) => {
@@ -102,9 +150,22 @@ export const AnalysisPieCard: FC<AnalysisPieCardProps> = ({
 
   return (
     <View style={styles.card}>
-      <Title level={2} style={styles.title}>
+      <Title level={2} style={periodChip === undefined ? styles.title : styles.titleWithChip}>
         {title}
       </Title>
+
+      {periodChip !== undefined && (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={periodChip.accessibilityLabel}
+          onPress={periodChip.onPress}
+          style={styles.periodChip}>
+          <Text size={13} color={colors[gray][1]}>
+            {periodChip.label}
+          </Text>
+          <VectorIcon name="chevron-down" color={colors[gray][0]} size={10} />
+        </TouchableOpacity>
+      )}
 
       {status === 'loading' && (
         <View style={styles.centered}>
@@ -150,13 +211,20 @@ export const AnalysisPieCard: FC<AnalysisPieCardProps> = ({
             </View>
           ) : (
             <View style={styles.chartRow}>
-              <DonutChart
-                sectors={sectors}
-                centerLabel={centerLabel}
-                centerValue={formatCentsToCurrency(total)}
-                accessibilityLabel={chartAccessibilityLabel}
-              />
-              <Legend sectors={sectors} />
+              <View style={styles.chartColumn}>
+                <DonutChart
+                  sectors={sectors}
+                  centerLabel={centerLabel}
+                  centerValue={formatCentsToCurrency(total)}
+                  accessibilityLabel={chartAccessibilityLabel}
+                />
+                {chartCaption !== undefined && (
+                  <Text color={colors[gray][0]} size={12} align="center" style={styles.caption}>
+                    {chartCaption}
+                  </Text>
+                )}
+              </View>
+              <Legend sectors={sectors} coverageById={coverageById} iconById={iconById} />
             </View>
           )}
           {insightText !== null && <InsightStrip text={insightText} />}
@@ -181,9 +249,33 @@ const styles = StyleSheet.create({
   title: {
     marginBottom: 16,
   },
+  titleWithChip: {
+    marginBottom: 10,
+  },
+  // `alignSelf: 'flex-start'` para que el chip mida lo que mide su
+  // texto: sin el, la fila se estira a todo el ancho de la tarjeta y el
+  // area tocable llega hasta el borde derecho, muy lejos de lo que se
+  // ve como boton.
+  periodChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: colors.inactive[0],
+    marginBottom: 16,
+  },
   chartRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  chartColumn: {
+    alignItems: 'center',
+  },
+  caption: {
+    marginTop: 8,
   },
   centered: {
     width: '100%',

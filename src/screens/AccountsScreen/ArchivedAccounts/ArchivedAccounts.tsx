@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {Money} from '@components/atoms/text/Money';
 import {ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from '@components/atoms/text/Text';
 import {Title} from '@components/atoms/text/Title';
@@ -166,7 +167,7 @@ export const ArchivedAccounts = (_props: ArchivedAccountsProps) => {
                 <Title
                   level={3}
                   color={item.balance < 0 ? colors[secondary][0] : undefined}>
-                  {formatCentsToCurrency(item.balance)}
+                  {<Money cents={item.balance} fontSize={20} />}
                 </Title>
                 <TouchableOpacity
                   accessibilityElementsHidden

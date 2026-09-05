@@ -101,10 +101,17 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
           accessibilityLabel={t('common.close')}
         />
         <View style={styles.card} accessible accessibilityRole="alert">
-          <View style={[styles.badge, {backgroundColor: TONE_TINT[tone]}]}>
-            <FontAwesomeIcon icon={TONE_ICON[tone]} size={22} color={TONE_COLOR[tone]} />
+          {/* El icono va en la MISMA linea que el titulo, no encima.
+              Apilado gastaba los 44 del distintivo mas 16 de margen en
+              vertical para no decir nada que la linea del titulo no
+              pueda acompanar; en fila, ese alto lo absorbe el propio
+              titulo y el dialogo encoge unos 50. */}
+          <View style={styles.headerRow}>
+            <View style={[styles.badge, {backgroundColor: TONE_TINT[tone]}]}>
+              <FontAwesomeIcon icon={TONE_ICON[tone]} size={20} color={TONE_COLOR[tone]} />
+            </View>
+            <Text style={styles.title}>{title}</Text>
           </View>
-          <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
 
           <View style={styles.buttonsRow}>
@@ -149,19 +156,26 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: colors.white[0],
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 10,
+  },
   badge: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
   title: {
+    // `flex: 1` para que un titulo largo pase de linea DENTRO de la
+    // fila en vez de empujar al icono fuera de la tarjeta.
+    flex: 1,
     fontSize: 20,
     fontWeight: '700',
     color: colors[textColorKey][0],
-    marginBottom: 8,
   },
   message: {
     fontSize: 14,

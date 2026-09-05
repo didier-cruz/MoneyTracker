@@ -5,6 +5,7 @@ export * from './categoriesQueries';
 export * from './envelopesQueries';
 export * from './financesQueries';
 export * from './period';
+export * from './seedQueries';
 export * from './transfersQueries';
 
 /**

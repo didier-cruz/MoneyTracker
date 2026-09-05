@@ -1,18 +1,11 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-} from 'react-native';
+import {View, Image} from 'react-native';
 import {
   DrawerContentComponentProps,
   DrawerContentScrollView,
   DrawerItemList,
 } from '@react-navigation/drawer';
 import {accent, colors} from '@constants/colors/colors';
-import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
-import {faArrowRightFromBracket} from '@fortawesome/free-solid-svg-icons/faArrowRightFromBracket';
 import {StyleSheet} from 'react-native';
 import {heightDP} from '@utils/responsive';
 import {useTranslation} from 'react-i18next';
@@ -48,24 +41,13 @@ const CustomDrawer = (props: DrawerContentComponentProps) => {
           </RSText>
           <LanguageSwitch onDark />
         </View>
-        <TouchableOpacity onPress={() => {}} style={{paddingVertical: 15}}>
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <FontAwesomeIcon
-              icon={faArrowRightFromBracket}
-              size={22}
-              color={colors[accent][0]}
-            />
-            <Text
-              style={{
-                fontSize: 15,
-                fontFamily: 'Roboto-Medium',
-                marginLeft: 5,
-                color: colors[accent][0],
-              }}>
-              {t('drawer.signOut')}
-            </Text>
-          </View>
-        </TouchableOpacity>
+        {/* Aqui vivia un "Cerrar sesion" con `onPress={() => {}}`: se
+            veia, se podia pulsar y no hacia absolutamente nada desde que
+            se escribio. Se retira entero en vez de darle una accion,
+            porque la accion no existe — esta app no tiene backend, ni
+            autenticacion, ni sesion que cerrar (ver la primera seccion
+            del CLAUDE.md). Un control que promete algo inexistente es
+            peor que su ausencia. */}
       </View>
     </View>
   );

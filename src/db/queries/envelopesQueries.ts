@@ -1,4 +1,4 @@
-import {SQLiteDatabase} from 'react-native-sqlite-storage';
+import {ResultSet, SQLiteDatabase, Transaction} from 'react-native-sqlite-storage';
 import {isFiniteInteger} from './numberGuards';
 import {getNetWorth} from './accountsQueries';
 
@@ -71,6 +71,15 @@ import {getNetWorth} from './accountsQueries';
  * belongs in a future slice, not silently built in here.
  */
 
+/**
+ * La nota que lleva el retiro de cierre de `completeEnvelope`. No es lo
+ * que identifica ese movimiento —eso lo hace
+ * `envelopes.closingMovementId`— pero si es lo que el usuario lee si
+ * abre el historial del sobre, y lo que el propio `UPDATE` usa para
+ * recuperar el id recien insertado dentro de la misma transaccion.
+ */
+const ENVELOPE_CLOSING_NOTE = 'Meta cumplida';
+
 export type EnvelopeKind = 'fund' | 'debt';
 
 export const ENVELOPE_KINDS: readonly EnvelopeKind[] = ['fund', 'debt'] as const;
@@ -91,6 +100,13 @@ export interface IEnvelope {
    * for that. */
   targetAmount: number | null;
   archivedAt: string | null;
+  /** ISO-8601 del momento en que se marco como CUMPLIDO, o `null`. Ver
+   * la migracion 008 para por que no es lo mismo que `archivedAt`. */
+  completedAt: string | null;
+  /** `envelope_movements.id` del retiro de cierre que hizo
+   * `completeEnvelope`, o `null` (sobre no cumplido, o cumplido con
+   * saldo cero, que no genera retiro). Lo usa `reopenEnvelope`. */
+  closingMovementId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -121,6 +137,17 @@ export interface IEnvelopeWithBalance extends IEnvelope {
   balance: number;
   paidAmount: number | null;
   remainingDebt: number | null;
+  /**
+   * Cents, `>= 0`. TODO lo que se ha asignado a este sobre a lo largo de
+   * su vida — `SUM` de los movimientos positivos, sin restar retiros.
+   *
+   * No es el saldo y no lo sustituye. Existe porque hay una pregunta
+   * que el saldo no puede responder despues de cerrar un sobre: cuanto
+   * llegaste a ahorrar. `completeEnvelope` retira el saldo hasta cero,
+   * asi que un fondo cumplido SIN meta (`targetAmount NULL`, que el
+   * esquema permite) no tendria ninguna cifra que celebrar en Logros.
+   */
+  assignedTotal: number;
 }
 
 export interface IInsertEnvelopeInput {
@@ -159,6 +186,9 @@ export interface IUpdateEnvelopeInput {
 export interface IGetEnvelopesOptions {
   /** Defaults to `false`. */
   includeArchived?: boolean;
+  /** Defaults to `false`. Un sobre CUMPLIDO ya no es parte de la lista
+   * activa: vive en Logros (`getCompletedEnvelopes`). */
+  includeCompleted?: boolean;
   /** Filter to one kind — e.g. the Fondos tab vs. the Deudas tab, or the
    * per-kind pie-chart breakdowns. */
   kind?: EnvelopeKind;
@@ -171,17 +201,21 @@ const mapRowToEnvelopeWithBalance = (row: any): IEnvelopeWithBalance => ({
   kind: row.kind,
   targetAmount: row.targetAmount ?? null,
   archivedAt: row.archivedAt ?? null,
+  completedAt: row.completedAt ?? null,
+  closingMovementId: row.closingMovementId ?? null,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
   balance: row.balance,
   paidAmount: row.paidAmount ?? null,
   remainingDebt: row.remainingDebt ?? null,
+  assignedTotal: row.assignedTotal ?? 0,
 });
 
 /**
  * Shared SELECT for every read below: joins each envelope to a
  * per-envelope aggregate over `envelope_movements` computed in ONE pass —
- * `total` (→ `balance`) and `withdrawn` (→ `paidAmount`, `debt` only) —
+ * `total` (→ `balance`), `assigned` (→ `assignedTotal`) and `withdrawn`
+ * (→ `paidAmount`, `debt` only) —
  * both derived from the same `SUM`/`CASE` expressions over the single
  * covering index `idx_envelope_movements_idEnvelope_amount(idEnvelope,
  * amount)` (see the migration), so SQLite never touches
@@ -196,9 +230,12 @@ const ENVELOPES_WITH_BALANCE_SELECT = `
     e.kind AS kind,
     e.targetAmount AS targetAmount,
     e.archivedAt AS archivedAt,
+    e.completedAt AS completedAt,
+    e.closingMovementId AS closingMovementId,
     e.createdAt AS createdAt,
     e.updatedAt AS updatedAt,
     COALESCE(m.total, 0) AS balance,
+    COALESCE(m.assigned, 0) AS assignedTotal,
     CASE WHEN e.kind = 'debt' THEN COALESCE(m.withdrawn, 0) ELSE NULL END AS paidAmount,
     CASE WHEN e.kind = 'debt' THEN e.targetAmount - COALESCE(m.withdrawn, 0) ELSE NULL END AS remainingDebt
   FROM envelopes e
@@ -206,6 +243,7 @@ const ENVELOPES_WITH_BALANCE_SELECT = `
     SELECT
       idEnvelope,
       SUM(amount) AS total,
+      SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS assigned,
       SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS withdrawn
     FROM envelope_movements
     GROUP BY idEnvelope
@@ -340,6 +378,208 @@ export const unarchiveEnvelope = async (db: SQLiteDatabase, id: number): Promise
   );
 };
 
+/* ------------------------------------------------------------------ *
+ *  Cumplir un sobre (Logros)
+ * ------------------------------------------------------------------ */
+
+/** Lo que `completeEnvelope` puede rechazar, para que la capa de UI
+ * distinga "todavia no llegaste" de "esto ya estaba cumplido" sin
+ * comparar cadenas de error. */
+export type CompleteEnvelopeRejection = 'notFound' | 'alreadyCompleted' | 'goalNotReached';
+
+export interface ICompleteEnvelopeResult {
+  /** `null` si se completo. */
+  rejectedBecause: CompleteEnvelopeRejection | null;
+  /** Cents retirados al cerrar. `0` si el sobre no tenia saldo. */
+  withdrawn: number;
+}
+
+/**
+ * `true` si el sobre alcanzo su meta y por tanto puede completarse.
+ *
+ * Pura, exportada, y es la MISMA funcion que usa la UI para decidir si
+ * pinta el CTA de "Marcar completado". Que la regla viva en un solo
+ * sitio importa: si la pantalla y la consulta la calcularan por
+ * separado, el boton podria ofrecerse justo cuando la escritura lo va a
+ * rechazar.
+ *
+ * - Deuda: `paidAmount >= targetAmount`. Pagar una deuda es RETIRAR del
+ *   sobre (ver `withdrawFromEnvelope`), asi que lo que cuenta es lo
+ *   retirado, no lo apartado.
+ * - Fondo CON meta: `balance >= targetAmount`.
+ * - Fondo SIN meta: cumplible en cuanto tenga saldo. El esquema permite
+ *   `targetAmount NULL` solo en los fondos, y un fondo sin meta nunca
+ *   llegaria al 100% de nada — pero cerrarlo sigue siendo un logro
+ *   legitimo ("ahorre $3,200 y me lo gaste en lo que queria"), asi que
+ *   el unico requisito ahi es que haya algo que celebrar.
+ */
+export const hasReachedGoal = (envelope: IEnvelopeWithBalance): boolean => {
+  if (envelope.kind === 'debt') {
+    return envelope.targetAmount !== null && (envelope.paidAmount ?? 0) >= envelope.targetAmount;
+  }
+  if (envelope.targetAmount === null) {
+    return envelope.balance > 0;
+  }
+  return envelope.balance >= envelope.targetAmount;
+};
+
+/**
+ * Marca un sobre como cumplido y RETIRA todo su saldo en la misma
+ * transaccion.
+ *
+ * ## Por que retira
+ *
+ * Decision de producto tomada explicitamente con el dueno del proyecto
+ * (2026-09-04). Un fondo de $10,000 para un viaje ya hecho no puede
+ * seguir sumando a "Dinero apartado" ni a "Ahorros" del Balance: seria
+ * dinero contado dos veces. El retiro NO toca ninguna cuenta ni crea
+ * fila alguna en `finances` — un sobre solo aparta dinero, nunca lo
+ * mueve (ver el doc de cabecera de este archivo) — asi que cerrar un
+ * sobre no puede alterar ningun saldo real. Aplica igual a las deudas:
+ * lo que quede apartado sin retirar deja de estar comprometido.
+ *
+ * ## Por que el importe se calcula DENTRO del INSERT
+ *
+ * Leer el saldo con un `SELECT` y despues insertar `-saldo` abriria una
+ * ventana entre las dos operaciones en la que una asignacion podria
+ * colarse y dejar el sobre cerrado con saldo distinto de cero. El
+ * `INSERT ... SELECT ... HAVING` de abajo calcula la suma y la inserta
+ * en un solo paso atomico. El `HAVING` ademas evita insertar cuando el
+ * saldo es cero, que violaria el `CHECK (amount <> 0)` de la tabla.
+ *
+ * El callback de la transaccion es DELIBERADAMENTE sincrono, igual que
+ * en `insertTransfer`: un `await` entre las dos sentencias dejaria
+ * confirmado el retiro sin marcar el sobre como cumplido.
+ *
+ * No lanza por una precondicion incumplida — devuelve `rejectedBecause`.
+ * Esto no es un error de programacion sino una carrera normal: el
+ * usuario pudo retirar dinero desde otra pantalla entre que vio el CTA
+ * y lo toco.
+ */
+export const completeEnvelope = async (
+  db: SQLiteDatabase,
+  id: number,
+  completedAt?: string,
+): Promise<ICompleteEnvelopeResult> => {
+  const envelope = await getEnvelopeById(db, id);
+  if (envelope === null) {
+    return {rejectedBecause: 'notFound', withdrawn: 0};
+  }
+  if (envelope.completedAt !== null) {
+    return {rejectedBecause: 'alreadyCompleted', withdrawn: 0};
+  }
+  if (!hasReachedGoal(envelope)) {
+    return {rejectedBecause: 'goalNotReached', withdrawn: 0};
+  }
+
+  const resolved = completedAt ?? new Date().toISOString();
+  let closingMovementId: number | null = null;
+
+  await db.transaction(tx => {
+    // Sin `async`: ver el doc de arriba.
+    tx.executeSql(
+      `INSERT INTO envelope_movements (idEnvelope, amount, dateCreated, note)
+         SELECT ?, -COALESCE(SUM(amount), 0), ?, ?
+           FROM envelope_movements
+          WHERE idEnvelope = ?
+         HAVING COALESCE(SUM(amount), 0) > 0`,
+      [id, resolved, ENVELOPE_CLOSING_NOTE, id],
+      // El `UPDATE` se lanza DESDE este callback, no encolado detras del
+      // `INSERT`, porque necesita el `insertId` y los parametros de una
+      // sentencia encolada se fijan en el momento de encolarla — cuando
+      // este callback todavia no ha corrido. Sigue siendo la misma
+      // transaccion: `innerTx` ES la transaccion en curso.
+      //
+      // La alternativa era que el `UPDATE` se buscara el id solo, con un
+      // `SELECT MAX(id) ... WHERE note = 'Meta cumplida'`. Se descarto:
+      // la nota es texto libre que el usuario ve y puede escribir igual
+      // en un retiro suyo, y entonces deshacer borraria el movimiento
+      // equivocado.
+      (innerTx: Transaction, result: ResultSet) => {
+        closingMovementId = result.rowsAffected > 0 ? result.insertId : null;
+        innerTx.executeSql(
+          `UPDATE envelopes
+              SET completedAt = ?, closingMovementId = ?, updatedAt = ?
+            WHERE id = ? AND completedAt IS NULL`,
+          [resolved, closingMovementId, resolved, id],
+        );
+      },
+    );
+  });
+
+  // El saldo leido un instante antes de la transaccion. Solo alimenta el
+  // mensaje de confirmacion; el importe que de verdad se retiro lo
+  // calculo SQLite dentro del `INSERT`.
+  return {rejectedBecause: null, withdrawn: closingMovementId === null ? 0 : envelope.balance};
+};
+
+/**
+ * Deshace `completeEnvelope`: el sobre vuelve a la lista activa con su
+ * saldo intacto.
+ *
+ * Existe desde el primer dia, no como mejora posterior. Completar
+ * retira dinero, asi que sin deshacer un toque equivocado seria
+ * irreversible — y este proyecto ya tiene un precedente de eso:
+ * `unarchiveEnvelope` lleva desde su creacion sin un solo llamador, lo
+ * que convierte archivar en un viaje de ida.
+ *
+ * Borra el retiro de cierre por su `id` guardado, nunca "el ultimo
+ * movimiento" ni uno buscado por fecha: entre completar y deshacer no
+ * puede haber movimientos nuevos (el sobre esta fuera de la lista
+ * activa), pero apoyarse en eso seria depender de una invariante que
+ * cualquier pantalla futura podria romper.
+ *
+ * Idempotente: sobre un sobre no cumplido no hace nada.
+ */
+export const reopenEnvelope = async (db: SQLiteDatabase, id: number): Promise<void> => {
+  const envelope = await getEnvelopeById(db, id);
+  if (envelope === null || envelope.completedAt === null) {
+    return;
+  }
+  const now = new Date().toISOString();
+  const movementId = envelope.closingMovementId;
+
+  await db.transaction(tx => {
+    // Se limpia el puntero ANTES de borrar la fila: al reves quedaria,
+    // por un instante dentro de la transaccion, un id apuntando a nada.
+    tx.executeSql(
+      'UPDATE envelopes SET completedAt = NULL, closingMovementId = NULL, updatedAt = ? WHERE id = ?',
+      [now, id],
+    );
+    if (movementId !== null) {
+      tx.executeSql('DELETE FROM envelope_movements WHERE id = ?', [movementId]);
+    }
+  });
+};
+
+/**
+ * Los sobres cumplidos, lo mas reciente primero — la pantalla de
+ * Logros.
+ *
+ * Devuelve el mismo `IEnvelopeWithBalance` que el resto del archivo,
+ * aunque su `balance` sea siempre `0` tras el cierre: lo que la
+ * pantalla muestra es `targetAmount` (la meta) y, en las deudas,
+ * `paidAmount` (lo pagado), que sobreviven al retiro porque salen de
+ * los movimientos, no del saldo.
+ *
+ * Ordenado por `completedAt DESC` sobre `idx_envelopes_completed`, el
+ * indice parcial que la migracion 008 crea justo para esta consulta.
+ */
+export const getCompletedEnvelopes = async (
+  db: SQLiteDatabase,
+): Promise<IEnvelopeWithBalance[]> => {
+  const [resultSet] = await db.executeSql(
+    `${ENVELOPES_WITH_BALANCE_SELECT}
+     WHERE e.completedAt IS NOT NULL
+     ORDER BY e.completedAt DESC, e.id DESC;`,
+  );
+  const envelopes: IEnvelopeWithBalance[] = [];
+  for (let index = 0; index < resultSet.rows.length; index++) {
+    envelopes.push(mapRowToEnvelopeWithBalance(resultSet.rows.item(index)));
+  }
+  return envelopes;
+};
+
 /**
  * Lists envelopes (active only by default) with derived `balance`/
  * `paidAmount`/`remainingDebt` — see `ENVELOPES_WITH_BALANCE_SELECT`.
@@ -359,6 +599,9 @@ export const getEnvelopes = async (
   const params: string[] = [];
   if (!opts.includeArchived) {
     conditions.push('e.archivedAt IS NULL');
+  }
+  if (!opts.includeCompleted) {
+    conditions.push('e.completedAt IS NULL');
   }
   if (opts.kind !== undefined) {
     conditions.push('e.kind = ?');
@@ -415,6 +658,12 @@ export const getEnvelopesTotal = async (
   if (!opts.includeArchived) {
     conditions.push('e.archivedAt IS NULL');
   }
+  // Los cumplidos quedan fuera SIEMPRE, sin flag. `completeEnvelope`
+  // retira todo su saldo, asi que un sobre cumplido aporta 0 a esta
+  // suma: incluirlo o no da el mismo numero. Se excluye igualmente para
+  // que la consulta diga lo que quiere decir —"lo apartado AHORA"— y no
+  // dependa de esa invariante para ser correcta.
+  conditions.push('e.completedAt IS NULL');
   if (opts.kind !== undefined) {
     conditions.push('e.kind = ?');
     params.push(opts.kind);
@@ -445,7 +694,10 @@ export const getTotalRemainingDebt = async (
   db: SQLiteDatabase,
   opts: {includeArchived?: boolean} = {},
 ): Promise<number> => {
-  const whereClause = opts.includeArchived ? '' : 'AND e.archivedAt IS NULL';
+  // Idem: una deuda cumplida esta saldada por definicion. Incluirla
+  // seria peor que inocuo — si se pago de mas, `targetAmount - withdrawn`
+  // es NEGATIVO y restaria de la deuda de los demas sobres.
+  const whereClause = `AND e.completedAt IS NULL ${opts.includeArchived ? '' : 'AND e.archivedAt IS NULL'}`;
   const [resultSet] = await db.executeSql(
     `SELECT COALESCE(SUM(e.targetAmount - COALESCE(m.withdrawn, 0)), 0) AS total
       FROM envelopes e

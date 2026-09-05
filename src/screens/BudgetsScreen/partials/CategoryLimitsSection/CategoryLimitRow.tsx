@@ -1,10 +1,12 @@
 import {FC} from 'react';
+import {Money} from '@components/atoms/text/Money';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from '@components/atoms/text/Text';
+import {getLimitVerdict} from '@screens/AchievementsScreen/monthlyOutcomes';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import {ICategoryBudgetWithSpent} from '@db/queries';
 import {ProgressBar} from '@components/atoms';
-import {colors, primary, white} from '@constants/colors/colors';
+import {accent, colors, gray, primary, white} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
 import {getCategoryBudgetProgress} from '../../mappers';
 import {useTranslation} from 'react-i18next';
@@ -21,6 +23,12 @@ interface CategoryLimitRowProps {
   showSeparator?: boolean;
   /** Borra el limite de esta fila. */
   onDelete: () => void;
+  /** El mes que se esta viendo ya termino. La fila pasa de "vas por
+   * aqui" a "asi acabo". */
+  isClosedMonth?: boolean;
+  /** Meses cerrados seguidos cumpliendo este limite. Solo se pinta en el
+   * mes en curso — ver el comentario en el cuerpo. */
+  streakMonths?: number;
 }
 
 /**
@@ -41,9 +49,12 @@ export const CategoryLimitRow: FC<CategoryLimitRowProps> = ({
   onPress,
   showSeparator = true,
   onDelete,
+  isClosedMonth = false,
+  streakMonths,
 }) => {
   const {t} = useTranslation();
   const {ratio, color, overMessage} = getCategoryBudgetProgress(budget);
+  const verdict = getLimitVerdict(budget);
   const spentOverLimit = `${formatCentsToCurrency(budget.spent)} / ${formatCentsToCurrency(
     budget.limitAmount,
   )}`;
@@ -73,7 +84,11 @@ export const CategoryLimitRow: FC<CategoryLimitRowProps> = ({
         <Text
           color={overMessage ? colors.error[0] : undefined}
           size={13}>
-          {spentOverLimit}
+          {/* La cadena `spentOverLimit` se conserva para las etiquetas de
+              accesibilidad —un lector de pantalla debe oir el importe
+              entero—; aqui se pinta con los centavos mas pequenos. */}
+          <Money cents={budget.spent} fontSize={13} /> /{' '}
+          <Money cents={budget.limitAmount} fontSize={13} />
         </Text>
       </View>
       <ProgressBar
@@ -83,9 +98,31 @@ export const CategoryLimitRow: FC<CategoryLimitRowProps> = ({
         style={styles.progress}
         accessibilityLabel={spentOverLimit}
       />
+      {/* En un mes CERRADO la fila deja de informar de un progreso —ya no
+          hay nada que progresar— y pasa a dar el veredicto. Es la unica
+          diferencia entre las dos lecturas de la misma fila: en curso,
+          "vas por aqui"; cerrado, "asi acabo". */}
+      {isClosedMonth && verdict === 'met' && (
+        <Text color={colors[accent][3]} size={12}>
+          {t('budgets.leftOverBy')} <Money cents={budget.limitAmount - budget.spent} fontSize={12} />
+        </Text>
+      )}
+      {isClosedMonth && verdict === 'inactive' && (
+        <Text color={colors[gray][0]} size={12}>
+          {t('budgets.noActivityThatMonth')}
+        </Text>
+      )}
       {overMessage && (
         <Text color={colors.error[0]} size={12}>
           {overMessage}
+        </Text>
+      )}
+      {/* La racha va solo en el mes EN CURSO: es un dato prospectivo
+          ("no la rompas"), y sobre un mes cerrado seria una curiosidad
+          historica que ademas se contradice con la que se ve hoy. */}
+      {!isClosedMonth && streakMonths !== undefined && streakMonths > 0 && (
+        <Text color={colors[accent][3]} size={12}>
+          {t('budgets.streak', {count: streakMonths})}
         </Text>
       )}
       </TouchableOpacity>

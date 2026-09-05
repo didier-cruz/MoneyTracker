@@ -1,8 +1,7 @@
-import {IEnvelopeWithBalance} from '@db/queries';
-import {accent, colors, gray, primary, secondary} from '@constants/colors/colors';
+import {IEnvelopeWithBalance, ISpendingByCategory} from '@db/queries';
+import {accent, colors, gray, primary, secondary, tertiary} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
-import {formatMonthNameCapitalized} from '@utils/dateFormat';
-import {IChartSectorInput} from '@components/organisms/Charts/DonutChart';
+import {IChartSector, IChartSectorInput} from '@components/organisms/Charts/DonutChart';
 import i18n from '@i18n';
 
 /**
@@ -44,22 +43,6 @@ const DEBT_PALETTE = [colors[secondary][0], colors.warning[0], colors[gray][0]];
 const FUND_PALETTE = [colors[accent][2], colors[accent][1], colors[primary][0]];
 
 /**
- * This calendar month's full name, capitalized, no year — e.g.
- * `"Agosto"` — for this screen's two-line header ("Analítica" /
- * `<month>`, per the approved prototype). A local, minimal duplicate of
- * `ResumenScreen/mappers.ts`'s own `getCurrentPeriod` (`'YYYY-MM'` for
- * "now"), not an import from it: that file is a SIBLING screen's own
- * module, out of this slice's scope to depend on (see this screen's
- * HANDOFF), and this is the only place Analítica needs "what period is
- * it right now" at all.
- */
-export const getCurrentMonthLabel = (now: Date = new Date()): string => {
-  const year = now.getFullYear();
-  const month = (now.getMonth() + 1).toString().padStart(2, '0');
-  return formatMonthNameCapitalized(`${year}-${month}`);
-};
-
-/**
  * One envelope -> one chart sector input, sorted BIGGEST value first
  * (ties broken by name, for a deterministic legend order) — matches
  * how `buildDebtsInsight`/`buildFundsInsight` below identify "the
@@ -94,6 +77,81 @@ export const toDebtSectorInputs = (debtEnvelopes: IEnvelopeWithBalance[]): IChar
  * `balance` (what's currently apartado). */
 export const toFundSectorInputs = (fundEnvelopes: IEnvelopeWithBalance[]): IChartSectorInput[] =>
   toSortedPositiveSectorInputs(fundEnvelopes, envelope => envelope.balance, FUND_PALETTE);
+
+/**
+ * How much of ONE charted debt is already covered by money sitting
+ * apartado in that same envelope.
+ *
+ * ## Why this exists at all
+ *
+ * The Debts ring is sized by `remainingDebt` (`targetAmount -
+ * paidAmount`), and `paidAmount` only counts WITHDRAWALS — money
+ * actually taken out of the envelope and applied as a payment. That is
+ * the correct number for "de cuánto es cada deuda", but on its own it
+ * makes the card look frozen: a user who assigns money to a debt
+ * envelope every month, without having made the payment yet, sees the
+ * exact same ring they saw the day they created the envelope. Their
+ * progress lives in `balance` (what is apartado and unspent), which
+ * the card never showed.
+ *
+ * The fix deliberately ADDS this as a second dimension rather than
+ * re-sizing the ring by `balance`, which was considered and rejected
+ * for two reasons: `toSortedPositiveSectorInputs` filters `value > 0`,
+ * so a debt with nothing set aside yet would vanish from the Debts
+ * chart entirely (the one debt most worth seeing); and slices sized by
+ * what is apartado invert the sense of scale — a $1,500 debt with $900
+ * saved would out-slice a $12,500 debt with $500 saved.
+ *
+ * `coveredPct` is relative to that envelope's OWN `remainingDebt`, not
+ * to the chart total, so it reads as "this debt is 60% covered" and is
+ * capped at 100 (an envelope can hold more apartado than it still
+ * owes; the bar tops out rather than overflowing its track).
+ */
+export interface ISectorCoverage {
+  id: number;
+  /** Cents apartado in this envelope (`balance`), never negative — an
+   * overdrawn envelope reads as 0 covered, not as a negative bar. */
+  setAside: number;
+  /** Whole number, `0..100`. */
+  coveredPct: number;
+}
+
+/**
+ * Coverage for every debt envelope that `toDebtSectorInputs` actually
+ * charts, keyed by envelope id so `Legend` can look a row up in O(1)
+ * without depending on array order. Envelopes excluded from the ring
+ * (`remainingDebt <= 0`) are excluded here too, so the two can never
+ * disagree about which envelopes are on screen.
+ */
+export const toDebtCoverageById = (
+  debtEnvelopes: IEnvelopeWithBalance[],
+): Record<number, ISectorCoverage> =>
+  debtEnvelopes.reduce<Record<number, ISectorCoverage>>((coverage, envelope) => {
+    const remaining = envelope.remainingDebt ?? 0;
+    if (remaining <= 0) {
+      return coverage;
+    }
+    const setAside = Math.max(0, envelope.balance);
+    coverage[envelope.id] = {
+      id: envelope.id,
+      setAside,
+      coveredPct: Math.min(100, Math.round((setAside / remaining) * 100)),
+    };
+    return coverage;
+  }, {});
+
+/**
+ * Total cents apartado across the debt envelopes THE RING DRAWS — the
+ * same `remainingDebt > 0` filter as above, so "of the $14,000 the ring
+ * shows, $1,400 is already set aside" is always a statement about the
+ * same set of envelopes.
+ */
+export const sumDebtSetAside = (debtEnvelopes: IEnvelopeWithBalance[]): number =>
+  debtEnvelopes.reduce(
+    (sum, envelope) =>
+      (envelope.remainingDebt ?? 0) > 0 ? sum + Math.max(0, envelope.balance) : sum,
+    0,
+  );
 
 /**
  * `"2026-08-29T12:00:00.000Z"` -> `"3 days ago"` / `"2 hours ago"` /
@@ -155,20 +213,40 @@ export interface ILastFundWithdrawal {
  * called with an empty `sectors` array (that's the card's empty state
  * instead, see `AnalysisPieCard`).
  */
-export const buildDebtsInsight = (sectors: IChartSectorInput[], total: number): string => {
+export const buildDebtsInsight = (
+  sectors: IChartSectorInput[],
+  total: number,
+  setAsideTotal: number = 0,
+): string => {
   const biggest = sectors[0];
-  if (sectors.length === 1) {
-    return i18n.t('analysis.debtsInsight.oneOpenDebt', {
-      name: biggest.label,
-      amount: formatCentsToCurrency(biggest.value),
-    });
+  const catalog =
+    sectors.length === 1
+      ? i18n.t('analysis.debtsInsight.oneOpenDebt', {
+          name: biggest.label,
+          amount: formatCentsToCurrency(biggest.value),
+        })
+      : i18n.t('analysis.debtsInsight.biggestDebt', {
+          name: biggest.label,
+          pct: Math.round((biggest.value / total) * 100),
+          total: formatCentsToCurrency(total),
+        });
+
+  // Nothing apartado yet -> the catalog sentence alone, unchanged. The
+  // second sentence is not "you have $0 set aside" (a scold with no
+  // action in it), it only appears once there is real progress to
+  // report.
+  if (setAsideTotal <= 0) {
+    return catalog;
   }
-  const pct = Math.round((biggest.value / total) * 100);
-  return i18n.t('analysis.debtsInsight.biggestDebt', {
-    name: biggest.label,
-    pct,
-    total: formatCentsToCurrency(total),
-  });
+
+  // Floored at 0 rather than allowed negative: holding MORE apartado
+  // than the ring's remaining debt is a good problem, and "te faltan
+  // -$300" is not a sentence.
+  const stillNeeded = Math.max(0, total - setAsideTotal);
+  return `${catalog} ${i18n.t('analysis.debtsInsight.stillNeeded', {
+    setAside: formatCentsToCurrency(setAsideTotal),
+    stillNeeded: formatCentsToCurrency(stillNeeded),
+  })}`;
 };
 
 /**
@@ -196,4 +274,136 @@ export const buildFundsInsight = (lastWithdrawal: ILastFundWithdrawal | null): s
     amount: formatCentsToCurrency(lastWithdrawal.amount),
     name: lastWithdrawal.envelopeName,
   });
+};
+
+/* ------------------------------------------------------------------ *
+ *  "En que gastas" — gasto por categoria en el periodo seleccionado.
+ * ------------------------------------------------------------------ */
+
+/**
+ * Cinco tonos para las categorias, todos tokens de
+ * `@constants/colors/colors` — misma regla que `DEBT_PALETTE`/
+ * `FUND_PALETTE`: ningun hex elegido a ojo.
+ *
+ * `secondary` (`#CF0A0A`) queda FUERA a proposito. En esta app el rojo
+ * ya significa deuda y saldo negativo (`AccountCard`, `DEBT_PALETTE`,
+ * los importes en `error[0]`); gastarlo en "la cuarta categoria que
+ * salio en la consulta" lo vuelve decorativo y le quita el significado
+ * que si tiene en las otras dos tarjetas de esta misma pantalla.
+ */
+const EXPENSE_PALETTE = [
+  colors[primary][0],
+  colors[accent][2],
+  colors[tertiary][0],
+  colors.info[1],
+  colors.warning[0],
+];
+
+/**
+ * Cuantas categorias se dibujan con su propio color antes de que el
+ * resto caiga en "Otros". Cinco es el largo de `EXPENSE_PALETTE`, y no
+ * por casualidad: pasar de ahi obligaria a ciclar la paleta
+ * (`index % length`, como hacen los sobres) y dos sectores del MISMO
+ * anillo compartirian color, que en una leyenda es indistinguible de
+ * un error. Los sobres pueden permitirselo porque una lista de sobres
+ * es corta; aqui hay 19 categorias de gasto sembradas de fabrica.
+ */
+const MAX_EXPENSE_SECTORS = 5;
+
+/**
+ * El id del sector agregado. Negativo a proposito: `categories.id` es
+ * un `INTEGER PRIMARY KEY AUTOINCREMENT`, siempre `>= 1`, asi que este
+ * valor no puede chocar con una categoria real ni hoy ni nunca — lo
+ * que importa porque `Legend` y `DonutChart` indexan por `id`.
+ */
+export const OTHERS_SECTOR_ID = -1;
+
+export interface IExpenseChartData {
+  /** Listos para `buildDonutData`, de mayor a menor, con "Otros" —si
+   * existe— SIEMPRE al final. */
+  sectors: IChartSectorInput[];
+  /** Icono por `id` de sector, para la leyenda. */
+  iconById: Record<number, string>;
+}
+
+/**
+ * Gasto por categoria -> sectores del dónut, quedandose con las
+ * `MAX_EXPENSE_SECTORS` mas grandes y sumando TODO el resto en un unico
+ * sector gris "Otros (N)".
+ *
+ * El agregado lleva el conteo en la etiqueta por una razon concreta:
+ * sin el, "Otros" se lee como una categoria mas —el usuario puede
+ * incluso tener una llamada asi— y no como una suma. Con "(4)" queda
+ * claro que detras hay cuatro cosas que no cupieron.
+ *
+ * `spent` ya viene `>= 0` y ordenado de mayor a menor desde
+ * `getSpendingByCategory`; aun asi se filtra `> 0` porque
+ * `buildDonutData` no sabe dibujar un sector de tamano cero y una
+ * categoria con gasto neto cero (un gasto y su reembolso en el mismo
+ * tramo) es perfectamente posible.
+ */
+export const toExpenseChartData = (rows: ISpendingByCategory[]): IExpenseChartData => {
+  const positive = rows.filter(row => row.spent > 0);
+  const top = positive.slice(0, MAX_EXPENSE_SECTORS);
+  const rest = positive.slice(MAX_EXPENSE_SECTORS);
+
+  const sectors: IChartSectorInput[] = top.map((row, index) => ({
+    id: row.category.id,
+    label: row.category.name,
+    value: row.spent,
+    color: EXPENSE_PALETTE[index],
+  }));
+  const iconById: Record<number, string> = Object.fromEntries(
+    top.map(row => [row.category.id, row.category.icon]),
+  );
+
+  if (rest.length > 0) {
+    sectors.push({
+      id: OTHERS_SECTOR_ID,
+      label: String(i18n.t('analysis.othersLabel', {count: rest.length})),
+      value: rest.reduce((sum, row) => sum + row.spent, 0),
+      color: colors[gray][0],
+    });
+    iconById[OTHERS_SECTOR_ID] = 'ellipsis-h';
+  }
+
+  return {sectors, iconById};
+};
+
+/**
+ * Icono por id para las tarjetas de sobres. Trivial, pero existe para
+ * que `AnalysisScreen` no arme el mismo `Object.fromEntries` tres veces
+ * en linea dentro del JSX.
+ */
+export const toEnvelopeIconById = (
+  envelopes: IEnvelopeWithBalance[],
+): Record<number, string> =>
+  Object.fromEntries(envelopes.map(envelope => [envelope.id, envelope.icon]));
+
+/**
+ * La frase de la tira lima bajo el dónut de gastos.
+ *
+ * Dos casos, y el segundo importa tanto como el primero: cuando ninguna
+ * categoria domina, decir "X se llevo el 18%" no informa de nada —lo
+ * util ahi es justamente que el gasto esta repartido—, asi que la frase
+ * cambia de forma en lugar de repetir la plantilla con un numero
+ * pequeno. El corte esta en 30%: por debajo de eso la categoria mas
+ * grande no manda sobre el total.
+ *
+ * Devuelve `null` sin sectores; la tarjeta ya muestra su vacio.
+ */
+export const buildExpenseInsight = (sectors: IChartSector[]): string | null => {
+  const [biggest] = sectors;
+  if (biggest === undefined) {
+    return null;
+  }
+  if (biggest.percentage < 30) {
+    return String(i18n.t('analysis.expensesInsight.spread', {pct: biggest.percentage}));
+  }
+  return String(
+    i18n.t('analysis.expensesInsight.dominant', {
+      category: biggest.label,
+      pct: biggest.percentage,
+    }),
+  );
 };

@@ -2,6 +2,8 @@ import {useCallback, useRef, useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 import {getDbConnection} from '@db/db';
+import {usePeriod} from '@context/PeriodContext';
+import {sortAccountsByRelevance} from '@screens/AccountsScreen/mappers';
 import {
   archiveAccount,
   getAccounts,
@@ -10,6 +12,7 @@ import {
   IAccountWithBalance,
   IFinanceRow,
   IFinancesCursor,
+  getLastMovementDates,
 } from '@db/queries';
 
 export type LoadStatus = 'loading' | 'success' | 'error';
@@ -43,6 +46,18 @@ export const useAccountsScreen = () => {
   const [netWorth, setNetWorth] = useState<number>(0);
   const hasLoadedAccountsRef = useRef(false);
 
+  /** Ultimo movimiento por cuenta: desempata el orden de las tarjetas
+   * cuando dos cuentas tienen el mismo saldo. */
+  const [lastUsed, setLastUsed] = useState<Map<number, string>>(new Map());
+  /**
+   * El tramo que mira la app. Acota la LISTA de movimientos de la cuenta
+   * elegida, no los saldos: un saldo es `initialBalance + SUM(amount)`
+   * sobre todo el historico y nunca se filtra por fecha —regla de este
+   * proyecto, no una decision de esta pantalla—, asi que el patrimonio
+   * neto sigue siendo acumulado aunque mires un mes concreto.
+   */
+  const {resolved} = usePeriod();
+
   const [selectedAccountId, setSelectedAccountId] = useState<number>();
 
   const [financeItems, setFinanceItems] = useState<IFinanceRow[]>([]);
@@ -61,17 +76,26 @@ export const useAccountsScreen = () => {
     setAccountsErrorMessage('');
     try {
       const db = await getDbConnection();
-      const [accountsResult, netWorthResult] = await Promise.all([
+      const [accountsResult, netWorthResult, lastMovements] = await Promise.all([
         getAccounts(db),
         getNetWorth(db),
+        getLastMovementDates(db),
       ]);
       setAccounts(accountsResult);
       setNetWorth(netWorthResult);
+      setLastUsed(lastMovements.byAccount);
       setSelectedAccountId(prev => {
+        // La seleccion por defecto sigue el MISMO orden que las
+        // tarjetas: con la fila cortada en ocho, la primera por `id`
+        // puede no estar entre las visibles.
+        const [mostRelevant] = sortAccountsByRelevance(
+          accountsResult,
+          lastMovements.byAccount,
+        );
         const nextId =
           prev !== undefined && accountsResult.some(account => account.id === prev)
             ? prev
-            : accountsResult[0]?.id;
+            : mostRelevant?.id;
         // The previously-selected account is gone (archived, most
         // likely) and there is nothing left to fall back to selecting
         // — without this, the transactions list below would keep
@@ -110,7 +134,11 @@ export const useAccountsScreen = () => {
     setFinancesErrorMessage('');
     try {
       const db = await getDbConnection();
-      const result = await getFinances(db, {idAccount: accountId});
+      const result = await getFinances(db, {
+        idAccount: accountId,
+        from: resolved.from,
+        to: resolved.to,
+      });
       setFinanceItems(result.items);
       setNextCursor(result.nextCursor);
       setFinancesStatus('success');
@@ -124,7 +152,10 @@ export const useAccountsScreen = () => {
         setFinancesStatus('error');
       }
     }
-  }, [t]);
+    // `resolved.from/to` en las dependencias: sin ellas el callback
+    // cerraria sobre el periodo VIEJO y la lista no se refrescaria al
+    // cambiarlo. Lo caza ESLint, no el compilador.
+  }, [t, resolved.from, resolved.to]);
 
   useFocusEffect(
     useCallback(() => {
@@ -151,6 +182,10 @@ export const useAccountsScreen = () => {
       const result = await getFinances(db, {
         idAccount: selectedAccountId,
         cursor: nextCursor,
+        // El mismo tramo que la primera pagina: sin esto, al paginar
+        // reapareceran movimientos de fuera del periodo.
+        from: resolved.from,
+        to: resolved.to,
       });
       setFinanceItems(prev => [...prev, ...result.items]);
       setNextCursor(result.nextCursor);
@@ -163,7 +198,7 @@ export const useAccountsScreen = () => {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [nextCursor, isLoadingMore, selectedAccountId]);
+  }, [nextCursor, isLoadingMore, selectedAccountId, resolved.from, resolved.to]);
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -210,6 +245,7 @@ export const useAccountsScreen = () => {
 
   return {
     accounts,
+    lastUsed,
     accountsStatus,
     accountsErrorMessage,
     netWorth,

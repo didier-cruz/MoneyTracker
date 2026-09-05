@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {Money} from '@components/atoms/text/Money';
 import {ActivityIndicator, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from '@components/atoms/text/Text';
 import {ScreenContainer, ScrollContainer} from '@components/atoms';
@@ -19,11 +20,14 @@ import CatalogList from '@components/organisms/Lists/CatalogList/CatalogList';
 import {CategoryMovementsList} from './partials';
 import {
   ADD_CATEGORY_CARD_ID,
+  NO_CATEGORY_SELECTED_ID,
+  SEE_ALL_CATEGORIES_CARD_ID,
   groupCategoryFinancesByDate,
   mapCategoriesToCatalogCards,
+  sortCategoriesByRelevance,
 } from './mappers';
+import {EntityPickerSheet} from '@components/organisms/pickers';
 import {useTranslation} from 'react-i18next';
-import {formatCentsToCurrency} from '@utils/currency';
 
 /**
  * El tipo (gastos / ingresos) ya NO viene en la ruta.
@@ -64,11 +68,13 @@ type FinanceType = 'expenses' | 'incomes';
 export const CategoriesScreen = () => {
   const {t} = useTranslation();
   const [financeType, setFinanceType] = useState<FinanceType>('expenses');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const navigation = useNavigation<CreateCategoryNavigationProp>();
 
   const {
     categories,
     categoryTotals,
+    lastUsed,
     categoriesStatus,
     categoriesErrorMessage,
     reloadCategories,
@@ -107,7 +113,23 @@ export const CategoriesScreen = () => {
    * lateral (`CategoriesAdminScreen`), igual que las cuentas. Esta
    * pestana es para RECORRER los movimientos de una categoria.
    */
-  const cards = mapCategoriesToCatalogCards(categories, categoryTotals);
+  const cards = mapCategoriesToCatalogCards(
+    categories,
+    categoryTotals,
+    lastUsed,
+    selectedCategoryId,
+  );
+
+  /** El listado completo de la hoja, en el mismo orden que las tarjetas
+   * para que lo que ya se ve arriba salga primero tambien aqui. */
+  const pickerItems = sortCategoriesByRelevance(categories, categoryTotals, lastUsed).map(
+    category => ({
+      id: category.id,
+      name: category.name,
+      icon: category.icon,
+      amount: categoryTotals.get(category.id) ?? 0,
+    }),
+  );
 
   /**
    * Un toque en la tarjeta de alta crea; en cualquier otra, selecciona.
@@ -117,6 +139,10 @@ export const CategoriesScreen = () => {
   const onPressCatalogItem = (id: number) => {
     if (id === ADD_CATEGORY_CARD_ID) {
       onPressAdd();
+      return;
+    }
+    if (id === SEE_ALL_CATEGORIES_CARD_ID) {
+      setPickerOpen(true);
       return;
     }
     selectCategory(id);
@@ -181,7 +207,7 @@ export const CategoriesScreen = () => {
                 }
                 size={32}
                 bold>
-                {formatCentsToCurrency(totalForPeriod)}
+                {<Money cents={totalForPeriod} fontSize={32} />}
               </Text>
             )}
           </View>
@@ -222,7 +248,7 @@ export const CategoriesScreen = () => {
                   crear la primera sea alcanzable. */}
               <CatalogList
                 data={cards}
-                selectedId={selectedCategoryId ?? -2}
+                selectedId={selectedCategoryId ?? NO_CATEGORY_SELECTED_ID}
                 onPressItem={onPressCatalogItem}
               />
 
@@ -257,6 +283,17 @@ export const CategoriesScreen = () => {
           </View>
         </ScreenContainer>
       </ScrollContainer>
+
+      <EntityPickerSheet
+        entity="category"
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        title={t('entityPicker.categoriesTitle')}
+        searchPlaceholder={t('entityPicker.searchCategory')}
+        items={pickerItems}
+        selectedId={selectedCategoryId}
+        onSelect={selectCategory}
+      />
 
       <TransactionActionsDialogs {...transactionActions.dialogProps} />
     </>
