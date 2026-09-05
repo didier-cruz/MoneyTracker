@@ -134,7 +134,6 @@
     "createEnvelope": "Crear sobre",
     "createNewEnvelope": "Crear un nuevo sobre",
     "addEnvelope": "Agregar sobre",
-    "monthlyLimitsHeading": "Límites del mes",
     "loadingLimits": "Cargando límites mensuales",
     "retryLoadingLimits": "Reintentar carga de límites mensuales",
     "loadLimitsError": "No se pudieron cargar los límites de este mes: {{message}}",
@@ -212,7 +211,8 @@
     "deleteLimitTitle": "¿Eliminar el límite?",
     "deleteLimitMessage": "Se quitará el límite mensual de «{{name}}». Sus movimientos no se tocan: solo dejas de tener un tope para esta categoría.",
     "deleteLimitErrorMessage": "No se pudo eliminar el límite. Inténtalo de nuevo.",
-    "deleteLimitAccessibilityLabel": "Eliminar el límite de {{name}}"
+    "deleteLimitAccessibilityLabel": "Eliminar el límite de {{name}}",
+    "monthlyLimitsHeadingFor": "Límites de {{month}}"
   },
   "categories": {
     "expenses": "Gastos",
@@ -516,5 +516,18 @@
     "searchCategory": "Buscar categoría…",
     "seeAllMovements": "Ver todos los movimientos →",
     "toggleMovements": "Mostrar u ocultar los movimientos de {{name}}"
+  },
+  "period": {
+    "all": "Todo el histórico",
+    "change": "Cambiar el periodo",
+    "customRange": "Rango personalizado",
+    "lastMonth": "Mes pasado",
+    "lastMonths": "Últimos {{count}} meses",
+    "monthsOnlyHere": "Los límites son mensuales, así que aquí solo se puede elegir un mes.",
+    "nextMonth": "Mes siguiente",
+    "previousMonth": "Mes anterior",
+    "thisMonth": "Este mes",
+    "thisYear": "Este año",
+    "title": "Periodo"
   }
 }

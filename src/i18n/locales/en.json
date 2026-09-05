@@ -134,7 +134,6 @@
     "createEnvelope": "Create envelope",
     "createNewEnvelope": "Create a new envelope",
     "addEnvelope": "Add envelope",
-    "monthlyLimitsHeading": "Monthly limits",
     "loadingLimits": "Loading monthly limits",
     "retryLoadingLimits": "Retry loading monthly limits",
     "loadLimitsError": "Could not load this month's limits: {{message}}",
@@ -212,7 +211,8 @@
     "deleteLimitTitle": "Delete this limit?",
     "deleteLimitMessage": "The monthly limit for “{{name}}” will be removed. Its transactions are left untouched — you just stop having a cap for this category.",
     "deleteLimitErrorMessage": "The limit could not be deleted. Please try again.",
-    "deleteLimitAccessibilityLabel": "Delete the limit for {{name}}"
+    "deleteLimitAccessibilityLabel": "Delete the limit for {{name}}",
+    "monthlyLimitsHeadingFor": "{{month}} limits"
   },
   "categories": {
     "expenses": "Expenses",
@@ -516,5 +516,18 @@
     "searchCategory": "Search category…",
     "seeAllMovements": "See all movements →",
     "toggleMovements": "Show or hide {{name}} movements"
+  },
+  "period": {
+    "all": "All time",
+    "change": "Change the period",
+    "customRange": "Custom range",
+    "lastMonth": "Last month",
+    "lastMonths": "Last {{count}} months",
+    "monthsOnlyHere": "Limits are monthly, so only a single month can be picked here.",
+    "nextMonth": "Next month",
+    "previousMonth": "Previous month",
+    "thisMonth": "This month",
+    "thisYear": "This year",
+    "title": "Period"
   }
 }

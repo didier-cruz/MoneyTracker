@@ -3,6 +3,7 @@ import {useEffect} from 'react';
 import {initDatabase, getDbConnection} from '@db/db';
 import {seedDefaultCategoriesOnce} from '@db/queries';
 import {DrawerNav} from '@navigation/DrawerNav';
+import {PeriodProvider} from '@context/PeriodContext';
 import {NavigationContainer} from '@react-navigation/native';
 import icons from './src/icons';
 import {hydrateStoredLanguage} from '@i18n';
@@ -48,7 +49,9 @@ function App(): JSX.Element {
 
 const AppState = ({children}: any) => {
   return (
-<NavigationContainer>{children}</NavigationContainer>
+    <NavigationContainer>
+      <PeriodProvider>{children}</PeriodProvider>
+    </NavigationContainer>
   );
 };
 
