@@ -4,8 +4,10 @@ import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faHome} from '@fortawesome/free-solid-svg-icons/faHome';
 import {faLayerGroup} from '@fortawesome/free-solid-svg-icons/faLayerGroup';
 import {faWallet} from '@fortawesome/free-solid-svg-icons/faWallet';
+import {faTrophy} from '@fortawesome/free-solid-svg-icons/faTrophy';
 import {AccountsAdminNavigator} from '@navigation/[accounts]/AccountsAdminNavigator';
 import {CategoriesAdminNavigator} from '@navigation/[categories]/CategoriesAdminNavigator';
+import {AchievementsScreen} from '@screens/AchievementsScreen';
 
 export const drawerRouter: IDrawer[] = [
   {
@@ -49,6 +51,21 @@ export const drawerRouter: IDrawer[] = [
       ),
       drawerIcon: ({color, focused: _focused, size}: any) => (
         <FontAwesomeIcon icon={faLayerGroup} color={color} size={size} />
+      ),
+    },
+  },
+  {
+    // Logros: los sobres cumplidos. Pantalla suelta y no un stack
+    // propio como las dos de arriba — no empuja nada encima de si
+    // misma, su unica accion (deshacer) es un dialogo.
+    name: 'Achievements',
+    component: AchievementsScreen,
+    options: {
+      drawerLabel: ({color}) => (
+        <DrawerLabel i18nKey="drawer.achievements" color={color} />
+      ),
+      drawerIcon: ({color, focused: _focused, size}: any) => (
+        <FontAwesomeIcon icon={faTrophy} color={color} size={size} />
       ),
     },
   },

@@ -27,10 +27,27 @@ export const getMonthLabel = (period: string): string => formatMonthYearLong(per
  * `period` IS today's month) case of `now` having rolled past
  * `period`'s own last day.
  */
-export const getDaysRemainingInMonth = (period: string, now: Date = new Date()): number => {
+export const getDaysRemainingInMonth = (
+  period: string,
+  now: Date = new Date(),
+): number | undefined => {
   const [yearStr, monthStr] = period.split('-');
   const year = Number(yearStr);
   const month = Number(monthStr);
+
+  // `undefined` si el periodo NO es el mes en curso.
+  //
+  // Esta funcion asumia que `period` era siempre hoy —lo decia su propio
+  // comentario: "no month picker on this screen"—. Con el selector de
+  // periodo ya no es cierto, y restando el dia de HOY contra el ultimo
+  // dia de un mes pasado salia "Quedan 27 dias" estando en agosto, un
+  // mes cerrado. Para un mes que no es el actual la pregunta no tiene
+  // respuesta: no quedan dias, ya paso, o aun no ha empezado.
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
+  if (!isCurrentMonth) {
+    return undefined;
+  }
+
   const lastDayOfMonth = new Date(year, month, 0).getDate();
   return Math.max(0, lastDayOfMonth - now.getDate());
 };
@@ -171,6 +188,9 @@ export const getCategoryBudgetProgress = (
       ratio,
       state: 'over',
       color: colors.error[0],
+      // Sin "este mes": la misma fila se pinta ahora sobre meses
+      // CERRADOS (ver `CategoryLimitRow`), y ahi "este mes" nombraba al
+      // mes equivocado.
       overMessage: i18n.t('budgets.overBy', {amount: formatCentsToCurrency(overAmount)}),
     };
   }

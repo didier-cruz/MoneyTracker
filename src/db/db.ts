@@ -6,6 +6,7 @@ import {migration004Statements} from './migrations/004_accountsAndSignedFinances
 import {migration005Statements} from './migrations/005_envelopesAndCategoryBudgets';
 import {migration006Statements} from './migrations/006_loanAccountKindAndInterestCategory';
 import {migration007Statements} from './migrations/007_appMetaTable';
+import {migration008Statements} from './migrations/008_envelopeCompletion';
 
 enablePromise(true);
 
@@ -100,6 +101,7 @@ const migrations: Migration[] = [
     requiresForeignKeysOff: true,
   },
   {version: 7, statements: migration007Statements},
+  {version: 8, statements: migration008Statements},
 ];
 
 const SCHEMA_VERSION = migrations[migrations.length - 1].version;

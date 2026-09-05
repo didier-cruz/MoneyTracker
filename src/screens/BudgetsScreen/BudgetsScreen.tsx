@@ -1,7 +1,11 @@
 import {useState} from 'react';
+import {formatMonthName} from '@utils/dateFormat';
+import {usePeriod} from '@context/PeriodContext';
+import {PeriodPickerSheet} from '@components/organisms/pickers';
 import {RefreshControl} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {NavigationProp, useNavigation} from '@react-navigation/native';
 import {faCoins} from '@fortawesome/free-solid-svg-icons/faCoins';
 import {faArrowUpFromBracket} from '@fortawesome/free-solid-svg-icons/faArrowUpFromBracket';
 import {faPen} from '@fortawesome/free-solid-svg-icons/faPen';
@@ -14,8 +18,10 @@ import {colors, accent} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
 import {useBudgetsScreen} from '@hooks/useBudgetsScreen';
 import {useNoticeDialog} from '@hooks/useNoticeDialog';
-import {getDaysRemainingInMonth, getMonthLabel} from './mappers';
+import {getDaysRemainingInMonth} from './mappers';
 import {EnvelopesSection} from './partials/EnvelopesSection/EnvelopesSection';
+import {RolloverCard} from './partials/RolloverCard';
+import {currentMonth} from '@utils/periodSelection';
 import {CategoryLimitsSection} from './partials/CategoryLimitsSection/CategoryLimitsSection';
 import {
   AssignWithdrawModal,
@@ -50,6 +56,26 @@ interface DeleteLimitConfirmState {
   visible: boolean;
   budget: ICategoryBudgetWithSpent | null;
 }
+
+/** El sobre que el usuario acaba de pedir cerrar, esperando
+ * confirmacion. */
+interface CompleteEnvelopeConfirmState {
+  visible: boolean;
+  envelope: IEnvelopeWithBalance | null;
+}
+
+/**
+ * Logros vive en el DRAWER, varios navegadores por encima de esta
+ * pantalla. Mismo patron (y mismo motivo) que el `SiblingTabParamList`
+ * de `AnalysisScreen`: no hay un `ParamList` del drawer que importar,
+ * asi que este tipo local comprueba al menos ESTE nombre de ruta en vez
+ * de un `any`. React Navigation propaga hacia arriba una accion que el
+ * navegador actual no sabe atender, asi que un `navigate` normal llega
+ * al drawer sin tener que encadenar `getParent()`.
+ */
+type DrawerRoutes = {
+  Achievements: undefined;
+};
 
 interface ArchiveEnvelopeConfirmState {
   visible: boolean;
@@ -107,6 +133,9 @@ interface ArchiveEnvelopeConfirmState {
  * shows — the assignment/withdrawal already succeeded.
  */
 const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
+  const {selection, setSelection, resolved} = usePeriod();
+  const [periodSheetOpen, setPeriodSheetOpen] = useState(false);
+  const drawerNavigation = useNavigation<NavigationProp<DrawerRoutes>>();
   const {t} = useTranslation();
   const {
     period,
@@ -128,7 +157,25 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
     setCategoryLimit,
     isSavingLimit,
     deleteCategoryLimitById,
+    achievementsCount,
+    completeEnvelopeById,
+    streaksByCategory,
+    rolloverSuggestions,
+    applyRollover,
+    isApplyingRollover,
   } = useBudgetsScreen();
+
+  /**
+   * La tarjeta de arrastre se puede cerrar, y ese "no ahora" NO se
+   * guarda en la base: vive mientras la pantalla este montada. Es
+   * deliberado — el hueco que tapa (un mes sin limites) es real y sigue
+   * ahi al volver, asi que un descarte permanente esconderia el problema
+   * en vez de resolverlo. Y un `dismissedAt` en la base seria la primera
+   * preferencia de UI persistida de todo el proyecto por una tarjeta.
+   */
+  const [rolloverDismissed, setRolloverDismissed] = useState(false);
+  // Un mes ya cerrado no admite "vas por aqui": ver `CategoryLimitRow`.
+  const isClosedMonth = period < currentMonth();
 
   const {notice, showNotice, dismissNotice} = useNoticeDialog();
 
@@ -140,6 +187,8 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
     useState<EnvelopeMenuState>({visible: false, envelope: null});
   const [archiveConfirm, setArchiveConfirm] =
     useState<ArchiveEnvelopeConfirmState>({visible: false, envelope: null});
+  const [completeConfirm, setCompleteConfirm] =
+    useState<CompleteEnvelopeConfirmState>({visible: false, envelope: null});
   const [deleteLimitConfirm, setDeleteLimitConfirm] =
     useState<DeleteLimitConfirmState>({visible: false, budget: null});
   const [isSubmittingMovement, setIsSubmittingMovement] = useState(false);
@@ -182,6 +231,42 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
     if (!success) {
       showNotice('danger', t('common.error'), t('budgets.archiveEnvelopeErrorMessage'));
     }
+  };
+
+  /**
+   * Completar SIEMPRE pasa por confirmacion, aunque el usuario haya
+   * tocado un boton que dice justo eso.
+   *
+   * No es una precaucion generica: completar RETIRA el saldo del sobre,
+   * y ese efecto no se deduce de la etiqueta "Marcar completado". El
+   * dialogo es el unico sitio donde se dice, con la cifra exacta, antes
+   * de que ocurra.
+   */
+  const onConfirmCompleteEnvelope = async () => {
+    const envelope = completeConfirm.envelope;
+    if (envelope === null) {
+      return;
+    }
+    setCompleteConfirm({visible: false, envelope: null});
+    const rejection = await completeEnvelopeById(envelope.id);
+    if (rejection === null) {
+      showNotice(
+        'info',
+        t('budgets.completeEnvelopeDoneTitle'),
+        t('budgets.completeEnvelopeDoneMessage', {name: envelope.name}),
+      );
+      return;
+    }
+    // `goalNotReached` es el unico rechazo que puede darse sin que nada
+    // vaya mal: el saldo pudo bajar desde otra pantalla entre que se
+    // pinto el CTA y se toco. Merece su propio texto, no un "error".
+    showNotice(
+      'danger',
+      t('common.error'),
+      rejection === 'goalNotReached'
+        ? t('budgets.completeEnvelopeGoalLostMessage')
+        : t('budgets.completeEnvelopeErrorMessage'),
+    );
   };
 
   // Borrar un limite se confirma igual que archivar un sobre: es
@@ -269,7 +354,8 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
     <>
       <ScreenTemplate
         headerTitle={t('budgets.title')}
-        headerSubtitle={getMonthLabel(period)}
+        headerSubtitle={resolved.label}
+        onPressHeaderSubtitle={() => setPeriodSheetOpen(true)}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -284,13 +370,55 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
           onRetry={reloadEnvelopes}
           onPressEnvelope={onPressEnvelope}
           onPressAdd={() => navigation.navigate('CreateEnvelope')}
+          onPressComplete={envelope => setCompleteConfirm({visible: true, envelope})}
+          achievementsCount={achievementsCount}
+          onPressAchievements={() => drawerNavigation.navigate('Achievements')}
         />
+
+        {/* Solo sobre el mes EN CURSO: proponer limites para un mes que
+            ya cerro no tiene sentido, y la sugerencia sale justamente de
+            mirar ese mes cerrado. */}
+        {!isClosedMonth && !rolloverDismissed && rolloverSuggestions.length > 0 && (
+          <RolloverCard
+            suggestions={rolloverSuggestions}
+            targetPeriod={period}
+            isApplying={isApplyingRollover}
+            onApply={async () => {
+              const ok = await applyRollover(
+                rolloverSuggestions.map(suggestion => ({
+                  idCategory: suggestion.idCategory,
+                  limitAmount: suggestion.suggestedAmount,
+                })),
+              );
+              if (!ok) {
+                showNotice('danger', t('common.error'), t('budgets.rolloverErrorMessage'));
+              }
+            }}
+            onDismiss={() => setRolloverDismissed(true)}
+            // "Ajustarlos uno a uno" no abre un editor propio: aplica lo
+            // propuesto y deja al usuario en la lista, donde cada limite
+            // ya es editable tocandolo. Un segundo editor solo para este
+            // caso duplicaria el que ya existe.
+            onPressAdjust={async () => {
+              await applyRollover(
+                rolloverSuggestions.map(suggestion => ({
+                  idCategory: suggestion.idCategory,
+                  limitAmount: suggestion.suggestedAmount,
+                })),
+              );
+              setRolloverDismissed(true);
+            }}
+          />
+        )}
 
         <CategoryLimitsSection
           budgets={budgets}
           status={budgetsStatus}
           errorMessage={budgetsErrorMessage}
           daysRemainingInMonth={getDaysRemainingInMonth(period)}
+          monthLabel={formatMonthName(period)}
+          isClosedMonth={isClosedMonth}
+          streaksByCategory={streaksByCategory}
           onRetry={reloadBudgets}
           onPressBudget={onPressBudget}
           onDeleteBudget={onPressDeleteBudget}
@@ -365,6 +493,39 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
       />
 
       <ConfirmDialog
+        visible={completeConfirm.visible}
+        // `info`, no `warning` ni `danger`: cerrar una meta cumplida es
+        // una buena noticia. El tono de advertencia lo llevan archivar y
+        // borrar, que si destruyen algo — este movimiento es reversible
+        // desde Logros.
+        tone="info"
+        title={t('budgets.completeEnvelopeTitle')}
+        message={
+          completeConfirm.envelope
+            ? t(
+                completeConfirm.envelope.balance > 0
+                  ? 'budgets.completeEnvelopeMessage'
+                  : 'budgets.completeEnvelopeMessageNoBalance',
+                {
+                  name: completeConfirm.envelope.name,
+                  amount: formatCentsToCurrency(completeConfirm.envelope.balance),
+                },
+              )
+            : ''
+        }
+        onRequestClose={() => setCompleteConfirm({visible: false, envelope: null})}
+        secondaryLabel={t('common.cancel')}
+        onSecondaryPress={() => setCompleteConfirm({visible: false, envelope: null})}
+        // "Completar" y no "Marcar completado" como en la tarjeta: en el
+        // ancho del boton del dialogo la etiqueta larga parte en dos
+        // lineas y se come el aire del boton. El titulo del dialogo ya
+        // dice "¿Marcar como completado?", asi que el boton no necesita
+        // repetirlo entero.
+        primaryLabel={t('budgets.completeConfirmAction')}
+        onPrimaryPress={onConfirmCompleteEnvelope}
+      />
+
+      <ConfirmDialog
         visible={archiveConfirm.visible}
         tone="danger"
         title={t('budgets.archiveEnvelopeTitle')}
@@ -408,6 +569,20 @@ const BudgetsScreen = ({navigation}: BudgetsScreenProps) => {
         onRequestClose={dismissNotice}
         primaryLabel={t('common.ok')}
         onPrimaryPress={dismissNotice}
+      />
+      {/* Sin `monthsOnly`: aqui se ofrecen los mismos atajos que en el
+          resto de la app. Un limite sigue siendo mensual por esquema, y
+          eso NO se resuelve escondiendo los atajos —eso solo dejaba
+          Presupuestos fuera del periodo global— sino diciendo de que mes
+          son los limites que se enseñan: la seccion se titula "Limites
+          de septiembre", no "Limites del mes". Los sobres, que son la
+          otra mitad de esta pantalla, son acumulados y no dependen del
+          periodo en absoluto. */}
+      <PeriodPickerSheet
+        visible={periodSheetOpen}
+        onClose={() => setPeriodSheetOpen(false)}
+        selection={selection}
+        onChange={setSelection}
       />
     </>
   );

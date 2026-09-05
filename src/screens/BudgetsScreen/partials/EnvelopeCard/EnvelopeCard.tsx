@@ -1,4 +1,5 @@
 import {FC} from 'react';
+import {Money} from '@components/atoms/text/Money';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Card} from '@components/atoms/Card';
 import {Text} from '@components/atoms/text/Text';
@@ -6,7 +7,7 @@ import {Title} from '@components/atoms/text/Title';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faPiggyBank} from '@fortawesome/free-solid-svg-icons/faPiggyBank';
 import {faFileInvoiceDollar} from '@fortawesome/free-solid-svg-icons/faFileInvoiceDollar';
-import {IEnvelopeWithBalance} from '@db/queries';
+import {hasReachedGoal, IEnvelopeWithBalance} from '@db/queries';
 import {ProgressBar} from '@components/atoms';
 import {accent, colors, gray, white} from '@constants/colors/colors';
 import {formatCentsToCurrency} from '@utils/currency';
@@ -30,6 +31,13 @@ interface EnvelopeCardProps {
    * separate small "manage" button for it.
    */
   onPress: () => void;
+  /**
+   * Se dispara desde el CTA que sustituye a la barra de progreso cuando
+   * el sobre llega a su meta. Separado de `onPress` a proposito:
+   * completar retira dinero, y esconderlo dentro del mismo gesto que
+   * abre el menu de acciones lo volveria pulsable por accidente.
+   */
+  onPressComplete: (envelope: IEnvelopeWithBalance) => void;
 }
 
 const KIND_ICONS = {
@@ -81,11 +89,20 @@ const KIND_ACCENT_COLOR = {
  * responsibility (see `mappers.ts`) — this component only renders
  * whatever it returns, including hiding the bar for a goal-less fund.
  */
-export const EnvelopeCard: FC<EnvelopeCardProps> = ({envelope, cardWidth, onPress}) => {
+export const EnvelopeCard: FC<EnvelopeCardProps> = ({
+  envelope,
+  cardWidth,
+  onPress,
+  onPressComplete,
+}) => {
   const {t} = useTranslation();
   const {hasProgress, ratio, contextLine} = getEnvelopeProgress(envelope);
   const kindLabel = getKindLabel(envelope.kind);
   const accentColor = KIND_ACCENT_COLOR[envelope.kind];
+  // La MISMA funcion que decide si la escritura se aceptaria (ver
+  // `hasReachedGoal` en `envelopesQueries`). Calcularlo aparte aqui
+  // permitiria ofrecer el boton justo cuando la consulta lo rechazaria.
+  const reachedGoal = hasReachedGoal(envelope);
 
   return (
     <TouchableOpacity
@@ -100,7 +117,7 @@ export const EnvelopeCard: FC<EnvelopeCardProps> = ({envelope, cardWidth, onPres
       onPress={onPress}
       activeOpacity={0.8}
       style={styles.touchable}>
-      <Card style={[styles.card, {width: cardWidth}]}>
+      <Card style={[styles.card, {width: cardWidth}, reachedGoal && styles.cardComplete]}>
         <Card.Body style={styles.body}>
           <View style={styles.chipRow}>
             <View
@@ -123,24 +140,52 @@ export const EnvelopeCard: FC<EnvelopeCardProps> = ({envelope, cardWidth, onPres
               style={styles.chipLabel}>
               {kindLabel}
             </Text>
+            {reachedGoal && (
+              <Text
+                color={colors[accent][3]}
+                size={10}
+                bold
+                transform="uppercase"
+                style={styles.goalBadge}>
+                {t('budgets.goalReachedBadge')}
+              </Text>
+            )}
           </View>
 
           <Text lines={1} style={styles.name}>
             {envelope.name}
           </Text>
           <Title level={2} color={envelope.kind === 'debt' ? accentColor : undefined}>
-            {formatCentsToCurrency(envelope.balance)}
+            {<Money cents={envelope.balance} fontSize={25} />}
           </Title>
 
-          {hasProgress && (
-            <ProgressBar
-              progress={ratio}
-              height={6}
-              color={accentColor}
-              style={styles.progress}
-              accessibilityLabel={contextLine}
-            />
-          )}
+          {/* Al llegar a la meta, el CTA SUSTITUYE a la barra y a la
+              linea de contexto: una barra al 100% y un "100% pagado" ya
+              no informan de nada, y son justo el sitio donde el usuario
+              esta mirando cuando quiere cerrar el sobre. */}
+          {reachedGoal ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('budgets.completeEnvelopeAccessibilityLabel', {
+                name: envelope.name,
+              })}
+              onPress={() => onPressComplete(envelope)}
+              style={styles.completeButton}>
+              <Text color={colors[accent][3]} size={12} bold align="center">
+                {t('budgets.markComplete')}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              {hasProgress && (
+                <ProgressBar
+                  progress={ratio}
+                  height={6}
+                  color={accentColor}
+                  style={styles.progress}
+                  accessibilityLabel={contextLine}
+                />
+              )}
           {/* Was capped at `lines={1}` — es-ES's longer "X% pagado ·
               quedan $Y" (vs en-US's shorter equivalent) truncates
               mid-amount at this card's width (see this slice's
@@ -148,9 +193,11 @@ export const EnvelopeCard: FC<EnvelopeCardProps> = ({envelope, cardWidth, onPres
               readable without touching the translated copy itself or
               widening the card back into the overflow this same slice
               fixes above. */}
-          <Text color={colors[gray][0]} size={11} lines={2}>
-            {contextLine}
-          </Text>
+              <Text color={colors[gray][0]} size={11} lines={2}>
+                {contextLine}
+              </Text>
+            </>
+          )}
         </Card.Body>
       </Card>
     </TouchableOpacity>
@@ -168,6 +215,16 @@ const styles = StyleSheet.create({
     // sigue el contorno RECTANGULAR de la vista y asomaba por las
     // esquinas de las tarjetas redondeadas como un cuadrado gris.
     boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.14)',
+  },
+  // El borde lima es lo que hace reconocible un sobre cumplido dentro de
+  // la fila horizontal sin tener que leer porcentajes. Va con
+  // `borderWidth` sobre el mismo radio, no con una sombra de color: en
+  // Android una sombra tenida se recorta cuadrada en las esquinas, el
+  // mismo problema que ya obligo a cambiar `elevation` por `boxShadow`
+  // en todas las tarjetas de esta app.
+  cardComplete: {
+    borderWidth: 2,
+    borderColor: colors[accent][1],
   },
   body: {
     paddingVertical: 16,
@@ -189,6 +246,18 @@ const styles = StyleSheet.create({
   chipLabel: {
     flexShrink: 1,
     letterSpacing: 0.7,
+  },
+  goalBadge: {
+    marginLeft: 6,
+    letterSpacing: 0.5,
+  },
+  completeButton: {
+    marginTop: 12,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: colors[accent][0],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   name: {
     marginBottom: 2,

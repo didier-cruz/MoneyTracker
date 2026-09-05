@@ -1,6 +1,6 @@
 import {SQLiteDatabase} from 'react-native-sqlite-storage';
 import {isFiniteInteger} from './numberGuards';
-import {isValidPeriod, periodToRange} from './period';
+import {getLocalTimeModifier, isValidPeriod, periodToRange} from './period';
 
 /**
  * Límites mensuales de gasto por categoría — `category_budgets`. Schema/
@@ -292,4 +292,134 @@ export const deleteCategoryBudget = async (
     [id],
   );
   return result.rowsAffected > 0;
+};
+
+/* ------------------------------------------------------------------ *
+ *  Retrospectiva: como cerro cada mes con limites
+ * ------------------------------------------------------------------ */
+
+export interface IBudgetOutcomeRow {
+  /** `'YYYY-MM'`. */
+  period: string;
+  category: ICategory;
+  limitAmount: number;
+  /** Cents `>= 0` gastados en esa categoria DENTRO de ese mes. */
+  spent: number;
+}
+
+/**
+ * Todos los limites que existen, de todos los meses, con lo gastado en
+ * cada uno — la materia prima de la retrospectiva ("4 de 5 limites
+ * cumplidos en agosto") y de las rachas.
+ *
+ * Una sola consulta para todo el historial en lugar de un
+ * `getCategoryBudgets(period)` por mes: la pantalla de Logros necesita
+ * TODOS los meses a la vez para poder contar rachas, y N consultas
+ * secuenciales es justo el patron que el propio `useAnalysisScreen`
+ * lleva marcado como "no anadir mas de estos". `category_budgets` tiene
+ * como mucho una fila por categoria y mes.
+ *
+ * El mes de cada gasto se calcula con `strftime` sobre la fecha
+ * desplazada al huso LOCAL, no sobre el UTC guardado — mismo motivo
+ * (y misma tecnica) que `getCashFlowByMonth`: sin el desplazamiento, un
+ * gasto de las once de la noche cae en el mes siguiente y se le achaca
+ * a un limite que no le toca.
+ *
+ * Ordenado del mes mas reciente al mas antiguo, y dentro de cada mes
+ * por nombre de categoria.
+ */
+export const getAllCategoryBudgetsWithSpent = async (
+  db: SQLiteDatabase,
+): Promise<IBudgetOutcomeRow[]> => {
+  const [resultSet] = await db.executeSql(
+    `SELECT
+        cb.period AS period,
+        cb.limitAmount AS limitAmount,
+        c.id AS categoryId,
+        c.category AS categoryName,
+        c.icon AS categoryIcon,
+        c.type AS categoryType,
+        -COALESCE(SUM(f.amount), 0) AS spent
+      FROM category_budgets cb
+      JOIN categories c ON c.id = cb.idCategory
+      LEFT JOIN finances f
+        ON f.idCategory = cb.idCategory
+       AND f.amount < 0
+       AND strftime('%Y-%m', datetime(f.dateCreated, ?)) = cb.period
+      GROUP BY cb.id
+      ORDER BY cb.period DESC, c.category ASC;`,
+    [getLocalTimeModifier()],
+  );
+
+  const rows: IBudgetOutcomeRow[] = [];
+  for (let index = 0; index < resultSet.rows.length; index++) {
+    const row = resultSet.rows.item(index);
+    rows.push({
+      period: row.period,
+      category: {
+        id: row.categoryId,
+        name: row.categoryName,
+        icon: row.categoryIcon,
+        type: row.categoryType,
+      },
+      limitAmount: row.limitAmount,
+      spent: row.spent,
+    });
+  }
+  return rows;
+};
+
+/**
+ * Copia a `toPeriod` los limites de `fromPeriod`, con los importes que
+ * se le pasen (el usuario pudo ajustar alguno antes de aceptar).
+ *
+ * Existe porque los limites NO se arrastran solos: `setCategoryBudget`
+ * escribe un par `(idCategory, period)` y nada los lleva al mes
+ * siguiente, asi que cada 1 de mes Presupuestos amanecia vacio y habia
+ * que recrearlos a mano. Ver la tarjeta de arrastre en `BudgetsScreen`.
+ *
+ * `INSERT OR IGNORE` y no `REPLACE`: si el usuario ya puso un limite a
+ * mano en el mes destino, ese gana. La copia solo rellena huecos, nunca
+ * pisa una decision mas reciente.
+ *
+ * Toda la copia va en UNA transaccion, con el callback sincrono por el
+ * mismo motivo documentado en `insertTransfer`. Devuelve cuantas filas
+ * se insertaron de verdad.
+ */
+export const copyCategoryBudgetsToPeriod = async (
+  db: SQLiteDatabase,
+  toPeriod: string,
+  limits: {idCategory: number; limitAmount: number}[],
+): Promise<number> => {
+  if (!isValidPeriod(toPeriod)) {
+    throw new Error(`Invalid period: ${toPeriod}`);
+  }
+  for (const limit of limits) {
+    if (!isFiniteInteger(limit.limitAmount) || limit.limitAmount <= 0) {
+      throw new Error('limitAmount must be a positive integer number of cents');
+    }
+  }
+  if (limits.length === 0) {
+    return 0;
+  }
+
+  const now = new Date().toISOString();
+  let inserted = 0;
+
+  await db.transaction(tx => {
+    // Sin `async`: ver `insertTransfer`.
+    for (const limit of limits) {
+      tx.executeSql(
+        `INSERT OR IGNORE INTO category_budgets
+           (idCategory, period, limitAmount, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?)`,
+        [limit.idCategory, toPeriod, limit.limitAmount, now, now],
+        (_tx, result) => {
+          inserted += result.rowsAffected;
+        },
+      );
+    }
+  });
+
+  return inserted;
 };

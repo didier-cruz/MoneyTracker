@@ -5,7 +5,12 @@ import {getDbConnection} from '@db/db';
 import {
   archiveEnvelope,
   assignToEnvelope,
+  completeEnvelope,
+  copyCategoryBudgetsToPeriod,
+  getAllCategoryBudgetsWithSpent,
+  CompleteEnvelopeRejection,
   getAvailableToAssign,
+  getCompletedEnvelopes,
   getCategoriesByType,
   getCategoryBudgets,
   getEnvelopes,
@@ -15,7 +20,13 @@ import {
   deleteCategoryBudget,
   withdrawFromEnvelope,
 } from '@db/queries';
-import {getCurrentPeriod} from '@screens/BudgetsScreen/mappers';
+import {usePeriod} from '@context/PeriodContext';
+import {currentMonth} from '@utils/periodSelection';
+import {
+  buildRolloverSuggestions,
+  buildStreaks,
+  IRolloverSuggestion,
+} from '@screens/AchievementsScreen/monthlyOutcomes';
 
 export type LoadStatus = 'loading' | 'success' | 'error';
 
@@ -48,9 +59,27 @@ export type LoadStatus = 'loading' | 'success' | 'error';
  */
 export const useBudgetsScreen = () => {
   const {t} = useTranslation();
-  const period = useRef(getCurrentPeriod()).current;
+  /**
+   * El mes que mira esta pantalla, tomado del periodo global.
+   *
+   * Se usa `anchorMonth` y no el tramo entero porque un limite vive en
+   * `category_budgets` con `UNIQUE (idCategory, period)`: es mensual por
+   * esquema, no admite rangos. Si el periodo global fuera "ultimos 3
+   * meses", esta pantalla muestra el mes mas reciente de ese tramo, y su
+   * selector se abre en modo `monthsOnly` para no ofrecer atajos que no
+   * puede honrar.
+   *
+   * Antes era `useRef(getCurrentPeriod()).current`, que congelaba el mes
+   * AL MONTAR: con la app abierta cruzando la medianoche del dia 1,
+   * Presupuestos seguia enseñando el mes viejo hasta reiniciarla.
+   */
+  const {resolved} = usePeriod();
+  const period = resolved.anchorMonth;
 
   const [envelopes, setEnvelopes] = useState<IEnvelopeWithBalance[]>([]);
+  /** Solo el CONTEO. La pantalla de Logros carga los suyos por su
+   * cuenta; aqui esto unicamente decide si se pinta el enlace. */
+  const [achievementsCount, setAchievementsCount] = useState(0);
   const [envelopesStatus, setEnvelopesStatus] = useState<LoadStatus>('loading');
   const [envelopesErrorMessage, setEnvelopesErrorMessage] = useState('');
   const [availableToAssign, setAvailableToAssign] = useState<number>(0);
@@ -72,12 +101,14 @@ export const useBudgetsScreen = () => {
     setEnvelopesErrorMessage('');
     try {
       const db = await getDbConnection();
-      const [envelopesResult, availableResult] = await Promise.all([
+      const [envelopesResult, availableResult, completedResult] = await Promise.all([
         getEnvelopes(db),
         getAvailableToAssign(db),
+        getCompletedEnvelopes(db),
       ]);
       setEnvelopes(envelopesResult);
       setAvailableToAssign(availableResult);
+      setAchievementsCount(completedResult.length);
       setEnvelopesStatus('success');
       hasLoadedEnvelopesRef.current = true;
     } catch (e: any) {
@@ -99,12 +130,17 @@ export const useBudgetsScreen = () => {
     setBudgetsErrorMessage('');
     try {
       const db = await getDbConnection();
-      const [budgetsResult, categoriesResult] = await Promise.all([
+      const [budgetsResult, categoriesResult, historyResult] = await Promise.all([
         getCategoryBudgets(db, period),
         getCategoriesByType(db, 'expense'),
+        getAllCategoryBudgetsWithSpent(db),
       ]);
       setBudgets(budgetsResult);
       setExpenseCategories(categoriesResult);
+      setStreaksByCategory(
+        new Map([...buildStreaks(historyResult)].map(([id, streak]) => [id, streak.months])),
+      );
+      setRolloverSuggestions(buildRolloverSuggestions(historyResult));
       setBudgetsStatus('success');
       hasLoadedBudgetsRef.current = true;
     } catch (e: any) {
@@ -214,6 +250,72 @@ export const useBudgetsScreen = () => {
     [loadEnvelopes],
   );
 
+  /**
+   * Rachas y arrastre salen de la MISMA consulta de historial que usa
+   * Logros. Se carga junto a los limites del mes porque las dos cosas
+   * cuelgan de `category_budgets` y cambian a la vez: poner o borrar un
+   * limite altera el mes actual y puede alterar una racha.
+   */
+  const [streaksByCategory, setStreaksByCategory] = useState<Map<number, number>>(new Map());
+  const [rolloverSuggestions, setRolloverSuggestions] = useState<IRolloverSuggestion[]>([]);
+  const [isApplyingRollover, setIsApplyingRollover] = useState(false);
+
+  const [isCompletingEnvelope, setIsCompletingEnvelope] = useState(false);
+
+  /**
+   * Cierra un sobre cumplido y lo manda a Logros.
+   *
+   * Devuelve el motivo del rechazo en lugar de un booleano porque los
+   * tres casos que `completeEnvelope` puede rechazar quieren mensajes
+   * distintos, y el mas probable —`goalNotReached`— ni siquiera es un
+   * error: el usuario pudo retirar dinero desde otra pantalla entre que
+   * vio el CTA y lo toco. `'failed'` se reserva para un fallo real de
+   * escritura.
+   */
+  const completeEnvelopeById = useCallback(
+    async (id: number): Promise<CompleteEnvelopeRejection | 'failed' | null> => {
+      setIsCompletingEnvelope(true);
+      try {
+        const db = await getDbConnection();
+        const {rejectedBecause} = await completeEnvelope(db, id);
+        await loadEnvelopes();
+        return rejectedBecause;
+      } catch (e: any) {
+        console.warn('[useBudgetsScreen] completeEnvelopeById failed:', e?.message ?? e);
+        return 'failed';
+      } finally {
+        setIsCompletingEnvelope(false);
+      }
+    },
+    [loadEnvelopes],
+  );
+
+  /**
+   * Crea en el mes EN CURSO los limites propuestos por la tarjeta de
+   * arrastre.
+   *
+   * Recibe los importes ya resueltos y no las sugerencias tal cual,
+   * porque la pantalla permite ajustar alguno antes de aceptar: lo que
+   * se guarda es lo que el usuario vio, no lo que el algoritmo propuso.
+   */
+  const applyRollover = useCallback(
+    async (limits: {idCategory: number; limitAmount: number}[]): Promise<boolean> => {
+      setIsApplyingRollover(true);
+      try {
+        const db = await getDbConnection();
+        await copyCategoryBudgetsToPeriod(db, currentMonth(), limits);
+        await loadBudgets();
+        return true;
+      } catch (e: any) {
+        console.warn('[useBudgetsScreen] applyRollover failed:', e?.message ?? e);
+        return false;
+      } finally {
+        setIsApplyingRollover(false);
+      }
+    },
+    [loadBudgets],
+  );
+
   const [isSavingLimit, setIsSavingLimit] = useState(false);
 
   /**
@@ -278,12 +380,17 @@ export const useBudgetsScreen = () => {
     envelopesErrorMessage,
     reloadEnvelopes: loadEnvelopes,
     availableToAssign,
+    achievementsCount,
 
     budgets,
     budgetsStatus,
     budgetsErrorMessage,
     reloadBudgets: loadBudgets,
     categoriesWithoutBudget,
+    streaksByCategory,
+    rolloverSuggestions,
+    applyRollover,
+    isApplyingRollover,
 
     isRefreshing,
     refresh,
@@ -292,6 +399,8 @@ export const useBudgetsScreen = () => {
     withdrawFromEnvelopeById,
     archiveEnvelopeById,
     isArchivingEnvelope,
+    completeEnvelopeById,
+    isCompletingEnvelope,
 
     setCategoryLimit,
     isSavingLimit,
