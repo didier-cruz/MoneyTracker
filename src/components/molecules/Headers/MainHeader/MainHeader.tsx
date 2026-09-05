@@ -1,6 +1,7 @@
 import {StyleSheet, Text, View} from 'react-native';
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faBarsStaggered} from '@fortawesome/free-solid-svg-icons/faBarsStaggered';
+import {faChevronDown} from '@fortawesome/free-solid-svg-icons/faChevronDown';
 import {TouchableOpacity} from 'react-native-gesture-handler';
 import {ParamListBase, useNavigation} from '@react-navigation/native';
 import {DrawerNavigationProp} from '@react-navigation/drawer';
@@ -19,9 +20,29 @@ type MainHeaderProps = {
    * same split-on-first-space behavior it already had.
    */
   subtitle?: string;
+  /**
+   * Vuelve el subtitulo TOCABLE y le pone un chevron.
+   *
+   * Existe para el selector de periodo: la cabecera de estas pantallas
+   * ya mostraba el mes ahi, asi que convertirlo en control no cuesta ni
+   * un pixel de alto — que es exactamente lo que no sobra.
+   *
+   * Opcional y aditivo: sin el, el subtitulo se dibuja como siempre,
+   * dentro del mismo bloque de texto que el titulo. Con el, se separa en
+   * su propia fila tocable; se hace asi y no envolviendo el bloque
+   * entero para que el titulo NO quede dentro del area pulsable.
+   */
+  onPressSubtitle?: () => void;
+  /** Etiqueta del subtitulo tocable para lectores de pantalla. */
+  subtitleAccessibilityLabel?: string;
 };
 
-const MainHeader = ({title = '', subtitle}: MainHeaderProps) => {
+const MainHeader = ({
+  title = '',
+  subtitle,
+  onPressSubtitle,
+  subtitleAccessibilityLabel,
+}: MainHeaderProps) => {
   const [title1, splitTitle2] = title.split(' ');
   const title2 = subtitle ?? splitTitle2;
 
@@ -48,8 +69,33 @@ const MainHeader = ({title = '', subtitle}: MainHeaderProps) => {
           style={{marginRight: 30, marginTop: 10}}
         />
       </TouchableOpacity>
-      {title && (
-        <View>
+      {title && onPressSubtitle && (
+        <View style={styles.stackedBlock}>
+          <Text style={styles.title1}>{title1}</Text>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={subtitleAccessibilityLabel ?? title2}
+            hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
+            onPress={onPressSubtitle}
+            style={styles.subtitleRow}>
+            <Text style={styles.title2}>{title2}</Text>
+            <FontAwesomeIcon
+              icon={faChevronDown}
+              size={11}
+              color={'#333333'}
+              style={styles.subtitleChevron}
+            />
+          </TouchableOpacity>
+        </View>
+      )}
+      {title && !onPressSubtitle && (
+        // `stackedBlock` (o sea, `flexShrink: 1`) tambien aqui: sin el,
+        // este bloque no tiene ninguna cota de ancho dentro de la fila y
+        // un subtitulo largo se sale de la pantalla en vez de partirse.
+        // La rama tocable de arriba ya lo tenia; esta se quedo sin ello
+        // y el fallo solo asoma con subtitulos largos (Logros: "3 metas
+        // cumplidas · $24,000.00").
+        <View style={styles.stackedBlock}>
           <Text style={styles.title1}>
             {title1}
             {title2 && (
@@ -66,6 +112,20 @@ const MainHeader = ({title = '', subtitle}: MainHeaderProps) => {
 };
 
 const styles = StyleSheet.create({
+  stackedBlock: {
+    flexShrink: 1,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    // Sin alto propio: el subtitulo ya ocupaba esta linea cuando iba
+    // dentro del bloque de texto, asi que la cabecera no crece.
+    alignSelf: 'flex-start',
+  },
+  subtitleChevron: {
+    marginTop: 2,
+  },
   title1: {
     color: '#373737',
     fontSize: 36,

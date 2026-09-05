@@ -1,4 +1,5 @@
 import {Text} from '@components/atoms/text/Text';
+import {Money} from '@components/atoms/text/Money';
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
 import {IAccountWithBalance} from '@db/queries';
@@ -22,6 +23,14 @@ type Props = {
 // `src/constants/colors/colors.ts`'s own comment: accent[3] over
 // accent[0] is the pairing that clears contrast, accent[2] does not).
 const PREVIEW_TEXT_COLOR = colors.accent[3];
+/**
+ * El rojo de los saldos que quedan en negativo, sobre esta tarjeta.
+ *
+ * `colors.error[0]` cae a 3.00:1 sobre la lima `accent[1]` y estos
+ * importes van en 16 negrita, que no cuenta como texto grande: hacen
+ * falta 4.5. `error[1]` es el mismo rojo al 70% y da 4.85:1.
+ */
+const PREVIEW_NEGATIVE_COLOR = colors.error[1];
 
 /**
  * "Después de transferir" — the approved prototype's light-lime
@@ -57,10 +66,10 @@ const TransferPreview = ({fromAccount, toAccount, amountCents}: Props) => {
             {fromAccount.name}
           </Text>
           <Text
-            color={previewFromBalance < 0 ? colors.error[0] : PREVIEW_TEXT_COLOR}
+            color={previewFromBalance < 0 ? PREVIEW_NEGATIVE_COLOR : PREVIEW_TEXT_COLOR}
             bold
             size="base">
-            {formatCentsToCurrency(previewFromBalance)}
+            <Money cents={previewFromBalance} fontSize={16} />
           </Text>
         </View>
         <View style={styles.column}>
@@ -68,10 +77,10 @@ const TransferPreview = ({fromAccount, toAccount, amountCents}: Props) => {
             {toAccount.name}
           </Text>
           <Text
-            color={previewToBalance < 0 ? colors.error[0] : PREVIEW_TEXT_COLOR}
+            color={previewToBalance < 0 ? PREVIEW_NEGATIVE_COLOR : PREVIEW_TEXT_COLOR}
             bold
             size="base">
-            {formatCentsToCurrency(previewToBalance)}
+            <Money cents={previewToBalance} fontSize={16} />
           </Text>
         </View>
       </View>
@@ -82,7 +91,9 @@ const TransferPreview = ({fromAccount, toAccount, amountCents}: Props) => {
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    backgroundColor: colors.accent[0],
+    // La misma lima que el CTA "Transferir" de la pantalla de cuentas,
+    // no la clara: son la misma accion vista en dos momentos.
+    backgroundColor: colors.accent[1],
     borderRadius: 20,
     paddingVertical: 16,
     paddingHorizontal: 20,

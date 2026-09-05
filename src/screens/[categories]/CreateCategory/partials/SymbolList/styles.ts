@@ -1,4 +1,4 @@
-import {accent, colors, gray, white} from '@constants/colors/colors';
+import {accent, colors, gray, primary, white} from '@constants/colors/colors';
 import {StyleSheet} from 'react-native';
 
 export const listTitle = StyleSheet.create({
@@ -9,17 +9,13 @@ export const listTitle = StyleSheet.create({
     justifyContent: 'space-between',
   },
   heading: {
-    width: 160,
+    // `flex: 1` y no el `width: 160` de antes: ese ancho fijo existia
+    // para dejarle sitio al boton "..." que habia a la derecha. Sin el
+    // boton, un ancho fijo solo puede recortar el titulo en el idioma
+    // en que no quepa.
+    flex: 1,
     paddingLeft: 0,
     alignItems: 'flex-start',
-  },
-  action: {
-    width: 40,
-    height: 40,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors[accent][1],
   },
 });
 
@@ -48,6 +44,23 @@ export const listStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 15,
+  },
+  // Algo mas grande que `activeItemContainer` porque este recuadro SI
+  // lleva borde y etiqueta dentro; 62 deja ~6px de aire a cada lado
+  // dentro de la celda de 75 y el punteado no toca al vecino.
+  moreItemContainer: {
+    width: 62,
+    height: 62,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 15,
+    borderWidth: 1.5,
+    borderColor: colors[primary][0],
+    borderStyle: 'dashed',
+  },
+  moreLabel: {
+    marginTop: 3,
+    paddingHorizontal: 2,
   },
 });
 

@@ -64,6 +64,17 @@ declare global {
     /** Abre el menu de administrar el movimiento (editar / eliminar).
      * Opcional: sin el, la fila no es pulsable — ver `TransactItem`. */
     onLongPress?: () => void;
+    /**
+     * Variante compacta de la fila: 64 de alto en vez de 90, icono mas
+     * pequeno, tipografia menor y SIN la flecha de direccion (el signo
+     * y el color ya dicen si entra o sale).
+     *
+     * Opt-in por llamador, como `containerStyle`: la usa
+     * `AllMovementsScreen`, que es una lista larga de consulta donde
+     * caben el doble de movimientos por pantalla. Balance, cuentas y
+     * categorias siguen con la fila normal.
+     */
+    compact?: boolean;
   }
   interface CatalogCard {
     id: number;

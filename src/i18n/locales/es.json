@@ -33,7 +33,6 @@
     "home": "Inicio",
     "accounts": "Cuentas",
     "categories": "Categorías",
-    "signOut": "Cerrar sesión",
     "language": "Idioma"
   },
   "accounts": {
@@ -209,7 +208,6 @@
   "categories": {
     "expenses": "Gastos",
     "incomes": "Ingresos",
-    "newTile": "Nuevo",
     "listCategoriesTitle": "Lista de categorías",
     "loadingCategories": "Cargando categorías",
     "retryLoadingCategories": "Reintentar carga de categorías",
@@ -221,12 +219,12 @@
       "expenses": {
         "title": "Categorías de gastos",
         "help": "Toca una categoría para ver sus transacciones. Mantén pulsada una para editarla o eliminarla.",
-        "totalLabel": "Gastado este mes"
+        "totalLabel": "Gastado en el periodo"
       },
       "incomes": {
         "title": "Categorías de ingresos",
         "help": "Toca una categoría para ver sus transacciones. Mantén pulsada una para editarla o eliminarla.",
-        "totalLabel": "Ganado este mes"
+        "totalLabel": "Ganado en el periodo"
       }
     },
     "createNewCategory": "Crear una nueva categoría",
@@ -275,7 +273,8 @@
     "adminEmptyState": "Aún no tienes categorías. Crea la primera con el botón de abajo.",
     "adminAddCategory": "Nueva categoría",
     "editCategoryAccessibilityLabel": "Editar {{name}}",
-    "deleteCategoryAccessibilityLabel": "Eliminar {{name}}"
+    "deleteCategoryAccessibilityLabel": "Eliminar {{name}}",
+    "addCategory": "Agregar categoría"
   },
   "transfer": {
     "title": "Transferir",
@@ -433,7 +432,8 @@
       "people": "Personas",
       "travel": "Viajes",
       "other": "Otros"
-    }
+    },
+    "moreIcons": "Más íconos"
   },
   "movements": {
     "title": "Movimientos"

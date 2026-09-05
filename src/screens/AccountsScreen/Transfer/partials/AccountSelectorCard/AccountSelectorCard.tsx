@@ -1,4 +1,5 @@
 import {Text} from '@components/atoms/text/Text';
+import {Money} from '@components/atoms/text/Money';
 import {Title} from '@components/atoms/text/Title';
 import React from 'react';
 import {StyleSheet, TouchableOpacity, View} from 'react-native';
@@ -49,7 +50,7 @@ const AccountSelectorCard = ({label, account, onPress}: Props) => {
         <View style={styles.info}>
           <Title level={4}>{account.name}</Title>
           <Text color={colors[gray][0]} size="sm">
-            {formatCentsToCurrency(account.balance)}
+            {<Money cents={account.balance} fontSize={18} />}
           </Text>
         </View>
         <VectorIcon name="chevron-right" color={colors[gray][0]} size={16} />

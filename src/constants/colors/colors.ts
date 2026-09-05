@@ -23,7 +23,12 @@ export const colors = {
   // not an approximation) when `useTheme` was retired.
   info: ['#969696', '#0BB7E3'],
   warning: ['#E6BF5C'],
-  error: ['#BC2424'],
+  // [0] el rojo de la app. [1] el MISMO rojo al 70% de luminosidad,
+  // para cuando el fondo es la lima `accent[1]`: sobre ese verde el
+  // `[0]` se queda en 3.00:1 y estos importes van en 16 negrita, que no
+  // cuenta como texto grande, asi que necesitan 4.5. El [1] da 4.85:1.
+  // Derivado, no elegido a ojo: `#BC2424` multiplicado por 0.7.
+  error: ['#BC2424', '#831919'],
   inactive: ['#EEEEEE'],
   surface: ['#FAFAFA'],
   black: ['black'],

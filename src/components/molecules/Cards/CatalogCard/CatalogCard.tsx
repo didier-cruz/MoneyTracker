@@ -1,4 +1,5 @@
 import {Card} from '@components/atoms/Card';
+import {Money} from '@components/atoms/text/Money';
 import {Text} from '@components/atoms/text/Text';
 import {Title} from '@components/atoms/text/Title';
 import {FC} from 'react';
@@ -81,6 +82,7 @@ const CatalogCard: FC<CatalogCard> = ({
             style={[
               styles.cardBodyContnr,
               isWide && styles.cardBodyContnrWide,
+              isAdd && styles.cardBodyContnrAdd,
             ]}>
             <View
               style={{...styles.iconContainer, backgroundColor: iconBackground}}>
@@ -94,7 +96,7 @@ const CatalogCard: FC<CatalogCard> = ({
                 <Title
                   level={2}
                   color={isNegative ? tokens.error[0] : undefined}>
-                  {formatCentsToCurrency(balance)}
+                  {<Money cents={balance} fontSize={25} />}
                 </Title>
               </View>
             )}
@@ -161,11 +163,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  // La variante 'add' se centra en la tarjeta en vez de heredar el
+  // `paddingLeft/Top: 20` + `space-around` de una tarjeta con datos.
+  // Ese anclaje arriba-izquierda tiene sentido cuando bajo el icono hay
+  // dos lineas (concepto y saldo); con solo un `+` y una etiqueta
+  // dejaba la mitad inferior vacia y el simbolo descentrado.
+  cardBodyContnrAdd: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 0,
+    paddingTop: 0,
+  },
   wideText: {
     marginLeft: 20,
   },
   addLabel: {
     marginTop: 10,
+    textAlign: 'center',
   },
   iconContainer: {
     height: 40,

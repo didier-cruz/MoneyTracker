@@ -33,7 +33,6 @@
     "home": "Home",
     "accounts": "Accounts",
     "categories": "Categories",
-    "signOut": "Sign Out",
     "language": "Language"
   },
   "accounts": {
@@ -209,7 +208,6 @@
   "categories": {
     "expenses": "Expenses",
     "incomes": "Incomes",
-    "newTile": "New",
     "listCategoriesTitle": "List Categories",
     "loadingCategories": "Loading categories",
     "retryLoadingCategories": "Retry loading categories",
@@ -221,12 +219,12 @@
       "expenses": {
         "title": "Expense categories",
         "help": "Tap a category to see its transactions. Long-press one to edit or delete it.",
-        "totalLabel": "Spent this month"
+        "totalLabel": "Spent in this period"
       },
       "incomes": {
         "title": "Income categories",
         "help": "Tap a category to see its transactions. Long-press one to edit or delete it.",
-        "totalLabel": "Earned this month"
+        "totalLabel": "Earned in this period"
       }
     },
     "createNewCategory": "Create a new category",
@@ -275,7 +273,8 @@
     "adminEmptyState": "You have no categories yet. Create the first one with the button below.",
     "adminAddCategory": "New category",
     "editCategoryAccessibilityLabel": "Edit {{name}}",
-    "deleteCategoryAccessibilityLabel": "Delete {{name}}"
+    "deleteCategoryAccessibilityLabel": "Delete {{name}}",
+    "addCategory": "Add category"
   },
   "transfer": {
     "title": "Transfer",
@@ -433,7 +432,8 @@
       "people": "People",
       "travel": "Travel",
       "other": "Other"
-    }
+    },
+    "moreIcons": "More icons"
   },
   "movements": {
     "title": "Movements"
