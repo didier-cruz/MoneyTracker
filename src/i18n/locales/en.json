@@ -468,5 +468,29 @@
     "selectPlaceholder": "Choose…",
     "searchPlaceholder": "Search…",
     "noOptions": "Nothing matches your search."
+  },
+  "defaultCategories": {
+    "clothing": "Clothing & shoes",
+    "diningOut": "Restaurants & cafés",
+    "education": "Education",
+    "feesInterest": "Fees & interest",
+    "freelance": "Freelance",
+    "fuel": "Fuel",
+    "gifts": "Gifts",
+    "groceries": "Groceries",
+    "health": "Health",
+    "housing": "Housing",
+    "internetPhone": "Internet & phone",
+    "investments": "Interest & investments",
+    "leisure": "Leisure",
+    "personalCare": "Personal care",
+    "pets": "Pets",
+    "pharmacy": "Pharmacy",
+    "refunds": "Refunds",
+    "rentalIncome": "Rental income",
+    "salary": "Salary",
+    "subscriptions": "Subscriptions",
+    "transport": "Transport",
+    "utilities": "Utilities"
   }
 }

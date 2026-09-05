@@ -468,5 +468,29 @@
     "selectPlaceholder": "Elegir…",
     "searchPlaceholder": "Buscar…",
     "noOptions": "Nada coincide con tu búsqueda."
+  },
+  "defaultCategories": {
+    "clothing": "Ropa y calzado",
+    "diningOut": "Restaurantes y cafés",
+    "education": "Educación",
+    "feesInterest": "Comisiones e intereses",
+    "freelance": "Trabajo independiente",
+    "fuel": "Combustible",
+    "gifts": "Regalos",
+    "groceries": "Supermercado",
+    "health": "Salud",
+    "housing": "Vivienda",
+    "internetPhone": "Internet y teléfono",
+    "investments": "Intereses e inversiones",
+    "leisure": "Ocio",
+    "personalCare": "Cuidado personal",
+    "pets": "Mascotas",
+    "pharmacy": "Farmacia",
+    "refunds": "Reembolsos",
+    "rentalIncome": "Alquileres",
+    "salary": "Salario",
+    "subscriptions": "Suscripciones",
+    "transport": "Transporte",
+    "utilities": "Servicios del hogar"
   }
 }

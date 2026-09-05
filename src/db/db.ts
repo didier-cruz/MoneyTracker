@@ -5,6 +5,7 @@ import {migration003Statements} from './migrations/003_seedDefaultCategories';
 import {migration004Statements} from './migrations/004_accountsAndSignedFinances';
 import {migration005Statements} from './migrations/005_envelopesAndCategoryBudgets';
 import {migration006Statements} from './migrations/006_loanAccountKindAndInterestCategory';
+import {migration007Statements} from './migrations/007_appMetaTable';
 
 enablePromise(true);
 
@@ -98,6 +99,7 @@ const migrations: Migration[] = [
     // una clave ajena — ver la migracion para el detalle.
     requiresForeignKeysOff: true,
   },
+  {version: 7, statements: migration007Statements},
 ];
 
 const SCHEMA_VERSION = migrations[migrations.length - 1].version;
