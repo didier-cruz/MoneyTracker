@@ -27,7 +27,8 @@
       "label": "Transferencia"
     },
     "noCategory": "Sin categoría",
-    "back": "Volver"
+    "back": "Volver",
+    "clear": "Limpiar"
   },
   "drawer": {
     "home": "Inicio",
@@ -112,7 +113,15 @@
     "adminEmptyState": "Aún no tienes cuentas. Crea la primera con el botón de abajo.",
     "adminAddAccount": "Nueva cuenta",
     "editAccountAccessibilityLabel": "Editar {{name}}",
-    "archiveAccountAccessibilityLabel": "Archivar {{name}}"
+    "archiveAccountAccessibilityLabel": "Archivar {{name}}",
+    "adminHeaderSubtitle": "y sus movimientos",
+    "adminHeaderTitle": "Cuentas",
+    "archiveAccountErrorMessage": "No se pudo archivar la cuenta. Inténtalo de nuevo.",
+    "archiveAccountMessage": "«{{name}}» dejará de aparecer en tus listas y de sumar al patrimonio neto. Sus movimientos NO se borran: siguen en el historial con su importe y su fecha. Puedes recuperarla cuando quieras desde «Cuentas archivadas».",
+    "archiveAccountTitle": "¿Archivar la cuenta?",
+    "archivedAccountsAccessibilityLabel": "Ver las cuentas archivadas",
+    "seeAllCards": "Ver todas ({{count}})",
+    "toggleMovementsAccessibilityLabel": "Mostrar u ocultar los movimientos de {{name}}"
   },
   "budgets": {
     "title": "Presupuestos",
@@ -237,8 +246,8 @@
     "loadingMovements": "Cargando movimientos",
     "retryLoadingMovements": "Reintentar carga de movimientos",
     "loadingMoreMovements": "Cargando más movimientos",
-    "noMovementsForCategory": "Aún no hay movimientos para \"{{name}}\".",
-    "noMovementsGeneric": "Aún no hay movimientos para esta categoría.",
+    "noMovementsForCategory": "No hay movimientos de \"{{name}}\" en este periodo.",
+    "noMovementsGeneric": "No hay movimientos de esta categoría en este periodo.",
     "createCategoryTitle": "Crear categoría",
     "createCategoryMessage": "Puedes registrar todas tus categorías desde este formulario",
     "addCategoryNamePlaceholder": "Agregar nombre de categoría",
@@ -274,7 +283,11 @@
     "adminAddCategory": "Nueva categoría",
     "editCategoryAccessibilityLabel": "Editar {{name}}",
     "deleteCategoryAccessibilityLabel": "Eliminar {{name}}",
-    "addCategory": "Agregar categoría"
+    "addCategory": "Agregar categoría",
+    "adminHeaderSubtitle": "y sus movimientos",
+    "adminHeaderTitle": "Categorías",
+    "seeAllCards": "Ver todas ({{count}})",
+    "toggleMovementsAccessibilityLabel": "Mostrar u ocultar los movimientos de {{name}}"
   },
   "transfer": {
     "title": "Transferir",
@@ -492,5 +505,16 @@
     "subscriptions": "Suscripciones",
     "transport": "Transporte",
     "utilities": "Servicios del hogar"
+  },
+  "entityPicker": {
+    "accountsTitle": "Listado de Cuentas y sus Movimientos",
+    "categoriesTitle": "Listado de Categorías y sus Movimientos",
+    "noMovementsYet": "Sin movimientos todavía.",
+    "noResults": "Nada coincide con «{{query}}»",
+    "rowAccessibilityLabel": "{{name}}, {{amount}}",
+    "searchAccount": "Buscar cuenta…",
+    "searchCategory": "Buscar categoría…",
+    "seeAllMovements": "Ver todos los movimientos →",
+    "toggleMovements": "Mostrar u ocultar los movimientos de {{name}}"
   }
 }

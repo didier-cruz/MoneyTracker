@@ -1,4 +1,7 @@
 import {StyleSheet, View} from 'react-native';
+import {useState} from 'react';
+import {usePeriod} from '@context/PeriodContext';
+import {PeriodPickerSheet} from '@components/organisms/pickers';
 import {createMaterialTopTabNavigator} from '@react-navigation/material-top-tabs';
 import {useTranslation} from 'react-i18next';
 
@@ -43,9 +46,30 @@ const TRACK_RADIUS = 14;
  */
 export const MovementsTopTabs = () => {
   const {t} = useTranslation();
+  const {selection, setSelection, resolved} = usePeriod();
+  const [periodSheetOpen, setPeriodSheetOpen] = useState(false);
+
   return (
     <View style={styles.container}>
-      <MainHeader title={t('movements.title')} />
+      {/* El selector de periodo vive en la cabecera COMPARTIDA, no en
+          cada pestana: gobierna las dos a la vez, que es el sentido de
+          tener un periodo unico para la app. Aqui si anade una linea de
+          alto —esta cabecera no tenia subtitulo—, y se acepta: el tramo
+          que estas mirando es justo el dato que faltaba para leer bien
+          las cifras de abajo. */}
+      <MainHeader
+        title={t('movements.title')}
+        subtitle={resolved.label}
+        onPressSubtitle={() => setPeriodSheetOpen(true)}
+        subtitleAccessibilityLabel={t('period.change')}
+      />
+
+      <PeriodPickerSheet
+        visible={periodSheetOpen}
+        onClose={() => setPeriodSheetOpen(false)}
+        selection={selection}
+        onChange={setSelection}
+      />
       <Tab.Navigator
       screenOptions={{
         /**

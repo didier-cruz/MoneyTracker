@@ -373,11 +373,46 @@ const styles = StyleSheet.create({
   list: {
     width: '100%',
   },
+  // El contenido de la lista ES la tarjeta: cabeceras de mes y filas
+  // van dentro de una sola superficie blanca con el mismo radio 20 y la
+  // misma sombra que el resto de tarjetas de la app.
+  //
+  // La tarjeta se aplica al `contentContainerStyle` y no a un `View` que
+  // envuelva la lista, a proposito: envolviendola, la tarjeta ocuparia
+  // todo el alto disponible y con un solo movimiento quedaria una
+  // superficie blanca casi vacia hasta el borde inferior. Aplicada al
+  // contenido, crece y se encoge con los movimientos que haya.
+  //
+  // `overflow: 'hidden'` es lo que hace que el radio recorte de verdad
+  // a la primera cabecera y a la ultima fila; sin el, las esquinas se
+  // ven redondeadas pero los hijos siguen pintando cuadrado por encima.
+  // SIN margen horizontal propio, y es deliberado: `ScreenContainer` ya
+  // aplica `paddingHorizontal: 15` a todo lo que envuelve, que es la
+  // misma sangria con la que se dibujan las tarjetas del resto de la
+  // app. Anadir margen aqui la sumaba a esos 15 y le quitaba ancho a la
+  // fila: con 12 (27 en total) `TransactItem` empezaba a cortar la linea
+  // secundaria en "01 ago 2026 · Efec...". Medido en el emulador
+  // comparando capturas, no el volcado de `uiautomator` — ese devuelve
+  // el texto FUENTE y no delata los puntos suspensivos.
   listContent: {
-    paddingBottom: 40,
+    marginBottom: 40,
+    // SIN padding horizontal: las filas de `TransactItem` ya reparten su
+    // ancho entre icono, concepto e importe, y quitarles 16 mas partia
+    // "Alquiler de casa" en "Alquiler de ...". La sangria de la tarjeta
+    // la da su margen; el aire interior, el propio `marginVertical` de
+    // cada fila.
+    paddingBottom: 8,
+    backgroundColor: colors[white][0],
+    borderRadius: 20,
+    overflow: 'hidden',
+    // `boxShadow` y no `elevation`: en Android la sombra de `elevation`
+    // sigue el contorno RECTANGULAR de la vista y asomaria por las
+    // cuatro esquinas como un cuadrado gris.
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.10)',
   },
   // Fondo opaco: la cabecera queda fija y sin el se veria pasar las
-  // filas por debajo.
+  // filas por debajo. `#FAFAFA` sobre el blanco de la tarjeta se lee
+  // como una banda de grupo muy tenue, no como un bloque gris pegado.
   sectionHeader: {
     backgroundColor: colors.surface[0],
     paddingHorizontal: 20,

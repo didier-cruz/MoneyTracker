@@ -391,6 +391,47 @@ export const getFinances = async (
  * id, asi que la fila real se relee de aqui en vez de arrastrar el
  * `IFinanceRow` completo por toda la UI.
  */
+/**
+ * Ultima fecha de movimiento por categoria y por cuenta: `Map<id, ISO>`.
+ *
+ * Sirve para ordenar las tarjetas de la fila horizontal cuando el gasto
+ * del mes no desempata — a primeros de mes TODO esta a cero, y sin esto
+ * el orden seria alfabetico, que es tanto como decir arbitrario. Con la
+ * ultima vez que se uso, la fila abre mostrando lo que de verdad
+ * mueves.
+ *
+ * Una sola consulta agregada por dimension, no una por categoria: el
+ * `GROUP BY` lo resuelve el motor de una pasada. Es justo lo contrario
+ * de lo que hace `useAnalysisScreen`, que lanza una consulta por sobre y
+ * esta anotado como algo que no hay que repetir.
+ */
+export const getLastMovementDates = async (
+  db: SQLiteDatabase,
+): Promise<{byCategory: Map<number, string>; byAccount: Map<number, string>}> => {
+  const [categoryRows] = await db.executeSql(
+    `SELECT idCategory AS id, MAX(dateCreated) AS lastDate
+       FROM finances
+      WHERE idCategory IS NOT NULL
+      GROUP BY idCategory;`,
+  );
+  const [accountRows] = await db.executeSql(
+    `SELECT idAccount AS id, MAX(dateCreated) AS lastDate
+       FROM finances
+      GROUP BY idAccount;`,
+  );
+
+  const toMap = (resultSet: any): Map<number, string> => {
+    const map = new Map<number, string>();
+    for (let index = 0; index < resultSet.rows.length; index++) {
+      const row = resultSet.rows.item(index);
+      map.set(row.id as number, row.lastDate as string);
+    }
+    return map;
+  };
+
+  return {byCategory: toMap(categoryRows), byAccount: toMap(accountRows)};
+};
+
 export const getFinanceById = async (
   db: SQLiteDatabase,
   id: number,

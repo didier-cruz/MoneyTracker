@@ -27,7 +27,8 @@
       "label": "Transfer"
     },
     "noCategory": "No category",
-    "back": "Back"
+    "back": "Back",
+    "clear": "Clear"
   },
   "drawer": {
     "home": "Home",
@@ -112,7 +113,15 @@
     "adminEmptyState": "You have no accounts yet. Create the first one with the button below.",
     "adminAddAccount": "New account",
     "editAccountAccessibilityLabel": "Edit {{name}}",
-    "archiveAccountAccessibilityLabel": "Archive {{name}}"
+    "archiveAccountAccessibilityLabel": "Archive {{name}}",
+    "adminHeaderSubtitle": "and their movements",
+    "adminHeaderTitle": "Accounts",
+    "archiveAccountErrorMessage": "The account could not be archived. Please try again.",
+    "archiveAccountMessage": "“{{name}}” will disappear from your lists and stop counting toward your net worth. Its movements are NOT deleted: they stay in the history with their amount and date. You can restore it any time from “Archived accounts”.",
+    "archiveAccountTitle": "Archive this account?",
+    "archivedAccountsAccessibilityLabel": "See archived accounts",
+    "seeAllCards": "See all ({{count}})",
+    "toggleMovementsAccessibilityLabel": "Show or hide {{name}} movements"
   },
   "budgets": {
     "title": "Budgets",
@@ -237,8 +246,8 @@
     "loadingMovements": "Loading movements",
     "retryLoadingMovements": "Retry loading movements",
     "loadingMoreMovements": "Loading more movements",
-    "noMovementsForCategory": "No movements yet for \"{{name}}\".",
-    "noMovementsGeneric": "No movements yet for this category.",
+    "noMovementsForCategory": "No movements for “{{name}}” in this period.",
+    "noMovementsGeneric": "No movements for this category in this period.",
     "createCategoryTitle": "Create Category",
     "createCategoryMessage": "You can register all your categories through this form",
     "addCategoryNamePlaceholder": "Add category name",
@@ -274,7 +283,11 @@
     "adminAddCategory": "New category",
     "editCategoryAccessibilityLabel": "Edit {{name}}",
     "deleteCategoryAccessibilityLabel": "Delete {{name}}",
-    "addCategory": "Add category"
+    "addCategory": "Add category",
+    "adminHeaderSubtitle": "and their movements",
+    "adminHeaderTitle": "Categories",
+    "seeAllCards": "See all ({{count}})",
+    "toggleMovementsAccessibilityLabel": "Show or hide {{name}} movements"
   },
   "transfer": {
     "title": "Transfer",
@@ -492,5 +505,16 @@
     "subscriptions": "Subscriptions",
     "transport": "Transport",
     "utilities": "Utilities"
+  },
+  "entityPicker": {
+    "accountsTitle": "Accounts and their movements",
+    "categoriesTitle": "Categories and their movements",
+    "noMovementsYet": "No movements yet.",
+    "noResults": "Nothing matches “{{query}}”",
+    "rowAccessibilityLabel": "{{name}}, {{amount}}",
+    "searchAccount": "Search account…",
+    "searchCategory": "Search category…",
+    "seeAllMovements": "See all movements →",
+    "toggleMovements": "Show or hide {{name}} movements"
   }
 }

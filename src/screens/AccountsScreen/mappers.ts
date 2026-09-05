@@ -31,6 +31,15 @@ export const formatCurrentMonthLabel = (now: Date = new Date()): string => {
  * for this id to navigate to `CreateAccount` instead of selecting it.
  */
 export const ADD_ACCOUNT_CARD_ID = -1;
+/** Tarjeta que abre la hoja con el listado completo de cuentas. */
+export const SEE_ALL_ACCOUNTS_CARD_ID = -2;
+/** "Ninguna seleccionada" — id imposible, con nombre para que no se
+ * confunda con el de "ver todas". */
+export const NO_ACCOUNT_SELECTED_ID = -99;
+/** Cuantas cuentas reales caben en la fila antes de mandar el resto a
+ * la hoja. El mismo corte que en categorias: ver
+ * `VISIBLE_CATEGORY_CARDS` para la medicion que lo justifica. */
+export const VISIBLE_ACCOUNT_CARDS = 8;
 
 /**
  * Maps `getAccounts`' rows to `CatalogList`'s `CatalogCard` shape, plus
@@ -46,10 +55,49 @@ export const ADD_ACCOUNT_CARD_ID = -1;
  * three of its rows) — nothing in the approved design varies this per
  * account/kind.
  */
+/**
+ * Ordena las cuentas por SALDO, de mayor a menor, y desempata por la
+ * usada mas recientemente y luego por nombre.
+ *
+ * Por saldo con signo y no por valor absoluto —al reves que las
+ * categorias—: aqui el signo significa algo distinto. Una deuda de
+ * -30.000 no es "la cuenta mas importante", es la que menos dinero
+ * disponible tiene, y debe quedar al final de la fila, no al principio.
+ */
+export const sortAccountsByRelevance = (
+  accounts: IAccountWithBalance[],
+  lastUsed: Map<number, string> = new Map(),
+): IAccountWithBalance[] =>
+  [...accounts].sort((a, b) => {
+    if (b.balance !== a.balance) {
+      return b.balance - a.balance;
+    }
+    const lastA = lastUsed.get(a.id) ?? '';
+    const lastB = lastUsed.get(b.id) ?? '';
+    if (lastA !== lastB) {
+      return lastB.localeCompare(lastA);
+    }
+    return a.name.localeCompare(b.name);
+  });
+
 export const mapAccountsToCatalogCards = (
   accounts: IAccountWithBalance[],
+  lastUsed: Map<number, string> = new Map(),
+  selectedId?: number,
 ): CatalogCard[] => {
-  const accountCards: CatalogCard[] = accounts.map(account => ({
+  const ordered = sortAccountsByRelevance(accounts, lastUsed);
+  // Misma razon que en categorias: la cuenta elegida en la hoja tiene
+  // que verse marcada en la fila aunque no este entre las ocho primeras.
+  const visible = (() => {
+    const head = ordered.slice(0, VISIBLE_ACCOUNT_CARDS);
+    if (selectedId === undefined || head.some(account => account.id === selectedId)) {
+      return head;
+    }
+    const selected = ordered.find(account => account.id === selectedId);
+    return selected ? [selected, ...head.slice(0, VISIBLE_ACCOUNT_CARDS - 1)] : head;
+  })();
+
+  const cards: CatalogCard[] = visible.map(account => ({
     id: account.id,
     icon: account.icon,
     iconColor: colors.white[0],
@@ -59,7 +107,24 @@ export const mapAccountsToCatalogCards = (
     variant: account.kind === 'receivable' ? 'wide' : 'square',
   }));
 
-  const addAccountCard: CatalogCard = {
+  // "Ver todas" se muestra SIEMPRE, no solo cuando algo queda fuera.
+  //
+  // Antes iba condicionada a `hidden > 0` y desaparecia justo en el caso
+  // limite: con 8 cuentas y un corte de 8 no sobra ninguna, asi que no
+  // habia forma de abrir el listado completo ni de buscar por nombre. Y
+  // ademas la fila cambiaba de composicion sola al crear la novena, que
+  // es lo contrario de una interfaz predecible.
+  cards.push({
+    id: SEE_ALL_ACCOUNTS_CARD_ID,
+      icon: 'ellipsis-h',
+      iconColor: colors.primary[0],
+      iconBackground: colors.inactive[0],
+    field: i18n.t('accounts.seeAllCards', {count: ordered.length}),
+    balance: 0,
+    variant: 'add',
+  });
+
+  cards.push({
     id: ADD_ACCOUNT_CARD_ID,
     icon: 'plus',
     iconColor: colors.primary[0],
@@ -67,9 +132,9 @@ export const mapAccountsToCatalogCards = (
     field: i18n.t('accounts.addAccount'),
     balance: 0,
     variant: 'add',
-  };
+  });
 
-  return [...accountCards, addAccountCard];
+  return cards;
 };
 
 /**

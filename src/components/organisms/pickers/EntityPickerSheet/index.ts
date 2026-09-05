@@ -1,2 +1,1 @@
-export * from './IconPicker';
 export {EntityPickerSheet} from './EntityPickerSheet';
