@@ -86,7 +86,7 @@ export const ArchivedAccounts = (_props: ArchivedAccountsProps) => {
 
   return (
     <>
-    <ScreenContainer>
+    <ScreenContainer containerStyle={styles.screen}>
       <Header
         title={t('accounts.archivedTitle')}
         message={t('accounts.archivedMessage')}
@@ -129,6 +129,7 @@ export const ArchivedAccounts = (_props: ArchivedAccountsProps) => {
         <FlatList
           data={accounts}
           keyExtractor={item => item.id.toString()}
+          style={styles.listView}
           contentContainerStyle={styles.list}
           renderItem={({item}) => (
             // Merged into one screen-reader stop, its "restore" action
@@ -212,6 +213,22 @@ export const ArchivedAccounts = (_props: ArchivedAccountsProps) => {
 };
 
 const styles = StyleSheet.create({
+  /**
+   * `ScreenContainer` centra a sus hijos (`alignItems: 'center'`) y no
+   * tiene alto propio. Bajo esas dos reglas la `FlatList` se encogia a
+   * su ancho minimo y a casi nada de alto: la fila salia recortada, con
+   * el icono partido y sin nombre ni boton de restaurar. Se veia asi en
+   * cualquier telefono en cuanto habia una sola cuenta archivada.
+   * `flex: 1` aqui le da alto a la pantalla, y `listView` estira la
+   * lista a todo el ancho y el alto que quedan.
+   */
+  screen: {
+    flex: 1,
+  },
+  listView: {
+    alignSelf: 'stretch',
+    flex: 1,
+  },
   centered: {
     width: '100%',
     alignItems: 'center',
