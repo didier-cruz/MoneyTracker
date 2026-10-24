@@ -5,6 +5,7 @@ import {seedDefaultCategoriesOnce} from '@db/queries';
 import {DrawerNav} from '@navigation/DrawerNav';
 import {PeriodProvider} from '@context/PeriodContext';
 import {NavigationContainer} from '@react-navigation/native';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 import icons from './src/icons';
 import {hydrateStoredLanguage} from '@i18n';
 
@@ -49,9 +50,15 @@ function App(): JSX.Element {
 
 const AppState = ({children}: any) => {
   return (
-    <NavigationContainer>
-      <PeriodProvider>{children}</PeriodProvider>
-    </NavigationContainer>
+    // `SafeAreaProvider` explicito en la raiz: la barra de pestanas lee
+    // el alto de la barra de navegacion del sistema con
+    // `useSafeAreaInsets()`, y sin proveedor propio dependeria del que
+    // el drawer monta por su cuenta.
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <PeriodProvider>{children}</PeriodProvider>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 };
 
