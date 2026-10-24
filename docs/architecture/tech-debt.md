@@ -2,6 +2,23 @@
 
 Formato: impacto + condición de disparo para retomar. No es una lista de "algún día".
 
+## Predictive back desactivado a la fuerza (React Native 0.77)
+
+- **Origen:** subida a `targetSdkVersion 36`, exigida por Google Play.
+- **Qué pasa:** Android 16 dejó de llamar a `onBackPressed()` y de despachar
+  `KEYCODE_BACK` para las apps que apuntan a 36. React Native 0.77 todavía depende de
+  esos callbacks, así que su `BackHandler` —del que cuelga React Navigation— nunca se
+  entera del gesto y el sistema cierra la actividad. Volver atrás desde el formulario
+  sacaba de la app en vez de regresar a Balance.
+- **Qué se hizo:** `android:enableOnBackInvokedCallback="false"` en el manifest, que es
+  la salida que documenta el propio Android. Poner la bandera en `true` NO arregla nada
+  en esta versión de RN; se probó primero y el fallo seguía igual.
+- **Qué se pierde:** las animaciones de predictive back. Nada funcional.
+- **Cómo se cierra:** subir a **React Native 0.81**, que reimplementa el back sobre
+  `OnBackPressedDispatcher`. Al hacerlo hay que quitar esa línea del manifest y volver a
+  verificar el gesto en un dispositivo con Android 16, no fiarse de que compile.
+- **Disparador para retomar:** la próxima subida de versión de React Native.
+
 ## Categorías heredadas de la migración 003 sin fusión (`Food`, `Bills`, `Children`) — CERRADO
 
 - **Origen:** ADR `0003-siembra-traducida-fusion-de-categorias-heredadas-en-codigo.md`

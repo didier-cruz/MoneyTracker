@@ -13,7 +13,18 @@ type DrawerLabelProps = {
  */
 export const DrawerLabel = ({i18nKey, color}: DrawerLabelProps) => {
   const {t} = useTranslation();
-  return <Text style={[styles.label, {color}]}>{t(i18nKey)}</Text>;
+  // Una sola linea que encoge la fuente antes que partir la palabra:
+  // con la fuente del sistema agrandada, "Categorias" salia como
+  // "Categoria" / "s". Ver el ancho del menu en `navOptions.ts`.
+  return (
+    <Text
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.7}
+      style={[styles.label, {color}]}>
+      {t(i18nKey)}
+    </Text>
+  );
 };
 
 const styles = StyleSheet.create({

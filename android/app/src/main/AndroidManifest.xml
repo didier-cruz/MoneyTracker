@@ -6,6 +6,25 @@
          hace ninguna peticion de red y no necesita el permiso. Sigue
          declarado en el manifest de `debug`, donde Metro si lo usa. -->
 
+    <!-- enableOnBackInvokedCallback="false" — SE OPTA POR SALIR del
+         "predictive back", a proposito y de forma temporal.
+
+         Android 16 dejo de llamar a onBackPressed() y de despachar
+         KEYCODE_BACK para las apps que apuntan a targetSdk 36. React Native
+         0.77 todavia depende de esos callbacks, asi que su BackHandler —del
+         que cuelga React Navigation— nunca se entera del gesto y el sistema
+         cierra la actividad: volver atras desde el formulario sacaba de la
+         app en vez de regresar a Balance.
+
+         Comprobado con el metodo de las dos mitades: con targetSdk 35 volvia
+         bien, con 36 no, y con 36 + esta bandera en false vuelve a hacerlo.
+         Poner la bandera en TRUE no arregla nada en esta version de RN: se
+         probo primero y el fallo seguia igual.
+
+         El arreglo de verdad llega en React Native 0.81, que reimplementa el
+         back sobre OnBackPressedDispatcher. Cuando se suba a esa version hay
+         que quitar esta linea y recuperar las animaciones de predictive back,
+         que es lo unico que se pierde aqui. Anotado en tech-debt.md. -->
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
@@ -13,7 +32,8 @@
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
       android:theme="@style/AppTheme"
-      android:supportsRtl="true">
+      android:supportsRtl="true"
+      android:enableOnBackInvokedCallback="false">
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

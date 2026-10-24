@@ -13,7 +13,7 @@ import {Title} from '@components/atoms/text/Title';
 import VectorIcon from 'react-native-vector-icons/FontAwesome';
 import InputField from '@screens/[categories]/CreateCategory/partials/InputField/InputField';
 import SaveAction from '@screens/[categories]/CreateCategory/partials/SaveAction/SaveAction';
-import {colors, gray, primary, white} from '@constants/colors/colors';
+import {accent, colors, gray, primary, white} from '@constants/colors/colors';
 import {parseAmountToCents} from '@utils/currency';
 import {centsToEditableAmountText} from '../../mappers';
 import {useTranslation} from 'react-i18next';
@@ -116,29 +116,69 @@ export const CategoryLimitModal = ({
     onSubmit(selectedCategory.id, amount);
   };
 
-  // The trailing amount field + Save button — shared by both modes.
-  // In `mode === 'add'` these are folded into the FlatList below as its
-  // `ListFooterComponent` (see that FlatList's own comment for why:
-  // rendering a SECOND, independently-scrolling list as a sibling of an
-  // outer scroll container is exactly the "VirtualizedLists should
-  // never be nested inside plain ScrollViews" trap this modal used to
-  // hit when `Modal`'s own `scrollable` prop supplied that outer
-  // scroll). In `mode === 'edit'` (no list at all) they are rendered
-  // directly.
-  const amountField = (
-    <>
+  /**
+   * "Add" is two steps: pick a category, THEN type the amount.
+   *
+   * It used to be one long list with the amount field and Save button
+   * as its footer. With the ~20 seeded expense categories that footer
+   * sat far below the fold: a tester picked a category, saw nothing
+   * happen, and had to discover by scrolling that the input and the CTA
+   * were at the very bottom. Now tapping a category swaps the list for
+   * the same amount view that "edit" already uses (category shown
+   * locked, input focused, Save right under it), with a "Change" link to
+   * go back to the list. The step is derived from `selectedCategory`,
+   * not stored separately, so the two can never disagree.
+   *
+   * Still no nested `VirtualizedList`: the list is the only scrollable
+   * element and only renders while no category is picked.
+   */
+  const isPicking = mode === 'add' && !selectedCategory;
+  const shownCategory = mode === 'edit' ? initialCategory : selectedCategory;
+
+  const amountView = (
+    <View style={styles.paddedContent}>
+      <Title level={4} style={styles.title}>
+        {title}
+      </Title>
+      {shownCategory && (
+        <View style={styles.lockedCategory}>
+          <View style={styles.rowIcon}>
+            <VectorIcon
+              name={shownCategory.icon}
+              color={colors[white][0]}
+              size={16}
+            />
+          </View>
+          <Text style={styles.lockedCategoryName}>{shownCategory.name}</Text>
+          {mode === 'add' && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('budgets.changeCategoryAccessibilityLabel')}
+              hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
+              onPress={() => {
+                setSelectedCategory(undefined);
+                setError('');
+              }}>
+              <Text color={colors[accent][2]} size="xs">
+                {t('budgets.changeCategory')}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
       <InputField
         inputText={amountText}
         onChangeInputText={setAmountText}
         placeholder={t('budgets.monthlyLimitPlaceholder')}
         accessibilityLabel={t('budgets.monthlyLimitAccessibilityLabel')}
         keyboardType="decimal-pad"
+        autoFocus={mode === 'add'}
         error={error}
       />
       <View style={styles.actions}>
         <SaveAction onSave={handleSubmit} disabled={isSubmitting} />
       </View>
-    </>
+    </View>
   );
 
   return (
@@ -146,66 +186,47 @@ export const CategoryLimitModal = ({
       <KeyboardAvoidingView
         style={styles.keyboardAvoiding}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {mode === 'edit' ? (
-          <View style={styles.paddedContent}>
-            <Title level={4} style={styles.title}>
-              {title}
-            </Title>
-            {initialCategory && (
-              <View style={styles.lockedCategory}>
-                <View style={styles.rowIcon}>
-                  <VectorIcon
-                    name={initialCategory.icon}
-                    color={colors[white][0]}
-                    size={16}
-                  />
-                </View>
-                <Text>{initialCategory.name}</Text>
-              </View>
-            )}
-            {amountField}
-          </View>
-        ) : (
-          // The ONLY scrollable element in "add" mode — title/empty-state/
-          // amount field/Save all ride along as its header/footer instead
-          // of living in a separate outer `ScrollView`, so there is never
-          // a nested `VirtualizedList` here. `flexShrink: 1` (`styles.list`)
-          // is what lets it actually shrink/scroll under `BottomSheet`'s
-          // own `maxHeight="80%"` — see that prop's doc comment.
+        {isPicking ? (
+          // `flexShrink: 1` (`styles.list`) is what lets it actually
+          // shrink/scroll under `BottomSheet`'s own `maxHeight="80%"` —
+          // see that prop's doc comment.
           <FlatList
             data={categories}
             keyExtractor={item => item.id.toString()}
             style={styles.list}
             ListHeaderComponent={
-              <Title level={4} style={[styles.title, styles.paddedContent]}>
-                {title}
-              </Title>
+              <View style={[styles.title, styles.paddedContent]}>
+                <Title level={4}>{title}</Title>
+                {categories.length > 0 && (
+                  <Text color={colors[gray][0]} size="xs">
+                    {t('budgets.pickLimitCategory')}
+                  </Text>
+                )}
+              </View>
             }
             ListEmptyComponent={
               <Text color={colors[gray][0]} style={[styles.empty, styles.paddedContent]}>
                 {t('budgets.everyCategoryHasLimit')}
               </Text>
             }
-            ListFooterComponent={
-              <View style={[styles.footer, styles.paddedContent]}>{amountField}</View>
-            }
-            renderItem={({item}) => {
-              const isSelected = selectedCategory?.id === item.id;
-              return (
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel={item.name}
-                  accessibilityState={{selected: isSelected}}
-                  onPress={() => setSelectedCategory(item)}
-                  style={[styles.row, isSelected && styles.rowSelected]}>
-                  <View style={styles.rowIcon}>
-                    <VectorIcon name={item.icon} color={colors[white][0]} size={16} />
-                  </View>
-                  <Text>{item.name}</Text>
-                </TouchableOpacity>
-              );
-            }}
+            renderItem={({item}) => (
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={item.name}
+                onPress={() => {
+                  setSelectedCategory(item);
+                  setError('');
+                }}
+                style={styles.row}>
+                <View style={styles.rowIcon}>
+                  <VectorIcon name={item.icon} color={colors[white][0]} size={16} />
+                </View>
+                <Text>{item.name}</Text>
+              </TouchableOpacity>
+            )}
           />
+        ) : (
+          amountView
         )}
       </KeyboardAvoidingView>
     </BottomSheet>
@@ -233,20 +254,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   list: {
-    // Generous, not tight — this is now the ONE scrollable region for
-    // the whole "add" sheet (title + rows + amount field + Save all
-    // ride along as its header/footer, see the component body), so it
-    // needs enough room to show the amount field without scrolling on
-    // an ordinary phone with a handful of categories. `BottomSheet`'s
-    // own `maxHeight="80%"` is still the real safety cap for a long
-    // category list. `flexShrink: 1` — see `keyboardAvoiding`'s
-    // comment above.
+    // Only the category picker now — the amount field and Save live in
+    // the second step (see `isPicking` in the component body).
+    // `BottomSheet`'s own `maxHeight="80%"` is the real cap for a long
+    // category list. `flexShrink: 1` — see `keyboardAvoiding`'s comment
+    // above.
     width: '100%',
     maxHeight: 480,
     flexShrink: 1,
-  },
-  footer: {
-    marginTop: 10,
   },
   empty: {
     paddingVertical: 20,
@@ -260,13 +275,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors[gray][0],
   },
-  rowSelected: {
-    backgroundColor: colors.inactive[0],
-  },
   lockedCategory: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 15,
+  },
+  lockedCategoryName: {
+    flex: 1,
   },
   rowIcon: {
     width: 30,

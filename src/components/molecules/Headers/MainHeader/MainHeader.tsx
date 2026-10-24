@@ -71,14 +71,18 @@ const MainHeader = ({
       </TouchableOpacity>
       {title && onPressSubtitle && (
         <View style={styles.stackedBlock}>
-          <Text style={styles.title1}>{title1}</Text>
+          <Text {...singleLineFit} style={styles.title1}>
+            {title1}
+          </Text>
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel={subtitleAccessibilityLabel ?? title2}
             hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
             onPress={onPressSubtitle}
             style={styles.subtitleRow}>
-            <Text style={styles.title2}>{title2}</Text>
+            <Text {...singleLineFit} style={[styles.title2, styles.shrink]}>
+              {title2}
+            </Text>
             <FontAwesomeIcon
               icon={faChevronDown}
               size={11}
@@ -95,23 +99,45 @@ const MainHeader = ({
         // La rama tocable de arriba ya lo tenia; esta se quedo sin ello
         // y el fallo solo asoma con subtitulos largos (Logros: "3 metas
         // cumplidas · $24,000.00").
+        // El titulo y el subtitulo van en dos `Text` hermanos y no
+        // anidados: solo el titulo se fuerza a una linea. El subtitulo
+        // puede ser largo (Logros: "3 metas cumplidas · $24,000.00") y
+        // ahi partirse en varias lineas es lo correcto.
         <View style={styles.stackedBlock}>
-          <Text style={styles.title1}>
+          <Text {...singleLineFit} style={styles.title1}>
             {title1}
-            {title2 && (
-              <Text style={styles.title2}>
-                {'\n'}
-                {title2}
-              </Text>
-            )}
           </Text>
+          {title2 && <Text style={styles.title2}>{title2}</Text>}
         </View>
       )}
     </View>
   );
 };
 
+/**
+ * Una sola linea que encoge la fuente antes que partirse.
+ *
+ * El titulo va a 36 y, despues del menu y los margenes, le quedan unos
+ * 270dp en un telefono de 393dp. En un Xiaomi con la fuente del sistema
+ * agrandada, "Presupuestos" ya no cabia y React Native lo partia A MEDIA
+ * PALABRA ("Presupuest" / "os"), porque es una sola palabra sin otro
+ * punto de corte. Igual con el mes del selector de periodo, que salia
+ * en dos lineas ("septiembre de" / "2026") y empujaba el chevron.
+ * Reproducido en el emulador con `font_scale 1.15` y densidad 480.
+ *
+ * `adjustsFontSizeToFit` reduce solo lo necesario, y `minimumFontScale`
+ * pone un piso para que nunca quede diminuto.
+ */
+const singleLineFit = {
+  numberOfLines: 1,
+  adjustsFontSizeToFit: true,
+  minimumFontScale: 0.6,
+} as const;
+
 const styles = StyleSheet.create({
+  shrink: {
+    flexShrink: 1,
+  },
   stackedBlock: {
     flexShrink: 1,
   },

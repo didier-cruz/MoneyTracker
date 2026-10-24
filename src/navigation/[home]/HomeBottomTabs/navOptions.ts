@@ -37,15 +37,33 @@ export const FAB_OVERHANG = 10;
  * `.secondary` (`#8CC63F`) is `tokens.accent[1]`, `.inactive`
  * (`#5CA41B`) is `tokens.accent[2]`.
  */
-export const bottomTabNavScreenOptions = (): BottomTabNavigationOptions => ({
+/**
+ * `bottomInset` es el alto de la barra de navegacion del sistema.
+ *
+ * Desde targetSdk 35, Android 15+ dibuja la app de borde a borde y desde
+ * targetSdk 36 ya no se puede desactivar: la ventana llega hasta el borde
+ * inferior y los botones del sistema (atras / inicio / recientes) se pintan
+ * ENCIMA de lo que haya ahi. Con `height` fijo y `paddingBottom: 0` esta
+ * barra quedaba debajo de esos botones, tapando las etiquetas y robando
+ * los toques. Lo reportaron los verificadores de la prueba cerrada y se
+ * reprodujo en el emulador (Android 16, navegacion de tres botones).
+ *
+ * `paddingBottom` y `height` se fijan aqui a mano porque cualquier valor
+ * en `tabBarStyle` reemplaza el padding que React Navigation calcula solo.
+ * El FAB no se mueve: se posiciona dentro de la fila de pestanas, que va
+ * por encima del padding, asi que su `bottom` sigue contando igual.
+ */
+export const bottomTabNavScreenOptions = (
+  bottomInset: number,
+): BottomTabNavigationOptions => ({
   headerShown: false,
   tabBarHideOnKeyboard: true,
   tabBarStyle: {
     backgroundColor: colors[primary][0],
     borderTopRightRadius: 50,
     borderTopLeftRadius: 50,
-    height: TAB_BAR_HEIGHT,
-    paddingBottom: 0,
+    height: TAB_BAR_HEIGHT + bottomInset,
+    paddingBottom: bottomInset,
   },
   tabBarActiveTintColor: colors[accent][1],
   tabBarInactiveTintColor: colors[accent][2],

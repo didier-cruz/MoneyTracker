@@ -1,4 +1,5 @@
 import {StyleSheet, View} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useState} from 'react';
 import {usePeriod} from '@context/PeriodContext';
 import {PeriodPickerSheet} from '@components/organisms/pickers';
@@ -50,19 +51,30 @@ export const MovementsTopTabs = () => {
   const [periodSheetOpen, setPeriodSheetOpen] = useState(false);
 
   return (
-    <View style={styles.container}>
+    // `SafeAreaView` solo arriba: es la unica pestana principal que no
+    // pasa por `ScreenContainer` (que ya es un `SafeAreaView`), asi que
+    // su cabecera no dejaba el hueco de la barra de estado y quedaba mas
+    // arriba que en Balance, Presupuestos o Analisis. Con la app de borde
+    // a borde (targetSdk 36) la diferencia es justo el alto de esa barra.
+    // Abajo no hace falta: la barra de pestanas ya reserva su espacio.
+    <SafeAreaView edges={['top']} style={styles.container}>
       {/* El selector de periodo vive en la cabecera COMPARTIDA, no en
           cada pestana: gobierna las dos a la vez, que es el sentido de
           tener un periodo unico para la app. Aqui si anade una linea de
           alto —esta cabecera no tenia subtitulo—, y se acepta: el tramo
           que estas mirando es justo el dato que faltaba para leer bien
           las cifras de abajo. */}
-      <MainHeader
-        title={t('movements.title')}
-        subtitle={resolved.label}
-        onPressSubtitle={() => setPeriodSheetOpen(true)}
-        subtitleAccessibilityLabel={t('period.change')}
-      />
+      {/* Mismo margen lateral que `ScreenContainer` en las demas
+          pestanas: sin el, el menu y el titulo quedaban 15dp mas a la
+          izquierda que en Balance o Presupuestos. */}
+      <View style={styles.header}>
+        <MainHeader
+          title={t('movements.title')}
+          subtitle={resolved.label}
+          onPressSubtitle={() => setPeriodSheetOpen(true)}
+          subtitleAccessibilityLabel={t('period.change')}
+        />
+      </View>
 
       <PeriodPickerSheet
         visible={periodSheetOpen}
@@ -103,13 +115,16 @@ export const MovementsTopTabs = () => {
           options={{tabBarLabel: t('categories.tabLabel')}}
         />
       </Tab.Navigator>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    paddingHorizontal: SCREEN_HORIZONTAL_PADDING,
   },
   track: {
     marginHorizontal: SCREEN_HORIZONTAL_PADDING,

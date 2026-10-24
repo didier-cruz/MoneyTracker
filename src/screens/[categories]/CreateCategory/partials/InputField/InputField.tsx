@@ -21,6 +21,7 @@ type Props = {
   placeholder?: string;
   keyboardType?: KeyboardTypeOptions;
   accessibilityLabel?: string;
+  autoFocus?: boolean;
 };
 
 const InputField = ({
@@ -30,6 +31,7 @@ const InputField = ({
   placeholder,
   keyboardType = 'default',
   accessibilityLabel,
+  autoFocus,
 }: Props) => {
   const {t} = useTranslation();
   const resolvedPlaceholder = placeholder ?? t('categories.addCategoryNamePlaceholder');
@@ -42,6 +44,7 @@ const InputField = ({
         placeholder={resolvedPlaceholder}
         placeholderTextColor={colors[gray][0]}
         keyboardType={keyboardType}
+        autoFocus={autoFocus}
         accessibilityLabel={accessibilityLabel ?? resolvedPlaceholder}
       />
       <Headings
