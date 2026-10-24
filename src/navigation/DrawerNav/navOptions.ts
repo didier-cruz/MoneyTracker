@@ -38,9 +38,22 @@ export const drawerNavScreenOptions = (): DrawerNavigationOptions => ({
   headerStyle: {
     backgroundColor: colors[primary][0],
   },
+  /**
+   * Ancho del menu: 75% de la pantalla con tope de 300dp.
+   *
+   * Estaba en un 50% fijo. En un telefono de ~360dp de ancho, o con el
+   * tamano de pantalla del sistema agrandado (Honor Magic 7 Pro), eso
+   * dejaba unos 180dp: tras el icono y los margenes de cada fila, a la
+   * etiqueta le quedaba tan poco que Android partia las palabras por la
+   * mitad ("Categ" / "orias") y el wordmark se salia por la derecha.
+   * 75% con tope es el rango habitual de un menu lateral: ancho de sobra
+   * en telefonos angostos, sin tapar casi toda la pantalla en uno ancho.
+   * Reproducido en el emulador con densidad 520 y `font_scale 1.15`.
+   */
   drawerStyle: {
     backgroundColor: colors[primary][0],
-    width: '50%',
+    width: '75%',
+    maxWidth: 300,
   },
   drawerItemStyle: {
     borderBottomColor: colors[primary][0],

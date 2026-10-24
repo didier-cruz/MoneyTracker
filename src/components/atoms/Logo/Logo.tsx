@@ -84,7 +84,14 @@ export const Logo: FC<LogoProps> = ({
       </G>
     </Svg>
     {!markOnly && (
-      <Text size="base" bold numberOfLines={1} color={colors.white[0]} style={styles.wordmark}>
+      <Text
+        size="base"
+        bold
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        color={colors.white[0]}
+        style={styles.wordmark}>
         Money
         <Text size="base" bold color={colors[accent][0]}>
           Tracker
@@ -103,6 +110,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   wordmark: {
+    // Sin `flexShrink` el texto no tenia cota de ancho dentro de la fila
+    // y, en un menu angosto, se salia por la derecha ("MoneyTrac") en vez
+    // de encoger con `adjustsFontSizeToFit`.
+    flexShrink: 1,
     marginLeft: 10,
     letterSpacing: -0.3,
   },
